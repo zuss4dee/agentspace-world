@@ -218,7 +218,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       </div>
       {pickedBuilding ? (
         <button type="button" className="gbw-inspect" onClick={() => selectBuilding(null)}>
-          <p className="gbw-kicker">Building · {pickedBuilding.assetId.replace("pack.northshore.building.", "")}</p>
+          <p className="gbw-kicker">Building</p>
           <p className="gbw-inspect-name">{pickedBuilding.name}</p>
           <p>
             {DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label} · {pickedBuilding.style}

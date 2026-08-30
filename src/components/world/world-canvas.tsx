@@ -545,12 +545,12 @@ function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp, scale: number
   ctx.fill();
 }
 
-function drawSpeech(ctx: CanvasRenderingContext2D, agent: Agent, scale: number) {
-  if (scale < 1.45) return;
+function drawSpeech(ctx: CanvasRenderingContext2D, agent: Agent, scale: number, selected: boolean) {
+  if (!selected && scale < 1.85) return;
   const line = agent.speech || (agent.status === "walking" ? "" : agent.thought);
   if (!line) return;
   const p = iso(agent.x, agent.y);
-  const text = line.slice(0, 36) + (line.length > 36 ? "…" : "");
+  const text = line.length > 42 ? `${line.slice(0, 42)}…` : line;
   ctx.font = "10px ui-sans-serif";
   const w = Math.min(180, ctx.measureText(text).width + 12);
   ctx.fillStyle = "rgba(255,246,236,0.94)";
@@ -716,7 +716,7 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
       }
       layers.sort((a, b) => a.z - b.z);
       for (const layer of layers) layer.draw();
-      for (const agent of agents) drawSpeech(ctx, agent, scale);
+      for (const agent of agents) drawSpeech(ctx, agent, scale, agent.id === state.current.selectedAgentId);
 
       ctx.restore();
 
