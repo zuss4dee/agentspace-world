@@ -19,9 +19,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Grok Bot World",
+  title: "Buy a Digital City Plot | Northshore",
   description:
-    "A visual Earth campus for AI agents. Zoom a city, follow tiny inhabitants, watch the organisation work.",
+    "Buy a digital plot for your organisation in Northshore. Claim a lot, put a workplace on the map, and let Grok Bots walk in.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
-      style={{ background: "#87c5e8" }}
+      style={{ background: "#0a0d14" }}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <AppShell>{children}</AppShell>

@@ -7,7 +7,7 @@ import { useWorld } from "@/components/world/world-store";
 
 const WorldCanvas = dynamic(() => import("@/components/world/world-canvas").then((m) => m.WorldCanvas), {
   ssr: false,
-  loading: () => <div className="size-full bg-[#8eb8d6]" />,
+  loading: () => <div className="size-full bg-[#0a0d14]" />,
 });
 
 export function HabitatView({

@@ -13,7 +13,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <WorldProvider>
       <TooltipProvider>
         {habitat ? (
-          <div className="flex h-dvh flex-col overflow-hidden bg-[#8ec8ea]">{children}</div>
+          <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0d14]">{children}</div>
         ) : (
           <div className="flex min-h-dvh flex-col bg-background">
             <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">

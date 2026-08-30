@@ -7,6 +7,14 @@ import { PLOTS } from "@/lib/plots";
 import { TILE, wx, wz } from "@/lib/coords";
 import { useWorld } from "@/components/world/world-store";
 
+const ZONE_SALE: Record<string, THREE.Color> = {
+  downtown: new THREE.Color("#e8c56a"),
+  midtown: new THREE.Color("#7eb0ea"),
+  uptown: new THREE.Color("#6dce9a"),
+  outskirts: new THREE.Color("#e39a5c"),
+  ultimate: new THREE.Color("#c4a3f5"),
+};
+
 const COLOR = {
   sale: new THREE.Color("#e8c56a"),
   owned: new THREE.Color("#d9c4a8"),
@@ -18,8 +26,9 @@ export function PlotsLayer() {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const color = useMemo(() => new THREE.Color(), []);
-  const { selectedPlotId, selectPlot } = useWorld();
+  const { selectedPlotId, selectPlot, claimedPlotIds } = useWorld();
   const list = PLOTS;
+  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
 
   useLayoutEffect(() => {
     const m = mesh.current;
@@ -29,14 +38,15 @@ export function PlotsLayer() {
       dummy.scale.set(p.w * TILE * 0.92, 1, p.h * TILE * 0.92);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
-      const c = COLOR[p.kind];
+      const taken = claimed.has(p.id);
+      const c = p.kind === "sale" && !taken ? (ZONE_SALE[p.zone] ?? COLOR.sale) : taken ? COLOR.owned : COLOR[p.kind];
       color.copy(c);
-      if (selectedPlotId === p.id) color.lerp(new THREE.Color("#ed712e"), 0.45);
+      if (selectedPlotId === p.id) color.lerp(new THREE.Color("#a78bfa"), 0.45);
       m.setColorAt(i, color);
     });
     m.instanceMatrix.needsUpdate = true;
     if (m.instanceColor) m.instanceColor.needsUpdate = true;
-  }, [dummy, color, list, selectedPlotId]);
+  }, [dummy, color, list, selectedPlotId, claimed]);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 4) return;
@@ -56,7 +66,12 @@ export function PlotsLayer() {
 }
 
 export function SaleStakes() {
-  const sales = useMemo(() => PLOTS.filter((p) => p.kind === "sale").filter((_, i) => i % 3 === 0), []);
+  const { claimedPlotIds } = useWorld();
+  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
+  const sales = useMemo(
+    () => PLOTS.filter((p) => p.kind === "sale" && !claimed.has(p.id)).filter((_, i) => i % 3 === 0),
+    [claimed],
+  );
   return (
     <group>
       {sales.map((p) => (
@@ -67,7 +82,7 @@ export function SaleStakes() {
           </mesh>
           <mesh position={[0.35, 0.85, 0.35]}>
             <boxGeometry args={[0.22, 0.16, 0.04]} />
-            <meshStandardMaterial color="#ed712e" emissive="#ed712e" emissiveIntensity={0.25} />
+            <meshStandardMaterial color="#7c6cff" emissive="#7c6cff" emissiveIntensity={0.25} />
           </mesh>
         </group>
       ))}

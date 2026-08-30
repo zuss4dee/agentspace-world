@@ -58,6 +58,12 @@ type WorldApi = {
   interiorId: string | null;
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
+  claimedPlotIds: string[];
+  claimPlot: (id: string) => boolean;
+  beaconBidCents: number;
+  placeBeaconBid: (cents: number) => void;
+  beaconOpen: boolean;
+  setBeaconOpen: (v: boolean) => void;
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -76,6 +82,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [cameraScale, setCameraScaleState] = useState(0.72);
   const [cameraTick, setCameraTick] = useState(0);
   const [interiorId, setInteriorId] = useState<string | null>(null);
+  const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
+  const [beaconBidCents, setBeaconBidCents] = useState(0);
+  const [beaconOpen, setBeaconOpen] = useState(false);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -365,6 +374,17 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraTick((t) => t + 1);
   }, []);
 
+  const claimPlot = useCallback((id: string) => {
+    const p = PLOTS.find((item) => item.id === id);
+    if (!p || p.kind !== "sale") return false;
+    setClaimedPlotIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    return true;
+  }, []);
+
+  const placeBeaconBid = useCallback((cents: number) => {
+    setBeaconBidCents(cents);
+  }, []);
+
   const focusPoi = useCallback((id: string) => {
     const poi = poiById(id);
     if (!poi) return;
@@ -411,6 +431,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       interiorId,
       enterBuilding,
       exitInterior,
+      claimedPlotIds,
+      claimPlot,
+      beaconBidCents,
+      placeBeaconBid,
+      beaconOpen,
+      setBeaconOpen,
     }),
     [
       world,
@@ -439,6 +465,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       interiorId,
       enterBuilding,
       exitInterior,
+      claimedPlotIds,
+      claimPlot,
+      beaconBidCents,
+      placeBeaconBid,
+      beaconOpen,
     ],
   );
 

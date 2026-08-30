@@ -3,6 +3,7 @@
 import { useLayoutEffect, useRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
+import { BeaconMarker } from "@/components/world/gl/beacon-marker";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
 import { PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
@@ -99,6 +100,7 @@ function ExteriorScene() {
       <PlotsLayer />
       <SaleStakes />
       <BuildingsLayer />
+      <BeaconMarker />
       <TrafficLayer />
       <AgentsLayer />
     </>
@@ -120,7 +122,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [8, 18, 8], fov: 42, near: 0.3, far: 140 }
+          : { position: [16, 22, 16], fov: 42, near: 0.3, far: 140 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none"
