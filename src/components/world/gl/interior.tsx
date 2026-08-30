@@ -9,7 +9,10 @@ import { useWorld } from "@/components/world/world-store";
 function InteriorCamera() {
   const camera = useThree((s) => s.camera);
   useLayoutEffect(() => {
-    camera.position.set(0, 2.9, 6.4);
+    camera.position.set(2.4, 2.15, 4.35);
+    camera.near = 0.08;
+    camera.far = 48;
+    camera.updateProjectionMatrix();
     camera.lookAt(0, 1.05, 0);
   }, [camera]);
   return (
@@ -18,10 +21,10 @@ function InteriorCamera() {
       enableDamping
       dampingFactor={0.1}
       target={[0, 1.05, 0]}
-      minDistance={3.2}
-      maxDistance={11}
+      minDistance={2.4}
+      maxDistance={7.2}
       maxPolarAngle={Math.PI / 2.05}
-      minPolarAngle={0.25}
+      minPolarAngle={0.32}
     />
   );
 }
@@ -50,6 +53,14 @@ export function InteriorRoom() {
         <mesh position={[0, 1.5, -d / 2]} receiveShadow>
           <boxGeometry args={[w, 3, 0.16]} />
           <meshStandardMaterial color={b.wall} roughness={0.62} />
+        </mesh>
+        <mesh position={[-1.8, 1.85, -d / 2 + 0.09]}>
+          <boxGeometry args={[1.6, 1.15, 0.06]} />
+          <meshStandardMaterial color="#8ec5e8" emissive="#3a6a88" emissiveIntensity={0.35} />
+        </mesh>
+        <mesh position={[1.8, 1.85, -d / 2 + 0.09]}>
+          <boxGeometry args={[1.6, 1.15, 0.06]} />
+          <meshStandardMaterial color="#8ec5e8" emissive="#3a6a88" emissiveIntensity={0.35} />
         </mesh>
         <mesh position={[0, 1.5, d / 2]} receiveShadow>
           <boxGeometry args={[w, 3, 0.16]} />

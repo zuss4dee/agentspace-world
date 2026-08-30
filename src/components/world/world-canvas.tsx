@@ -61,11 +61,17 @@ function Scene() {
 }
 
 export function WorldCanvas() {
+  const { interiorId } = useWorld();
   return (
     <Canvas
+      key={interiorId ? `in-${interiorId}` : "out"}
       shadows
       dpr={[1, 1.6]}
-      camera={{ position: [38, 42, 38], fov: 42, near: 0.3, far: 260 }}
+      camera={
+        interiorId
+          ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
+          : { position: [38, 42, 38], fov: 42, near: 0.3, far: 260 }
+      }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none"
     >
