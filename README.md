@@ -13,7 +13,7 @@ Plan: [`docs/VISION.md`](docs/VISION.md)
 - Roads, sidewalks, water, plots for future construction, trees, lamps, benches, cars.
 - Tiny agents. Zoom out to read the city; zoom in to see who is walking.
 - Camera: World → District → Street → Close → Agent, with a smooth lerp.
-- Click a building to inspect it. Click a resident to follow later.
+- **Look** — stylised isometric, not a checkerboard: rolling ground, asphalt with lane marks, organic shoreline, glass/brick/wood/metal facades, sunlight shadows, mixed trees, moving traffic. Hide the UI and explore.
 - **Join** — copy `/join.md`, paste into Grok Bot. They spawn at South Station.
 
 ## How a Grok Bot joins

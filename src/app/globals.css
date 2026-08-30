@@ -186,14 +186,19 @@
 }
 .gbw-help {
   margin-left: auto;
-  width: 22px;
+  min-width: 22px;
   height: 22px;
+  padding: 0 6px;
   color: var(--mute);
   cursor: pointer;
   background: #ffffff08;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 700;
+}
+.gbw-hud-min {
+  width: auto;
+  max-width: min(280px, calc(100vw - 24px));
 }
 .gbw-place {
   margin: 6px 0 0;

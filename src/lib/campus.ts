@@ -1,4 +1,5 @@
 import type { Building, District, TileKind } from "./types";
+import { fbm, hash2 } from "./noise";
 
 export const GRID = 64;
 export const ROAD_XS = [6, 12, 24, 36, 48, 58];
@@ -570,16 +571,23 @@ function adjacentToRoad(x: number, y: number) {
   return ROAD_XS.some((rx) => Math.abs(x - rx) === 1) || ROAD_YS.some((ry) => Math.abs(y - ry) === 1);
 }
 
+function organicWater(x: number, y: number) {
+  if (isRoad(x, y)) return false;
+  const n = fbm(x * 0.11, y * 0.1);
+  const west = x + n * 2.6 < 3.5 && y > 2 && y < 47;
+  const inlet = x + n * 1.8 < 6.4 && y > 14 && y < 24;
+  const marsh = x > 50 && y > 47 && (x - 50) * 0.32 + (y - 47) * 0.26 + n * 2.5 > 3.1;
+  const harbor = x > 58 && y > 43 && n + (x - 58) * 0.18 + (y - 46) * 0.08 > 0.42;
+  return west || inlet || marsh || harbor;
+}
+
 export function makeTerrain(): TileKind[][] {
   const tiles: TileKind[][] = [];
   for (let y = 0; y < GRID; y++) {
     const row: TileKind[] = [];
     for (let x = 0; x < GRID; x++) {
       let kind: TileKind = "grass";
-      if (x <= 3 && y >= 4 && y <= 46) kind = "water";
-      if (x <= 5 && y >= 16 && y <= 22) kind = "water";
-      if (x >= 54 && y >= 52) kind = "water";
-      if (x >= 61 && y >= 46 && y <= 63) kind = "water";
+      if (organicWater(x, y)) kind = "water";
       if (x >= 1 && x <= 10 && y >= 1 && y <= 10 && kind !== "water") kind = "park";
       if (x >= 1 && x <= 10 && y >= 14 && y <= 22 && kind !== "water") kind = "park";
       if (x >= 2 && x <= 20 && y >= 50 && y <= 62 && kind !== "water") kind = "park";
@@ -593,7 +601,7 @@ export function makeTerrain(): TileKind[][] {
       if (x >= 2 && x <= 5 && y >= 44 && y <= 46 && kind !== "water") kind = "lot";
       if (isRoad(x, y) && kind !== "water") kind = "road";
       if (kind === "grass" && adjacentToRoad(x, y) && !isRoad(x, y)) kind = "sidewalk";
-      if (kind === "grass" && (x + y * 3) % 19 === 0) kind = "dirt";
+      if (kind === "grass" && hash2(x * 0.9, y * 1.1) > 0.86) kind = "dirt";
       row.push(kind);
     }
     tiles.push(row);
@@ -606,11 +614,13 @@ export function makeTerrain(): TileKind[][] {
         [x - 1, y],
         [x, y + 1],
         [x, y - 1],
+        [x + 1, y + 1],
+        [x - 1, y - 1],
       ];
       for (const [nx, ny] of neighbors) {
         if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
         const t = tiles[ny]![nx]!;
-        if (t === "grass" || t === "park" || t === "dirt" || t === "sidewalk") tiles[ny]![nx] = "sand";
+        if (t === "grass" || t === "park" || t === "dirt") tiles[ny]![nx] = "sand";
       }
     }
   }
@@ -618,6 +628,22 @@ export function makeTerrain(): TileKind[][] {
 }
 
 export const TERRAIN = makeTerrain();
+
+export function groundZ(x: number, y: number) {
+  const ix = Math.max(0, Math.min(GRID - 1, Math.floor(x)));
+  const iy = Math.max(0, Math.min(GRID - 1, Math.floor(y)));
+  const kind = TERRAIN[iy]![ix]!;
+  const n = fbm(x * 0.08, y * 0.08);
+  if (kind === "water") return -6.5 + n * 1.6;
+  if (kind === "sand") return -1.4 + n * 0.6;
+  if (kind === "road") return 0.35;
+  if (kind === "sidewalk") return 1.55;
+  if (kind === "plaza") return 1.7;
+  if (kind === "lot") return 0.7;
+  if (kind === "park") return 2.4 + n * 5.2;
+  if (kind === "dirt") return 0.5 + n * 2.2;
+  return 1.1 + n * 3.8;
+}
 
 export function buildingAt(buildings: Building[], x: number, y: number) {
   return buildings.find(

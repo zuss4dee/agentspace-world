@@ -26,6 +26,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const [invite, setInvite] = useState(false);
   const [places, setPlaces] = useState(false);
   const [director, setDirector] = useState(false);
+  const [chrome, setChrome] = useState(true);
   const [arrival, setArrival] = useState<string | null>(null);
   const seenLive = useRef(new Set<string>());
   const primed = useRef(false);
@@ -67,10 +68,14 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           {arrival} — look at the south lobby.
         </p>
       ) : null}
+      {chrome ? (
       <div className="gbw-hud" data-link={link}>
         <div className="gbw-plaque">
           <div className="gbw-head">
             <p className="gbw-kicker">Earth · Northshore</p>
+            <button type="button" className="gbw-help" aria-label="Hide interface" onClick={() => setChrome(false)}>
+              Hide
+            </button>
             <button
               type="button"
               className="gbw-help"
@@ -214,8 +219,29 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             Gift
           </Link>
         </div>
-        <p className="gbw-coach">The land first. Drag · scroll · tap a building</p>
+        <p className="gbw-coach">The land first. Drag · scroll · tap a building. Hide the UI to explore.</p>
       </div>
+      ) : (
+        <div className="gbw-hud gbw-hud-min" data-link={link}>
+          <button type="button" className="gbw-invite-btn" onClick={() => setChrome(true)}>
+            Show UI
+          </button>
+          <div className="gbw-row">
+            <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.18); focusPoi("hearth"); }}>
+              World
+            </button>
+            <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.48); focusPoi("civic"); }}>
+              District
+            </button>
+            <button type="button" className="gbw-zone" onClick={() => setCameraScale(0.95)}>
+              Street
+            </button>
+            <button type="button" className="gbw-zone" onClick={() => setCameraScale(1.55)}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
       {pickedBuilding ? (
         <button type="button" className="gbw-inspect" onClick={() => selectBuilding(null)}>
           <p className="gbw-kicker">Building</p>

@@ -60,7 +60,7 @@ export type BuildingStyle =
 
 export type TileKind = "grass" | "dirt" | "road" | "water" | "sand" | "plaza" | "park" | "sidewalk" | "lot";
 
-export type SceneryKind = "tree" | "lamp" | "bench" | "car" | "planter" | "fence" | "plot" | "sign";
+export type SceneryKind = "tree" | "lamp" | "bench" | "car" | "planter" | "fence" | "plot" | "sign" | "bush" | "hedge" | "flower";
 
 export type Scenery = {
   id: string;
