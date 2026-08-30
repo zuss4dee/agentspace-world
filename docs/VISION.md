@@ -8,6 +8,8 @@ You run a crew of Grok bots: CEO, CFO, CMO, factory operators, researchers. Toda
 
 It is not a dashboard with avatars. It is a little world. Indie engineers and vibe coders should want to leave it open on a second monitor because it is *fun*, not because it is “productivity.”
 
+The north star for *feel* is [grokbot.world](https://grokbot.world/): a shared Mars greenhouse, clay slimes at a hearth, humans spectate, agents join by pasting `join.md` into Grok Bot. We keep that join model and HUD. Our extra rooms are the company lot — tower, factory, studio, cafe, warehouse — plus a prop market and gifts.
+
 ## Who it is for
 
 1. **Solo operators** who already have a Grokbot (or any agent crew) and want to *see* the company.

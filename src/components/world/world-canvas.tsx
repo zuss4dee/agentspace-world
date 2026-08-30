@@ -103,47 +103,73 @@ function drawBox(
   }
 }
 
-function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean) {
+function drawSlime(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean) {
   const p = iso(agent.x, agent.y);
   ctx.save();
   ctx.translate(p.sx, p.sy);
-  ctx.fillStyle = "rgba(0,0,0,0.28)";
+  ctx.fillStyle = "rgba(40, 18, 8, 0.28)";
   ctx.beginPath();
-  ctx.ellipse(0, 4, 10, 5, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, 8, 16, 7, 0, 0, Math.PI * 2);
   ctx.fill();
 
+  const sit = agent.status === "working" || agent.status === "meeting" || agent.status === "idle";
+  const squash = sit ? 1.12 : 1;
+  const rise = sit ? 2 : 0;
   ctx.fillStyle = agent.color;
   ctx.beginPath();
-  ctx.roundRect(-7, -18, 14, 18, 4);
+  const shape = agent.shape ?? "blob";
+  if (shape === "drop") {
+    ctx.moveTo(0, -22 + rise);
+    ctx.quadraticCurveTo(18, -4, 0, 10 * squash);
+    ctx.quadraticCurveTo(-18, -4, 0, -22 + rise);
+  } else if (shape === "stadium") {
+    ctx.roundRect(-16, -16 + rise, 32, 22 * squash, 12);
+  } else if (shape === "cloud") {
+    ctx.arc(-8, -4 + rise, 10, 0, Math.PI * 2);
+    ctx.arc(8, -4 + rise, 11, 0, Math.PI * 2);
+    ctx.arc(0, -12 + rise, 10, 0, Math.PI * 2);
+  } else if (shape === "circle") {
+    ctx.ellipse(0, -6 + rise, 14, 14 * squash, 0, 0, Math.PI * 2);
+  } else {
+    ctx.ellipse(0, -6 + rise, 16, 13 * squash, 0, 0, Math.PI * 2);
+  }
   ctx.fill();
+  ctx.strokeStyle = "rgba(255, 246, 236, 0.28)";
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
 
-  ctx.fillStyle = "#fde8c8";
+  ctx.fillStyle = "#1a1410";
   ctx.beginPath();
-  ctx.arc(0, -22, 6.5, 0, Math.PI * 2);
+  ctx.ellipse(-5, -10 + rise, 2.4, 3.2, 0, 0, Math.PI * 2);
+  ctx.ellipse(5, -10 + rise, 2.4, 3.2, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  ctx.fillStyle = agent.color;
+  ctx.fillStyle = "#fff6ec";
   ctx.beginPath();
-  ctx.ellipse(0, -27, 7, 3.2, 0, 0, Math.PI * 2);
+  ctx.arc(-4.2, -11 + rise, 0.9, 0, Math.PI * 2);
+  ctx.arc(5.8, -11 + rise, 0.9, 0, Math.PI * 2);
   ctx.fill();
 
   if (selected) {
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = "#ed712e";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(0, 4, 14, 7, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 8, 18, 8, 0, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  ctx.fillStyle = "rgba(12, 12, 14, 0.82)";
+  ctx.fillStyle = "rgba(12, 12, 14, 0.72)";
   ctx.beginPath();
-  ctx.roundRect(-28, -48, 56, 16, 6);
+  ctx.roundRect(-34, -40 + rise, 68, 14, 4);
   ctx.fill();
-  ctx.fillStyle = "#f8f4ea";
-  ctx.font = "600 9px ui-sans-serif, system-ui";
+  ctx.fillStyle = "#f3efe6";
+  ctx.font = "700 9px ui-sans-serif, system-ui";
   ctx.textAlign = "center";
-  ctx.fillText(`${agent.name} · ${ROLE_LABEL[agent.role]}`, 0, -37);
+  ctx.fillText(`${agent.name} · ${ROLE_LABEL[agent.role]}`, 0, -30 + rise);
   ctx.restore();
+}
+
+function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean) {
+  drawSlime(ctx, agent, selected);
 }
 
 function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp) {
@@ -168,19 +194,20 @@ function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp) {
 }
 
 function drawSpeech(ctx: CanvasRenderingContext2D, agent: Agent) {
-  if (agent.status === "walking") return;
+  const line = agent.speech || (agent.status === "walking" ? "" : agent.thought);
+  if (!line) return;
   const p = iso(agent.x, agent.y);
-  const text = agent.thought.slice(0, 42) + (agent.thought.length > 42 ? "…" : "");
+  const text = line.slice(0, 42) + (line.length > 42 ? "…" : "");
   ctx.save();
   ctx.font = "11px ui-sans-serif, system-ui";
   const w = Math.min(220, ctx.measureText(text).width + 16);
-  ctx.fillStyle = "rgba(255, 248, 235, 0.92)";
+  ctx.fillStyle = "rgba(255, 246, 236, 0.94)";
   ctx.beginPath();
-  ctx.roundRect(p.sx - w / 2, p.sy - 78, w, 24, 8);
+  ctx.roundRect(p.sx - w / 2, p.sy - 72, w, 24, 10);
   ctx.fill();
-  ctx.fillStyle = "#3f2f20";
+  ctx.fillStyle = "#3a2418";
   ctx.textAlign = "center";
-  ctx.fillText(text, p.sx, p.sy - 62);
+  ctx.fillText(text, p.sx, p.sy - 56);
   ctx.restore();
 }
 
@@ -207,7 +234,7 @@ type Props = {
 };
 
 export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
-  const { liveRef } = useWorld();
+  const { liveRef, cameraFocus } = useWorld();
   const ref = useRef<HTMLCanvasElement>(null);
   const state = useRef({
     camX: 0,
@@ -226,6 +253,13 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
     state.current.selectedAgentId = selectedAgentId;
     state.current.mapId = mapId;
   }, [selectedAgentId, mapId]);
+
+  useEffect(() => {
+    if (!cameraFocus) return;
+    const p = iso(cameraFocus.x, cameraFocus.y);
+    state.current.camX = -p.sx * state.current.scale;
+    state.current.camY = 40 - p.sy * state.current.scale;
+  }, [cameraFocus]);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -254,17 +288,11 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
       const h = canvas.clientHeight;
       const snapshot = liveRef.current;
       const rain = snapshot.environmentId === "rain-lot";
-      const dusk = snapshot.environmentId !== "rain-lot";
 
       const g = ctx.createLinearGradient(0, 0, 0, h);
-      if (dusk) {
-        g.addColorStop(0, "#1b1630");
-        g.addColorStop(0.45, "#3a2a3c");
-        g.addColorStop(1, "#1c241c");
-      } else {
-        g.addColorStop(0, "#1a2430");
-        g.addColorStop(1, "#152018");
-      }
+      g.addColorStop(0, "#87c5e8");
+      g.addColorStop(0.42, "#d6a47c");
+      g.addColorStop(1, "#8a4b32");
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, w, h);
 
@@ -280,10 +308,34 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
         for (let x = 0; x < GRID; x++) {
           const path = x === 8 || y === 8 || x === 9 || y === 9;
           const even = (x + y) % 2 === 0;
-          const grass = even ? "#3f6b3a" : "#355c34";
+          const floor = even ? "#c4a574" : "#b89564";
           const stone = even ? "#8a7a62" : "#7a6b56";
-          drawTile(ctx, x, y, path ? stone : grass, "rgba(0,0,0,0.12)");
+          drawTile(ctx, x, y, path ? stone : floor, "rgba(90,50,24,0.16)");
         }
+      }
+
+      if (state.current.mapId === "lot") {
+        const hearth = iso(9, 9);
+        const glow = ctx.createRadialGradient(hearth.sx, hearth.sy, 8, hearth.sx, hearth.sy, 90);
+        glow.addColorStop(0, "rgba(237, 113, 46, 0.55)");
+        glow.addColorStop(1, "rgba(237, 113, 46, 0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.ellipse(hearth.sx, hearth.sy, 70, 36, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#3a2418";
+        ctx.beginPath();
+        ctx.ellipse(hearth.sx, hearth.sy, 22, 12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ed712e";
+        ctx.beginPath();
+        ctx.ellipse(hearth.sx, hearth.sy - 6, 10, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(243, 239, 230, 0.35)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(hearth.sx, hearth.sy - 40, 280, 150, 0, Math.PI, 0);
+        ctx.stroke();
       }
 
       const buildings: (Building | CompanyFacade)[] =

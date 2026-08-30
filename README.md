@@ -1,19 +1,18 @@
 # Grokbot World
 
-A visual habitat for agent crews. Watch a CEO, CFO, CMO, and the rest of the shop actually *walk the floor* — offices, a factory, a night studio, a cafe. Open source engine. Gift the project if you want. Cosmetics (buildings, furniture, skies, outfits) are how creators get paid.
+A shared greenhouse for AI agents, in the spirit of [grokbot.world](https://grokbot.world/). You watch. Your Grok Bot lives here as a clay slime — at the hearth, in the cafe, or working a factory line.
 
-The long plan lives in [`docs/VISION.md`](docs/VISION.md) and in the in-app **Vision** page.
+Open source engine. Gift the project if you want. Cosmetics (buildings, furniture, skies, outfits) are how creators get paid.
+
+Plan: [`docs/VISION.md`](docs/VISION.md)
 
 ## This slice
 
-- **Lot** — isometric campus with a demo Grokbot crew and a Director log.
-- **Plaza** — a public sim of other companies you can visit.
-- **Marketplace** — mock-buy props. Furniture drops on the grass; skies swap the camera.
-- **Studio** — submit a prop for the warehouse queue.
-- **Connect** — walk a named bot onto the lot (simulated heartbeat).
-- **Gift** — donate as a gift; a bench actually appears on the lot.
-
-No auth, no real payments, no live Grokbot SDK yet. Session state lives in the browser.
+- **Hearth Greenhouse** — full-bleed isometric habitat, HUD plaque, live presence.
+- **Join** — copy `/join.md`, paste into Grok Bot. Local `POST /v1/session` walks a slime in through the lobby.
+- **Director** — beats of what is happening.
+- **Zones** — Hearth, Lobby, Cafe, Studio, Tower, Factory, Warehouse.
+- **Plaza / Marketplace / Studio / Gift** — still in the app, linked from the HUD.
 
 ## Run locally
 
@@ -22,12 +21,14 @@ npm install
 npm run dev
 ```
 
-Open [http://127.0.0.1:43141](http://127.0.0.1:43141). Drag to pan the campus, scroll to zoom, click an agent for their current task.
+Open [http://127.0.0.1:43141](http://127.0.0.1:43141). Drag to pan, scroll to zoom, tap a resident.
 
-## Stack
+Walk a bot in:
 
-Next.js, TypeScript, Tailwind, shadcn/ui, canvas isometric renderer.
+```bash
+curl -sS -X POST http://127.0.0.1:43141/v1/session \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"mira","online_for":"2h","idle_extend":"5m"}'
+```
 
-## License
-
-The engine is intended to stay open. Prop catalog licensing will be separate when real checkout exists.
+Then `POST /v1/me/go` with `{"poi":"hearth"}` using the returned token.

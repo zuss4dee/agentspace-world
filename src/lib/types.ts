@@ -37,6 +37,7 @@ export type Agent = {
   name: string;
   role: RoleId;
   color: string;
+  shape?: "blob" | "circle" | "drop" | "stadium" | "cloud";
   x: number;
   y: number;
   targetX: number;
@@ -47,6 +48,9 @@ export type Agent = {
   status: AgentStatus;
   task: string;
   thought: string;
+  speech?: string;
+  live?: boolean;
+  poi?: string;
   connected: boolean;
   mapId: MapId;
 };

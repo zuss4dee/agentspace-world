@@ -1,13 +1,7 @@
 "use client";
 
-import { CampusView } from "@/components/world/campus-view";
+import { HabitatView } from "@/components/world/habitat-view";
 
-export default function LotPage() {
-  return (
-    <CampusView
-      mapId="lot"
-      kicker="Your campus"
-      title="The crew is already on the floor."
-    />
-  );
+export default function HomePage() {
+  return <HabitatView mapId="lot" place="Hearth Greenhouse" />;
 }

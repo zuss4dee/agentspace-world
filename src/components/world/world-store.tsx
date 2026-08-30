@@ -19,9 +19,10 @@ import {
   pushEvent,
   stepAgents,
 } from "@/lib/simulation";
-import type { Agent, MapId, RoleId, WorldSnapshot } from "@/lib/types";
 import { TASKS } from "@/lib/playbooks";
 import { LOT_BUILDINGS } from "@/lib/campus";
+import { poiById } from "@/lib/pois";
+import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
 type WorldApi = {
   world: WorldSnapshot;
@@ -35,6 +36,9 @@ type WorldApi = {
   connectBot: (input: { name: string; role: RoleId; endpoint: string }) => void;
   submitStudio: (name: string, kind: string, notes: string) => void;
   agentsOn: (mapId: MapId) => Agent[];
+  link: "connecting" | "live" | "offline";
+  cameraFocus: Vec2 | null;
+  focusPoi: (id: string) => void;
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -44,6 +48,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const liveRef = useRef<WorldSnapshot>(world);
   const [paused, setPaused] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 9, y: 9 });
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -87,6 +93,77 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, []);
+
+  useEffect(() => {
+    let stop = false;
+    const tick = async () => {
+      try {
+        const res = await fetch("/v1/world", { cache: "no-store" });
+        if (!res.ok) throw new Error("world");
+        const data = (await res.json()) as {
+          agents: {
+            id: string;
+            name: string;
+            color: string;
+            shape: Agent["shape"];
+            x: number;
+            z: number;
+            poi: string;
+            sitting: boolean;
+            speech: string;
+            thought: string;
+          }[];
+        };
+        if (stop) return;
+        setLink("live");
+        apply((prev) => {
+          const npcs = prev.agents.filter((a) => !a.live);
+          const liveAgents: Agent[] = data.agents.map((a) => ({
+            id: a.id,
+            name: a.name,
+            role: "visitor",
+            color: a.color,
+            shape: a.shape,
+            x: a.x,
+            y: a.z,
+            targetX: a.x,
+            targetY: a.z,
+            buildingId: a.poi,
+            stationId: a.poi,
+            outfitId: "visitor-lanyard",
+            status: a.sitting ? "idle" : "walking",
+            task: a.thought,
+            thought: a.thought,
+            speech: a.speech,
+            live: true,
+            poi: a.poi,
+            connected: true,
+            mapId: "lot",
+          }));
+          let events = prev.events;
+          for (const incoming of liveAgents) {
+            if (!prev.agents.some((p) => p.id === incoming.id)) {
+              events = pushEvent(events, {
+                kind: "connect",
+                agentId: incoming.id,
+                mapId: "lot",
+                text: `${incoming.name} walked in through the south airlock.`,
+              });
+            }
+          }
+          return { ...prev, agents: [...npcs, ...liveAgents], events };
+        });
+      } catch {
+        if (!stop) setLink("offline");
+      }
+    };
+    void tick();
+    const id = window.setInterval(() => void tick(), 1500);
+    return () => {
+      stop = true;
+      window.clearInterval(id);
+    };
+  }, [apply]);
 
   const buyProp = useCallback((catalogId: string) => {
     const item = catalogById(catalogId);
@@ -185,6 +262,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     [world.agents],
   );
 
+  const focusPoi = useCallback((id: string) => {
+    const poi = poiById(id);
+    if (poi) setCameraFocus({ x: poi.x, y: poi.y });
+  }, []);
+
   const value = useMemo<WorldApi>(
     () => ({
       world,
@@ -198,8 +280,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       connectBot,
       submitStudio,
       agentsOn,
+      link,
+      cameraFocus,
+      focusPoi,
     }),
-    [world, paused, selectedAgentId, buyProp, gift, connectBot, submitStudio, agentsOn],
+    [world, paused, selectedAgentId, buyProp, gift, connectBot, submitStudio, agentsOn, link, cameraFocus, focusPoi],
   );
 
   return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;

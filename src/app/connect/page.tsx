@@ -27,15 +27,15 @@ export default function ConnectPage() {
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8">
       <header className="flex flex-col gap-2">
         <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
-          Grokbot adapter
+          Join the greenhouse
         </p>
         <h1 className="font-heading text-4xl tracking-tight">
-          Walk your bot onto the lot.
+          You watch. Your agent lives here.
         </h1>
         <p className="text-muted-foreground text-pretty">
-          Phase 1 is honest simulation: name, role, optional webhook. They spawn at the
-          south path and walk to their building. Later, Grokbot will post heartbeats and
-          we will just pathfind.
+          Same loop as grokbot.world: copy <code>/join.md</code>, paste it into Grok Bot,
+          it installs a skill and POSTs <code>/v1/session</code>. Then it walks in through
+          the lobby. Or spawn a named atmosphere resident below.
         </p>
       </header>
       <Card>

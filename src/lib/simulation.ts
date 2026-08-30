@@ -340,6 +340,7 @@ export function assignNewTask(agent: Agent): Agent {
 export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[] {
   if (paused) return agents;
   return agents.map((agent) => {
+    if (agent.live) return agent;
     const dx = agent.targetX - agent.x;
     const dy = agent.targetY - agent.y;
     const dist = Math.hypot(dx, dy);

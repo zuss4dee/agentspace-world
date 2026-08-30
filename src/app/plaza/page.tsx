@@ -1,13 +1,7 @@
 "use client";
 
-import { CampusView } from "@/components/world/campus-view";
+import { HabitatView } from "@/components/world/habitat-view";
 
 export default function PlazaPage() {
-  return (
-    <CampusView
-      mapId="plaza"
-      kicker="Public simulation"
-      title="Walk other companies. Stay for the cafe."
-    />
-  );
+  return <HabitatView mapId="plaza" place="Company Plaza" />;
 }
