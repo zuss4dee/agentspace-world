@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
 import { roleLabel } from "@/lib/playbooks";
+import { BuildingPopup } from "@/components/world/building-popup";
 import { DISTRICTS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
 import { WORLD_SECTIONS } from "@/lib/world-sections";
@@ -270,33 +271,14 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
         </button>
       ) : null}
       {pickedBuilding ? (
-        <div className="gbw-inspect">
-          <p className="gbw-kicker">{DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label}</p>
-          <p className="gbw-inspect-name">{pickedBuilding.name}</p>
-          <p>{pickedBuilding.purpose ?? `${pickedBuilding.style} · ${pickedBuilding.kind}`}</p>
-          <p>
-            Status: {world.agents.some((a) => a.buildingId === pickedBuilding.id) ? "Active" : "Quiet"}
-          </p>
-          <p>
-            Agents:{" "}
-            {world.agents.filter((a) => a.buildingId === pickedBuilding.id).map((a) => a.name).join(", ") || "none inside"}
-          </p>
-          <p className="gbw-inspect-thought">{pickedBuilding.stations.length} workstations</p>
-          <div className="gbw-row" style={{ marginTop: 10 }}>
-            <button type="button" className="gbw-zone" onClick={() => enterBuilding(pickedBuilding.id)}>
-              {interiorId === pickedBuilding.id ? "You’re inside" : "Enter"}
-            </button>
-            {interiorId === pickedBuilding.id ? (
-              <button type="button" className="gbw-zone" onClick={exitInterior}>
-                Leave
-              </button>
-            ) : (
-              <button type="button" className="gbw-zone" onClick={() => selectBuilding(null)}>
-                Close
-              </button>
-            )}
-          </div>
-        </div>
+        <BuildingPopup
+          building={pickedBuilding}
+          agents={world.agents}
+          interiorId={interiorId}
+          onClose={() => selectBuilding(null)}
+          onEnter={() => enterBuilding(pickedBuilding.id)}
+          onLeave={exitInterior}
+        />
       ) : selected ? (
         <div className="gbw-inspect">
           <p className="gbw-kicker">{roleLabel(selected.role)}</p>
