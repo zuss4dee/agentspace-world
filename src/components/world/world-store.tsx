@@ -30,8 +30,11 @@ type WorldApi = {
   liveRef: MutableRefObject<WorldSnapshot>;
   paused: boolean;
   selectedAgentId: string | null;
+  selectedBuildingId: string | null;
   setPaused: (v: boolean) => void;
   selectAgent: (id: string | null) => void;
+  selectBuilding: (id: string | null) => void;
+  focusBuilding: (id: string) => void;
   buyProp: (catalogId: string) => { ok: true; creatorPayout: number } | { ok: false; reason: string };
   gift: (cents: number, label: string) => void;
   connectBot: (input: { name: string; role: RoleId; endpoint: string }) => void;
@@ -53,10 +56,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const liveRef = useRef<WorldSnapshot>(world);
   const [paused, setPaused] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
-  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 24, y: 22 });
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 32, y: 32 });
   const [followAgent, setFollowAgent] = useState(false);
-  const [cameraScale, setCameraScale] = useState(0.34);
+  const [cameraScale, setCameraScale] = useState(0.22);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -278,12 +282,32 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     [world.agents],
   );
 
+  const selectAgent = useCallback((id: string | null) => {
+    setSelectedAgentId(id);
+    if (id) setSelectedBuildingId(null);
+  }, []);
+
+  const selectBuilding = useCallback((id: string | null) => {
+    setSelectedBuildingId(id);
+    if (id) {
+      setSelectedAgentId(null);
+      setFollowAgent(false);
+    }
+  }, []);
+
+  const focusBuilding = useCallback((id: string) => {
+    const b = LOT_BUILDINGS.find((item) => item.id === id);
+    if (!b) return;
+    setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
+    setCameraScale(1.05);
+  }, []);
+
   const focusPoi = useCallback((id: string) => {
     const poi = poiById(id);
     if (!poi) return;
     setCameraFocus({ x: poi.x, y: poi.y });
-    if (id === "hearth") setCameraScale(0.32);
-    else setCameraScale(0.88);
+    if (id === "hearth") setCameraScale(0.2);
+    else setCameraScale(0.72);
   }, []);
 
   const value = useMemo<WorldApi>(
@@ -292,8 +316,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       liveRef,
       paused,
       selectedAgentId,
+      selectedBuildingId,
       setPaused,
-      selectAgent: setSelectedAgentId,
+      selectAgent,
+      selectBuilding,
+      focusBuilding,
       buyProp,
       gift,
       connectBot,
@@ -307,7 +334,25 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       cameraScale,
       setCameraScale,
     }),
-    [world, paused, selectedAgentId, buyProp, gift, connectBot, submitStudio, agentsOn, link, cameraFocus, focusPoi, followAgent, cameraScale],
+    [
+      world,
+      paused,
+      selectedAgentId,
+      selectedBuildingId,
+      selectAgent,
+      selectBuilding,
+      focusBuilding,
+      buyProp,
+      gift,
+      connectBot,
+      submitStudio,
+      agentsOn,
+      link,
+      cameraFocus,
+      focusPoi,
+      followAgent,
+      cameraScale,
+    ],
   );
 
   return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;

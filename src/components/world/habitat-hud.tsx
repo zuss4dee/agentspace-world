@@ -13,6 +13,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
     link,
     selectedAgentId,
     selectAgent,
+    selectedBuildingId,
+    selectBuilding,
     focusPoi,
     paused,
     setPaused,
@@ -22,6 +24,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   } = useWorld();
   const [help, setHelp] = useState(false);
   const [invite, setInvite] = useState(false);
+  const [places, setPlaces] = useState(false);
+  const [director, setDirector] = useState(false);
   const [arrival, setArrival] = useState<string | null>(null);
   const seenLive = useRef(new Set<string>());
   const primed = useRef(false);
@@ -33,6 +37,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const selected = world.agents.find((a) => a.id === selectedAgentId);
   const events = world.events.filter((e) => e.mapId === mapId).slice(0, 8);
   const building = selected ? LOT_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
+  const pickedBuilding = selectedBuildingId ? LOT_BUILDINGS.find((b) => b.id === selectedBuildingId) : undefined;
 
   useEffect(() => {
     const live = world.agents.filter((a) => a.live);
@@ -101,7 +106,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
               </div>
               <div>
                 <dt>Tap</dt>
-                <dd>Inspect a slime</dd>
+                <dd>Inspect a building or a resident</dd>
               </div>
             </dl>
           </div>
@@ -138,29 +143,17 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             </button>
           </div>
         ) : null}
-        <div className="gbw-zones">
-          {DISTRICTS.map((d) => (
-            <button key={d.id} type="button" className="gbw-zone" onClick={() => { setCameraScale(0.82); focusPoi(d.id); }}>
-              {d.label}
-            </button>
-          ))}
-        </div>
-        <div className="gbw-pop gbw-log">
-          <p className="gbw-kicker">Director</p>
-          <ul>
-            {events.map((event) => (
-              <li key={event.id}>{event.text}</li>
-            ))}
-          </ul>
-        </div>
         <div className="gbw-row">
-          <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.28); focusPoi("hearth"); }}>
-            City
+          <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.18); focusPoi("hearth"); }}>
+            World
           </button>
-          <button type="button" className="gbw-zone" onClick={() => setCameraScale(0.85)}>
+          <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.48); focusPoi("civic"); }}>
+            District
+          </button>
+          <button type="button" className="gbw-zone" onClick={() => setCameraScale(0.95)}>
             Street
           </button>
-          <button type="button" className="gbw-zone" onClick={() => setCameraScale(1.6)}>
+          <button type="button" className="gbw-zone" onClick={() => setCameraScale(1.55)}>
             Close
           </button>
           <button
@@ -168,15 +161,48 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             className="gbw-zone"
             onClick={() => {
               setFollowAgent(!followAgent);
-              if (!followAgent) setCameraScale(1.45);
+              if (!followAgent) setCameraScale(1.7);
             }}
           >
-            {followAgent ? "Unfollow" : "Follow"}
+            {followAgent ? "Unfollow" : "Agent"}
           </button>
           <button type="button" className="gbw-zone" onClick={() => setPaused(!paused)}>
             {paused ? "Resume" : "Pause"}
           </button>
         </div>
+        <button type="button" className="gbw-invite-btn" onClick={() => setPlaces((v) => !v)}>
+          {places ? "Hide places" : "Places"}
+        </button>
+        {places ? (
+          <div className="gbw-zones">
+            {DISTRICTS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className="gbw-zone"
+                onClick={() => {
+                  setCameraScale(0.55);
+                  focusPoi(d.id);
+                }}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <button type="button" className="gbw-invite-btn" onClick={() => setDirector((v) => !v)}>
+          {director ? "Hide director" : "Director"}
+        </button>
+        {director ? (
+          <div className="gbw-pop gbw-log">
+            <p className="gbw-kicker">Director</p>
+            <ul>
+              {events.map((event) => (
+                <li key={event.id}>{event.text}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="gbw-row">
           <Link className="gbw-zone" href="/how">
             How to join
@@ -188,9 +214,21 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             Gift
           </Link>
         </div>
-        <p className="gbw-coach">Drag to move · pinch to zoom · tap a resident</p>
+        <p className="gbw-coach">The land first. Drag · scroll · tap a building</p>
       </div>
-      {selected ? (
+      {pickedBuilding ? (
+        <button type="button" className="gbw-inspect" onClick={() => selectBuilding(null)}>
+          <p className="gbw-kicker">Building · {pickedBuilding.assetId.replace("pack.northshore.building.", "")}</p>
+          <p className="gbw-inspect-name">{pickedBuilding.name}</p>
+          <p>
+            {DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label} · {pickedBuilding.style}
+          </p>
+          <p className="gbw-inspect-thought">
+            Modular facade. Later this is something you collect, not a hardcoded box.
+          </p>
+          <p>{pickedBuilding.stations.length} interior stations. Click again to close.</p>
+        </button>
+      ) : selected ? (
         <button type="button" className="gbw-inspect" onClick={() => selectAgent(null)}>
           <p className="gbw-kicker">Resident</p>
           <p className="gbw-inspect-name">

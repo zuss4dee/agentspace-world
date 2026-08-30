@@ -27,7 +27,14 @@ export type BuildingKind =
   | "park"
   | "station"
   | "data"
-  | "hall";
+  | "hall"
+  | "hotel"
+  | "workshop"
+  | "restaurant"
+  | "retail"
+  | "apartment"
+  | "pavilion"
+  | "conference";
 
 export type BuildingStyle =
   | "hq"
@@ -42,7 +49,29 @@ export type BuildingStyle =
   | "data"
   | "station"
   | "hall"
-  | "gallery";
+  | "gallery"
+  | "hotel"
+  | "restaurant"
+  | "workshop"
+  | "retail"
+  | "apartment"
+  | "pavilion"
+  | "conference";
+
+export type TileKind = "grass" | "dirt" | "road" | "water" | "sand" | "plaza" | "park" | "sidewalk" | "lot";
+
+export type SceneryKind = "tree" | "lamp" | "bench" | "car" | "planter" | "fence" | "plot" | "sign";
+
+export type Scenery = {
+  id: string;
+  assetId: string;
+  kind: SceneryKind;
+  x: number;
+  y: number;
+  color?: string;
+  w?: number;
+  h?: number;
+};
 
 export type CatalogKind =
   | "building"
@@ -54,8 +83,6 @@ export type CatalogKind =
   | "vehicle";
 
 export type MapId = "lot" | "plaza";
-
-export type TileKind = "grass" | "dirt" | "road" | "water" | "sand" | "plaza" | "park";
 
 export type Vec2 = { x: number; y: number };
 
@@ -81,6 +108,7 @@ export type Building = {
   wallDark: string;
   accent: string;
   sign?: string;
+  assetId: string;
   stations: { id: string; name: string; x: number; y: number }[];
 };
 

@@ -196,6 +196,59 @@ export const PLAZA_AGENTS: Agent[] = [
     task: "Walk the waterfront",
     thought: "I would buy that neon.",
   }),
+  agent({
+    id: "pico",
+    name: "Pico",
+    role: "visitor",
+    organization: "Visitor",
+    color: "#e3b341",
+    x: 24.4,
+    y: 24.2,
+    targetX: 24.4,
+    targetY: 24.2,
+    buildingId: "kiosk",
+    stationId: "board",
+    status: "idle",
+    mapId: "lot",
+    connected: false,
+    task: "Walk the waterfront",
+    thought: "I want that factory.",
+  }),
+  agent({
+    id: "nori",
+    name: "Nori",
+    role: "support",
+    organization: "Northshore",
+    color: "#5bb7c6",
+    x: 33.4,
+    y: 8.4,
+    targetX: 33.4,
+    targetY: 8.4,
+    buildingId: "retail",
+    stationId: "till",
+    status: "working",
+    mapId: "lot",
+    task: "Catch a lost walk-in",
+    thought: "Ribbon Shop is the postcard.",
+  }),
+  agent({
+    id: "jun",
+    name: "Jun",
+    role: "ops",
+    organization: "Northshore",
+    color: "#b45309",
+    x: 9.2,
+    y: 44.2,
+    targetX: 9.2,
+    targetY: 44.2,
+    buildingId: "workshop",
+    stationId: "anvil",
+    status: "working",
+    mapId: "lot",
+    outfitId: "coveralls",
+    task: "Unload a crate at the dock",
+    thought: "The shed should look used.",
+  }),
 ];
 
 function nid() {
@@ -295,7 +348,7 @@ export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[
           status: Math.random() < 0.22 ? "meeting" : "working",
         };
       }
-      if (Math.random() < dt * 0.045) return assignNewTask(agent);
+      if (Math.random() < dt * 0.07) return assignNewTask(agent);
       return agent;
     }
     const speed = 1.7;

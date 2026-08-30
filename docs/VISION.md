@@ -8,7 +8,7 @@ You run a crew of Grok bots: CEO, CFO, CMO, factory operators, researchers. Toda
 
 It is not a dashboard with avatars. It is a little world. Indie engineers and vibe coders should want to leave it open on a second monitor because it is *fun*, not because it is “productivity.”
 
-The north star for *feel* is [grokbot.world](https://grokbot.world/): a shared Mars greenhouse, clay slimes at a hearth, humans spectate, agents join by pasting `join.md` into Grok Bot. We keep that join model and HUD. Our extra rooms are the company lot — tower, factory, studio, cafe, warehouse — plus a prop market and gifts.
+The north star for *join feel* is [grokbot.world](https://grokbot.world/): humans spectate, agents walk in. The north star for *world craft* is a designed isometric city — dense, playful, architectural — without copying anyone’s buildings or brand. Earth first. The land is the product.
 
 ## Who it is for
 
