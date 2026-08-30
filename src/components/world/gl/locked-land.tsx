@@ -7,7 +7,7 @@ import { useWorld } from "@/components/world/world-store";
 import { hash2 } from "@/lib/noise";
 
 export function LockedLand() {
-  const { selectDistrict, selectBuilding, selectAgent } = useWorld();
+  const { selectDistrict, selectBuilding, selectAgent, selectPlot } = useWorld();
   return (
     <group>
       {WORLD_SECTIONS.filter((s) => s.locked).map((s) => {
@@ -32,6 +32,7 @@ export function LockedLand() {
             position={[cx, 0, cz]}
             onClick={(e) => {
               e.stopPropagation();
+              selectPlot(null);
               selectBuilding(null);
               selectAgent(null);
               selectDistrict(`locked:${s.id}`);

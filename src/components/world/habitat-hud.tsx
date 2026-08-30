@@ -5,9 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
 import { roleLabel } from "@/lib/playbooks";
-import { BuildingPopup } from "@/components/world/building-popup";
+import { PlacePopup } from "@/components/world/building-popup";
 import { DISTRICTS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
+import { formatUsd } from "@/lib/companies";
+import { PLOT_BANDS, PLOTS, plotsForSale } from "@/lib/plots";
 import { WORLD_SECTIONS } from "@/lib/world-sections";
 
 export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "plaza" }) {
@@ -16,8 +18,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
     link,
     selectedAgentId,
     selectAgent,
-    selectedBuildingId,
-    selectBuilding,
+    selectedPlotId,
+    selectPlot,
     selectedDistrictId,
     selectDistrict,
     enterBuilding,
@@ -47,7 +49,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const selected = world.agents.find((a) => a.id === selectedAgentId);
   const events = world.events.filter((e) => e.mapId === mapId).slice(0, 8);
   const building = selected ? ALL_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
-  const pickedBuilding = selectedBuildingId ? ALL_BUILDINGS.find((b) => b.id === selectedBuildingId) : undefined;
+  const pickedPlot = selectedPlotId ? PLOTS.find((p) => p.id === selectedPlotId) : undefined;
+  const saleLots = plotsForSale();
   const lockedSection = selectedDistrictId?.startsWith("locked:")
     ? WORLD_SECTIONS.find((s) => s.id === selectedDistrictId.slice(7))
     : undefined;
@@ -131,7 +134,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
               </div>
               <div>
                 <dt>Tap</dt>
-                <dd>Inspect a street, district, building, or resident</dd>
+                <dd>Inspect a plot, building, street, or resident</dd>
               </div>
             </dl>
           </div>
@@ -270,13 +273,13 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           Inside {ALL_BUILDINGS.find((b) => b.id === interiorId)?.name} — return to the world
         </button>
       ) : null}
-      {pickedBuilding ? (
-        <BuildingPopup
-          building={pickedBuilding}
+      {pickedPlot ? (
+        <PlacePopup
+          plot={pickedPlot}
           agents={world.agents}
           interiorId={interiorId}
-          onClose={() => selectBuilding(null)}
-          onEnter={() => enterBuilding(pickedBuilding.id)}
+          onClose={() => selectPlot(null)}
+          onEnter={enterBuilding}
           onLeave={exitInterior}
         />
       ) : selected ? (
@@ -338,6 +341,43 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           {directorLines[0]}
         </p>
       ) : null}
+      <aside className="gbw-market" aria-label="Plots">
+        <p className="gbw-kicker">Plots</p>
+        <ul>
+          {PLOT_BANDS.map((band) => {
+            const n = saleLots.filter((p) => p.band === band.id).length;
+            const sample = saleLots.find((p) => p.band === band.id);
+            return (
+              <li key={band.id}>
+                <button
+                  type="button"
+                  className="gbw-market-band"
+                  disabled={!sample}
+                  onClick={() => {
+                    if (!sample) return;
+                    selectPlot(sample.id);
+                    focusCoord(sample.x + sample.w / 2, sample.y + sample.h / 2, 0.95);
+                  }}
+                >
+                  <span>{band.label}</span>
+                  <span>
+                    {n} · {sample ? formatUsd(sample.price) : "—"}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="gbw-kicker" style={{ marginTop: 10 }}>
+          Activity
+        </p>
+        <ul className="gbw-market-log">
+          {directorLines.slice(0, 5).map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+        <p className="gbw-mute">Protected park tiles are not for sale.</p>
+      </aside>
       <nav className="gbw-worldnav" aria-label="World sections">
         {WORLD_SECTIONS.map((s) => (
           <button

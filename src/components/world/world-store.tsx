@@ -23,6 +23,7 @@ import {
 import { tasksFor } from "@/lib/playbooks";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
+import { PLOTS } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
@@ -32,10 +33,12 @@ type WorldApi = {
   paused: boolean;
   selectedAgentId: string | null;
   selectedBuildingId: string | null;
+  selectedPlotId: string | null;
   selectedDistrictId: string | null;
   setPaused: (v: boolean) => void;
   selectAgent: (id: string | null) => void;
   selectBuilding: (id: string | null) => void;
+  selectPlot: (id: string | null) => void;
   selectDistrict: (id: string | null) => void;
   focusBuilding: (id: string) => void;
   buyProp: (catalogId: string) => { ok: true; creatorPayout: number } | { ok: false; reason: string };
@@ -65,6 +68,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
   const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 24, y: 22 });
@@ -295,7 +299,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   const selectAgent = useCallback((id: string | null) => {
     setSelectedAgentId(id);
-    if (id) setSelectedBuildingId(null);
+    if (id) {
+      setSelectedBuildingId(null);
+      setSelectedPlotId(null);
+    }
   }, []);
 
   const selectBuilding = useCallback((id: string | null) => {
@@ -303,7 +310,24 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     if (id) {
       setSelectedAgentId(null);
       setFollowAgent(false);
+      const p = PLOTS.find((item) => item.buildingId === id);
+      setSelectedPlotId(p?.id ?? null);
+    } else {
+      setSelectedPlotId(null);
     }
+  }, []);
+
+  const selectPlot = useCallback((id: string | null) => {
+    setSelectedPlotId(id);
+    if (!id) {
+      setSelectedBuildingId(null);
+      return;
+    }
+    const p = PLOTS.find((item) => item.id === id);
+    setSelectedAgentId(null);
+    setFollowAgent(false);
+    setSelectedBuildingId(p?.buildingId ?? null);
+    if (p) setSelectedDistrictId(p.districtId);
   }, []);
 
   const selectDistrict = useCallback((id: string | null) => {
@@ -362,10 +386,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       paused,
       selectedAgentId,
       selectedBuildingId,
+      selectedPlotId,
       selectedDistrictId,
       setPaused,
       selectAgent,
       selectBuilding,
+      selectPlot,
       selectDistrict,
       focusBuilding,
       buyProp,
@@ -391,9 +417,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       paused,
       selectedAgentId,
       selectedBuildingId,
+      selectedPlotId,
       selectedDistrictId,
       selectAgent,
       selectBuilding,
+      selectPlot,
       selectDistrict,
       focusBuilding,
       buyProp,

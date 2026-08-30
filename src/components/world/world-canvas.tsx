@@ -4,6 +4,7 @@ import { useLayoutEffect, useRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
+import { PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
@@ -12,7 +13,7 @@ import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/ter
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { fromWorld } from "@/lib/coords";
-import { buildingAnywhere } from "@/lib/city-gen";
+import { plotAt } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
 function LightFollow() {
@@ -45,28 +46,28 @@ function LightFollow() {
 }
 
 function ExteriorScene() {
-  const { selectBuilding, selectAgent, selectDistrict, focusCoord } = useWorld();
+  const { selectBuilding, selectAgent, selectDistrict, selectPlot, focusCoord } = useWorld();
   const onMiss = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 4) return;
     const g = fromWorld(e.point.x, e.point.z);
     const locked = sectionAt(g.x, g.y);
     if (locked?.locked) {
+      selectPlot(null);
       selectBuilding(null);
       selectAgent(null);
       selectDistrict(`locked:${locked.id}`);
       return;
     }
-    const b = buildingAnywhere(g.x, g.y);
-    if (b) {
-      selectBuilding(b.id);
-      selectDistrict(b.districtId);
-      selectAgent(null);
+    const p = plotAt(g.x, g.y);
+    if (p) {
+      selectPlot(p.id);
       return;
     }
     const ix = Math.floor(g.x);
     const iy = Math.floor(g.y);
     const tile = ix >= 0 && iy >= 0 && ix < GRID && iy < GRID ? TERRAIN[iy]![ix] : null;
     const d = districtAt(g.x, g.y);
+    selectPlot(null);
     selectBuilding(null);
     selectAgent(null);
     selectDistrict(d?.id ?? (tile === "road" ? "street" : null));
@@ -95,6 +96,8 @@ function ExteriorScene() {
       <TreeField />
       <BushField />
       <Lamps />
+      <PlotsLayer />
+      <SaleStakes />
       <BuildingsLayer />
       <TrafficLayer />
       <AgentsLayer />
