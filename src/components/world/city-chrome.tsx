@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, MapPin, Minus, Plus } from "lucide-react";
+import { Activity, Compass, MapPin, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
@@ -34,6 +34,7 @@ export function CityChrome() {
     placeBeaconBid,
     beaconOpen,
     setBeaconOpen,
+    focusPoi,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
@@ -44,10 +45,37 @@ export function CityChrome() {
   }, [claimed]);
   const activity = useMemo(() => shopActivity(), []);
   const picked = selectedPlotId ? PLOTS.find((p) => p.id === selectedPlotId) : undefined;
-  const joinUrl = typeof window === "undefined" ? "/join.md" : `${window.location.origin}/join.md`;
+
+  const active = world.agents.filter((a) => a.mapId === "lot").length;
 
   return (
     <>
+      <header className="ns-topbar">
+        <Link href="/" className="ns-logo">
+          Northshore<span>.world</span>
+        </Link>
+        <p className="ns-live">
+          <span className="ns-live-dot" />
+          {active} active now
+        </p>
+        <div className="ns-ticker" aria-hidden>
+          <div className="ns-ticker-track">
+            {[...activity, ...activity].map((row, i) => (
+              <span key={`${row.id}-${i}`}>
+                {row.brandName} — {ZONE_THEME[row.zone].label}
+                <em> View on the map</em>
+              </span>
+            ))}
+          </div>
+        </div>
+        <nav className="ns-topnav">
+          <Link href="/directory">Directory</Link>
+          <Link href="/how" className="ns-join-link">
+            Join
+          </Link>
+        </nav>
+      </header>
+
       <aside className="ns-activity" aria-label="Latest Activity">
         <div className="ns-card ns-pad">
           <div className="ns-card-kicker">
@@ -132,19 +160,16 @@ export function CityChrome() {
         <button type="button" aria-label="Zoom out" onClick={() => setCameraScale(Math.max(0.12, cameraScale - 0.22))}>
           <Minus className="size-4" />
         </button>
-      </div>
-
-      <div className="ns-join-chip">
         <button
           type="button"
-          onClick={async () => {
-            await navigator.clipboard.writeText(joinUrl);
-            toast.success("Paste join.md into Grok Bot.");
+          aria-label="Reset view"
+          onClick={() => {
+            focusPoi("civic");
+            setCameraScale(0.55);
           }}
         >
-          Let a Grok Bot join
+          <Compass className="size-4" />
         </button>
-        <Link href="/how">How</Link>
       </div>
 
       {picked ? (
@@ -174,8 +199,8 @@ export function CityChrome() {
             <p className="ns-bid-kicker">Northshore championship seat</p>
             <h2 id="beacon-title">The Beacon</h2>
             <p className="ns-bid-copy">
-              One landmark. Open bid. Holder gets the HQ halo until someone posts a higher total. This session keeps the
-              bid in memory — no checkout leaves this machine.
+              Current holder: Northshore. Every bid is a non-refundable raise in this session. The holder keeps the HQ
+              halo until someone posts a higher total.
             </p>
             <dl className="ns-bid-stats">
               <div>
@@ -216,7 +241,7 @@ export function CityChrome() {
                   toast.success(`Beacon bid posted · ${formatUsd(n)}.`);
                 }}
               >
-                Place bid
+                Place bid — challenge the holder
               </button>
             </div>
           </div>

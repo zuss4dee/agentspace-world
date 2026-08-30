@@ -136,3 +136,35 @@ export function sampleSalePlot(zone: PlotZone, claimed: Set<string>): Plot | und
 export function beaconPlot() {
   return PLOTS.find((p) => p.zone === "ultimate") ?? PLOTS.find((p) => p.buildingId === "hq");
 }
+
+export type DirectoryEntry = {
+  id: string;
+  name: string;
+  tagline: string;
+  zone: PlotZone;
+  buildingName: string;
+  plotId: string;
+};
+
+export function directoryEntries(): DirectoryEntry[] {
+  const seen = new Set<string>();
+  const list: DirectoryEntry[] = [];
+  for (const p of PLOTS) {
+    if (p.kind !== "owned" || !p.buildingId) continue;
+    const ownerId = BUILDING_OWNER[p.buildingId];
+    if (!ownerId || ownerId === "civic" || seen.has(ownerId)) continue;
+    seen.add(ownerId);
+    const company = COMPANIES[ownerId];
+    const b = LOT_BUILDINGS.find((item) => item.id === p.buildingId);
+    if (!company || !b) continue;
+    list.push({
+      id: ownerId,
+      name: company.name,
+      tagline: company.does,
+      zone: p.zone,
+      buildingName: b.name,
+      plotId: p.id,
+    });
+  }
+  return list;
+}

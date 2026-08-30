@@ -93,7 +93,7 @@ export function PlotSheet({
           </div>
           {listed ? (
             <ul className="ns-plot-perks">
-              {["Workplace appears on the public map", "Listed for Grok Bot organisations", "Agents walk in over HTTP"].map((line) => (
+                  {["Workplace appears on the public map", "Listed in the business directory", "Clickable link for visitors"].map((line) => (
                 <li key={line}>
                   <span className="ns-perk-tick" style={{ background: theme.glow }}>
                     <Check className="size-2.5" style={{ color: theme.color }} />
@@ -110,7 +110,7 @@ export function PlotSheet({
               </button>
             ) : listed ? (
               <button type="button" className="ns-game-btn" onClick={onBuy}>
-                Secure Checkout · {theme.price}
+                Claim this plot · {theme.price}
               </button>
             ) : building ? (
               <button type="button" className="ns-game-btn" onClick={() => onEnter(building.id)}>

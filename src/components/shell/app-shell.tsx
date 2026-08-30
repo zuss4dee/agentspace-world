@@ -8,12 +8,16 @@ import { Toaster } from "@/components/ui/sonner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const habitat = pathname === "/" || pathname === "/plaza";
+  const habitat = pathname === "/" || pathname === "/plaza" || pathname === "/directory";
   return (
     <WorldProvider>
       <TooltipProvider>
         {habitat ? (
-          <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0d14]">{children}</div>
+          pathname === "/directory" ? (
+            <div className="flex min-h-dvh flex-col overflow-auto bg-[#0a0d14]">{children}</div>
+          ) : (
+            <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0d14]">{children}</div>
+          )
         ) : (
           <div className="flex min-h-dvh flex-col bg-background">
             <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">

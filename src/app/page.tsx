@@ -1,7 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { HabitatView } from "@/components/world/habitat-view";
 
 export default function HomePage() {
-  return <HabitatView mapId="lot" place="Northshore" />;
+  return (
+    <Suspense fallback={<div className="size-full flex-1 bg-[#0a0d14]" />}>
+      <HabitatView mapId="lot" place="Northshore" />
+    </Suspense>
+  );
 }
