@@ -9,7 +9,7 @@ import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/ter
 import { useWorld } from "@/components/world/world-store";
 import { fromWorld } from "@/lib/coords";
 
-function Scene() {
+function ExteriorScene() {
   const { selectBuilding, selectAgent, focusCoord } = useWorld();
   const onMiss = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 4) return;
@@ -49,11 +49,15 @@ function Scene() {
       <BushField />
       <Lamps />
       <BuildingsLayer />
-      <InteriorRoom />
       <TrafficLayer />
       <AgentsLayer />
     </>
   );
+}
+
+function Scene() {
+  const { interiorId } = useWorld();
+  return interiorId ? <InteriorRoom /> : <ExteriorScene />;
 }
 
 export function WorldCanvas() {
@@ -64,7 +68,6 @@ export function WorldCanvas() {
       camera={{ position: [38, 42, 38], fov: 42, near: 0.3, far: 260 }}
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none"
-      onPointerMissed={() => undefined}
     >
       <Scene />
     </Canvas>

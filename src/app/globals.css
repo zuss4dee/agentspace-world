@@ -355,6 +355,24 @@
   font-size: 0.72rem;
   line-height: 1.4;
 }
+.gbw-inside {
+  pointer-events: auto;
+  cursor: pointer;
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 40;
+  transform: translateX(-50%);
+  border: 1px solid #ed712e8c;
+  border-radius: 2px;
+  background: #ed712ee6;
+  color: #fff6ec;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  box-shadow: 0 12px 28px #08060466;
+}
 .gbw-arrival {
   pointer-events: none;
   position: fixed;

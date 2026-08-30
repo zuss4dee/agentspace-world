@@ -246,8 +246,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
         </div>
       )}
       {interiorId ? (
-        <button type="button" className="gbw-arrival" onClick={exitInterior}>
-          Inside {LOT_BUILDINGS.find((b) => b.id === interiorId)?.name} — click to return to the world
+        <button type="button" className="gbw-inside" onClick={exitInterior}>
+          Inside {LOT_BUILDINGS.find((b) => b.id === interiorId)?.name} — return to the world
         </button>
       ) : null}
       {pickedBuilding ? (
@@ -264,11 +264,17 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           <p className="gbw-inspect-thought">{pickedBuilding.stations.length} stations · {pickedBuilding.style} · {pickedBuilding.assetId}</p>
           <div className="gbw-row" style={{ marginTop: 10 }}>
             <button type="button" className="gbw-zone" onClick={() => enterBuilding(pickedBuilding.id)}>
-              Enter
+              {interiorId === pickedBuilding.id ? "You’re inside" : "Enter"}
             </button>
-            <button type="button" className="gbw-zone" onClick={() => selectBuilding(null)}>
-              Close
-            </button>
+            {interiorId === pickedBuilding.id ? (
+              <button type="button" className="gbw-zone" onClick={exitInterior}>
+                Leave
+              </button>
+            ) : (
+              <button type="button" className="gbw-zone" onClick={() => selectBuilding(null)}>
+                Close
+              </button>
+            )}
           </div>
         </div>
       ) : selected ? (
