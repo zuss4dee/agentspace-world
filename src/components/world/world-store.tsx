@@ -67,9 +67,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
-  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 18, y: 18 });
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 24, y: 22 });
   const [followAgent, setFollowAgent] = useState(false);
-  const [cameraScale, setCameraScaleState] = useState(0.68);
+  const [cameraScale, setCameraScaleState] = useState(0.72);
   const [cameraTick, setCameraTick] = useState(0);
   const [interiorId, setInteriorId] = useState<string | null>(null);
   const pausedRef = useRef(paused);
@@ -345,7 +345,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const poi = poiById(id);
     if (!poi) return;
     setCameraFocus({ x: poi.x, y: poi.y });
-    setCameraScaleState(id === "hearth" ? 0.52 : 0.72);
+    setCameraScaleState(id === "hearth" ? 0.55 : 0.72);
     setCameraTick((t) => t + 1);
   }, []);
 

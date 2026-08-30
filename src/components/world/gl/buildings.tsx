@@ -186,8 +186,7 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
 }
 
 export function BuildingsLayer() {
-  const { selectedBuildingId, interiorId, selectBuilding, selectDistrict, cameraScale } = useWorld();
-  if (cameraScale < 0.55) return null;
+  const { selectedBuildingId, interiorId, selectBuilding, selectDistrict } = useWorld();
   const onClick = (b: Building) => (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     selectBuilding(b.id);

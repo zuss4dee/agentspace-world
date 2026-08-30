@@ -4,17 +4,14 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
-import { extraLamps, extraTraffic, OUTER_TREES } from "@/lib/city-gen";
+import { extraLamps, extraTraffic } from "@/lib/city-gen";
 import { TILE, wx, wz } from "@/lib/coords";
 import { SCENERY, TRAFFIC } from "@/lib/scenery";
 import { useWorld } from "@/components/world/world-store";
 
 export function TreeField() {
   const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
-  const all = useMemo(
-    () => [...core.map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") })), ...OUTER_TREES],
-    [core],
-  );
+  const all = useMemo(() => core.map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") })), [core]);
   const trunks = useRef<THREE.InstancedMesh>(null);
   const canopies = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);

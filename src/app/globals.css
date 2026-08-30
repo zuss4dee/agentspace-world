@@ -330,6 +330,50 @@
   color: var(--mute);
   font-size: 0.68rem;
 }
+.gbw-lockchip {
+  pointer-events: none;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fff6ec;
+  background: #0a0b0dcc;
+  border: 1px solid #ed712e88;
+  padding: 4px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.gbw-worldnav {
+  pointer-events: auto;
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 12;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  max-width: min(200px, calc(100vw - 28px));
+}
+.gbw-worldnav-item {
+  pointer-events: auto;
+  cursor: pointer;
+  text-align: left;
+  border: 1px solid #c5cbd138;
+  background: #0a0b0db8;
+  color: #f3efe6;
+  padding: 5px 10px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 650;
+  border-radius: 2px;
+}
+.gbw-worldnav-item[data-locked="1"] {
+  color: #8b939c;
+}
+.gbw-worldnav-item:hover {
+  border-color: #ed712e8c;
+}
 .gbw-ticker {
   pointer-events: none;
   position: fixed;
@@ -438,7 +482,7 @@
 .gbw-thumb {
   display: block;
   width: 100%;
-  height: 120px;
+  height: 72px;
   margin: 8px 0;
   object-fit: cover;
   border-radius: 10px;

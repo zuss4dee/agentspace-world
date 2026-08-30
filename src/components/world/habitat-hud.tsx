@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
 import { roleLabel } from "@/lib/playbooks";
 import { DISTRICTS } from "@/lib/campus";
-import { isoForStyle } from "@/lib/asset-pack";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
+import { WORLD_SECTIONS } from "@/lib/world-sections";
 
 export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "plaza" }) {
   const {
@@ -34,7 +34,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const [invite, setInvite] = useState(false);
   const [places, setPlaces] = useState(false);
   const [director, setDirector] = useState(false);
-  const [chrome, setChrome] = useState(true);
+  const [chrome, setChrome] = useState(false);
   const [arrival, setArrival] = useState<string | null>(null);
   const seenLive = useRef(new Set<string>());
   const primed = useRef(false);
@@ -47,8 +47,11 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const events = world.events.filter((e) => e.mapId === mapId).slice(0, 8);
   const building = selected ? ALL_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
   const pickedBuilding = selectedBuildingId ? ALL_BUILDINGS.find((b) => b.id === selectedBuildingId) : undefined;
+  const lockedSection = selectedDistrictId?.startsWith("locked:")
+    ? WORLD_SECTIONS.find((s) => s.id === selectedDistrictId.slice(7))
+    : undefined;
   const pickedDistrict =
-    selectedDistrictId && selectedDistrictId !== "street"
+    selectedDistrictId && selectedDistrictId !== "street" && !selectedDistrictId.startsWith("locked:")
       ? DISTRICTS.find((d) => d.id === selectedDistrictId)
       : undefined;
   const directorLines = world.agents
@@ -192,7 +195,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </button>
         </div>
         <button type="button" className="gbw-invite-btn" onClick={() => setPlaces((v) => !v)}>
-          {places ? "Hide places" : "Places"}
+          {places ? "Hide neighbourhood" : "Neighbourhood"}
         </button>
         {places ? (
           <div className="gbw-zones">
@@ -269,8 +272,6 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       {pickedBuilding ? (
         <div className="gbw-inspect">
           <p className="gbw-kicker">{DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label}</p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="gbw-thumb" src={isoForStyle(pickedBuilding.style)} alt="" />
           <p className="gbw-inspect-name">{pickedBuilding.name}</p>
           <p>{pickedBuilding.purpose ?? `${pickedBuilding.style} · ${pickedBuilding.kind}`}</p>
           <p>
@@ -297,23 +298,37 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </div>
         </div>
       ) : selected ? (
-        <button type="button" className="gbw-inspect" onClick={() => selectAgent(null)}>
-          <p className="gbw-kicker">Resident</p>
-          <p className="gbw-inspect-name">
-            {selected.name} · {roleLabel(selected.role)}
-          </p>
-          <p>{selected.organization}</p>
-          <p>
-            {selected.live
-              ? "Just came through the airlock over HTTP."
-              : selected.connected
-                ? "Atmosphere resident."
-                : "Visitor."}
-          </p>
-          <p className="gbw-inspect-thought">“{selected.speech || selected.thought}”</p>
-          <p>
-            {selected.status} · {selected.task} · {building?.name ?? selected.poi ?? selected.buildingId}
-          </p>
+        <div className="gbw-inspect">
+          <p className="gbw-kicker">{roleLabel(selected.role)}</p>
+          <p className="gbw-inspect-name">{selected.name}</p>
+          <p>Currently {selected.status === "walking" ? "on the street" : selected.status}</p>
+          <p>{selected.task}</p>
+          <p>Location · {building?.name ?? selected.poi ?? "Northshore"}</p>
+          {selected.speech || selected.thought ? (
+            <p className="gbw-inspect-thought">“{selected.speech || selected.thought}”</p>
+          ) : null}
+          <div className="gbw-row" style={{ marginTop: 10 }}>
+            <button
+              type="button"
+              className="gbw-zone"
+              onClick={() => {
+                setFollowAgent(true);
+                setCameraScale(1.7);
+              }}
+            >
+              Follow
+            </button>
+            <button type="button" className="gbw-zone" onClick={() => selectAgent(null)}>
+              Close
+            </button>
+          </div>
+        </div>
+      ) : lockedSection ? (
+        <button type="button" className="gbw-inspect" onClick={() => selectDistrict(null)}>
+          <p className="gbw-kicker">Coming soon</p>
+          <p className="gbw-inspect-name">{lockedSection.label}</p>
+          <p>{lockedSection.blurb}</p>
+          <p>This chapter of the world is locked. Starter City stays open.</p>
         </button>
       ) : pickedDistrict ? (
         <button type="button" className="gbw-inspect" onClick={() => selectDistrict(null)}>
@@ -341,6 +356,28 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           {directorLines[0]}
         </p>
       ) : null}
+      <nav className="gbw-worldnav" aria-label="World sections">
+        {WORLD_SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            className="gbw-worldnav-item"
+            data-locked={s.locked ? "1" : "0"}
+            onClick={() => {
+              if (s.locked) {
+                selectDistrict(`locked:${s.id}`);
+                return;
+              }
+              selectDistrict(null);
+              focusPoi("civic");
+              setCameraScale(0.55);
+            }}
+          >
+            {s.locked ? "🔒 " : "● "}
+            {s.label}
+          </button>
+        ))}
+      </nav>
     </>
   );
 }

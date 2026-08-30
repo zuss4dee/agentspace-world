@@ -2,9 +2,9 @@ import type { Building, District, TileKind } from "./types";
 import { fbm, hash2 } from "./noise";
 
 export const CORE = 64;
-export const GRID = 176;
-export const ROAD_XS = [6, 12, 24, 36, 48, 58, 70, 82, 94, 106, 118, 130, 142, 154, 166];
-export const ROAD_YS = [6, 12, 24, 36, 48, 58, 70, 82, 94, 106, 118, 130, 142, 154, 166];
+export const GRID = 64;
+export const ROAD_XS = [6, 12, 24, 36, 48, 58];
+export const ROAD_YS = [6, 12, 24, 36, 48, 58];
 
 export const DISTRICTS: District[] = [
   { id: "parklands", label: "Parklands", blurb: "Lawns, water, and a pavilion.", origin: { x: 0, y: 0 }, size: { x: 11, y: 11 }, theme: "public" },
@@ -26,21 +26,6 @@ export const DISTRICTS: District[] = [
   { id: "southpark", label: "South lawn", blurb: "Trees and empty land.", origin: { x: 0, y: 49 }, size: { x: 23, y: 15 }, theme: "public" },
   { id: "southgate", label: "Southgate", blurb: "More roads, more room.", origin: { x: 25, y: 49 }, size: { x: 23, y: 15 }, theme: "residential" },
   { id: "eastmarsh", label: "East marsh", blurb: "Water, reeds, and sky.", origin: { x: 49, y: 49 }, size: { x: 15, y: 15 }, theme: "public" },
-  { id: "executive-east", label: "Executive", blurb: "Leadership annexes east of HQ.", origin: { x: 64, y: 0 }, size: { x: 28, y: 24 }, theme: "executive" },
-  { id: "finance-east", label: "Finance", blurb: "Clearing houses and ledger streets.", origin: { x: 92, y: 0 }, size: { x: 36, y: 24 }, theme: "finance" },
-  { id: "tech-north", label: "Tech", blurb: "Engineering blocks and quiet racks.", origin: { x: 128, y: 0 }, size: { x: 48, y: 36 }, theme: "tech" },
-  { id: "creative-east", label: "Media mile", blurb: "Studios and cut rooms on the east grid.", origin: { x: 64, y: 24 }, size: { x: 28, y: 28 }, theme: "creative" },
-  { id: "research-east", label: "Research park", blurb: "Labs spilling east of Helix.", origin: { x: 92, y: 24 }, size: { x: 36, y: 28 }, theme: "research" },
-  { id: "ops-east", label: "Operations", blurb: "Dispatch, yards, and night shifts.", origin: { x: 128, y: 36 }, size: { x: 48, y: 34 }, theme: "operations" },
-  { id: "homes-east", label: "Canal homes", blurb: "Porches and stairs along the cut.", origin: { x: 64, y: 52 }, size: { x: 42, y: 30 }, theme: "residential" },
-  { id: "public-green", label: "Common green", blurb: "A park the size of a neighbourhood.", origin: { x: 106, y: 52 }, size: { x: 22, y: 30 }, theme: "public" },
-  { id: "univ", label: "University", blurb: "Halls, lawns, and late lights.", origin: { x: 64, y: 82 }, size: { x: 42, y: 36 }, theme: "campus" },
-  { id: "midtown", label: "Midtown", blurb: "Mixed streets between campus and the bay.", origin: { x: 106, y: 82 }, size: { x: 46, y: 36 }, theme: "finance" },
-  { id: "south-homes", label: "South terrace", blurb: "Quiet houses facing the water.", origin: { x: 0, y: 64 }, size: { x: 64, y: 42 }, theme: "residential" },
-  { id: "south-works", label: "South works", blurb: "Sheds and loading south of the mill.", origin: { x: 0, y: 106 }, size: { x: 64, y: 36 }, theme: "operations" },
-  { id: "bay-park", label: "Bay park", blurb: "Grass before the estuary.", origin: { x: 0, y: 142 }, size: { x: 94, y: 34 }, theme: "public" },
-  { id: "harbour-town", label: "Harbour town", blurb: "Cafes and inns on the south shore.", origin: { x: 64, y: 118 }, size: { x: 88, y: 24 }, theme: "public" },
-  { id: "east-shore", label: "East shore", blurb: "Homes and workshops to the water.", origin: { x: 152, y: 70 }, size: { x: 24, y: 72 }, theme: "residential" },
 ];
 
 function footprint(
@@ -591,15 +576,11 @@ function adjacentToRoad(x: number, y: number) {
 function organicWater(x: number, y: number) {
   if (isRoad(x, y)) return false;
   const n = fbm(x * 0.11, y * 0.1);
-  const west = x + n * 2.6 < 3.5 && y > 2 && y < 110;
+  const west = x + n * 2.6 < 3.5 && y > 2 && y < 47;
   const inlet = x + n * 1.8 < 6.4 && y > 14 && y < 24;
-  const marsh = x > 50 && x < 78 && y > 47 && y < 78 && (x - 50) * 0.32 + (y - 47) * 0.26 + n * 2.5 > 3.1;
-  const harbor = x > 58 && y > 43 && y < 70 && n + (x - 58) * 0.18 + (y - 46) * 0.08 > 0.42;
-  const canal = Math.abs(x - (81 + n * 2.4)) < 1.35 && y > 8 && y < 100;
-  const lake = Math.hypot(x - 116, y - 66) < 6.4 + n * 2.2;
-  const bay = y > 166 - n * 5 && x > 8;
-  const eastShore = x > 170 - n * 3 && y > 40;
-  return west || inlet || marsh || harbor || canal || lake || bay || eastShore;
+  const marsh = x > 50 && y > 47 && (x - 50) * 0.32 + (y - 47) * 0.26 + n * 2.5 > 3.1;
+  const harbor = x > 58 && y > 43 && n + (x - 58) * 0.18 + (y - 46) * 0.08 > 0.42;
+  return west || inlet || marsh || harbor;
 }
 
 export function makeTerrain(): TileKind[][] {
@@ -614,9 +595,6 @@ export function makeTerrain(): TileKind[][] {
       if (x >= 2 && x <= 20 && y >= 50 && y <= 62 && kind !== "water") kind = "park";
       if (x >= 38 && x <= 46 && y >= 8 && y <= 14) kind = "park";
       if (x >= 26 && x <= 34 && y >= 14 && y <= 22 && !isRoad(x, y)) kind = "park";
-      if (x >= 106 && x <= 126 && y >= 52 && y <= 80 && kind !== "water") kind = "park";
-      if (x >= 70 && x <= 100 && y >= 86 && y <= 112 && !isRoad(x, y) && kind !== "water") kind = "park";
-      if (x >= 4 && x <= 90 && y >= 146 && y <= 164 && kind !== "water" && !isRoad(x, y)) kind = "park";
       if ((x >= 22 && x <= 26 && y >= 22 && y <= 26) || ((x === 24 || y === 24) && x > 10 && y > 10 && x < 48 && y < 48)) {
         if (!isRoad(x, y) && kind !== "water") kind = "plaza";
       }

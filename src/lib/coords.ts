@@ -16,15 +16,13 @@ export function fromWorld(x: number, z: number) {
 }
 
 export function buildingHeight(h: number) {
-  return Math.max(1.35, h / 14);
+  return Math.max(1.2, h / 16);
 }
 
-/** Camera distance for HUD zoom chips. Far is still closer than “see the whole board”. */
 export function distFromScale(scale: number) {
-  if (scale <= 0.16) return 118;
-  if (scale <= 0.28) return 72;
-  if (scale <= 0.5) return 42;
-  if (scale <= 1) return 22;
-  if (scale <= 1.45) return 12;
-  return 6.2;
+  if (scale <= 0.2) return 48;
+  if (scale <= 0.5) return 28;
+  if (scale <= 1) return 16;
+  if (scale <= 1.45) return 9.5;
+  return 5.8;
 }

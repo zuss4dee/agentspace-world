@@ -28,9 +28,7 @@ export function makeScenery(): Scenery[] {
 
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
-      if (x >= CORE || y >= CORE) {
-        if (x % 3 || y % 3) continue;
-      }
+      if (x >= CORE || y >= CORE) continue;
       const tile: TileKind = TERRAIN[y]![x]!;
       const h = hash2(x, y);
       if ((tile === "park" || tile === "grass") && h > 0.62 && !buildingAt(WORLD_BUILDINGS, x + 0.4, y + 0.35)) {

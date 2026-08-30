@@ -1,21 +1,20 @@
 /**
- * Foundation for a larger habitat. This demo is one Earth city.
- * Future slices add continents, private company worlds, and packs —
- * without replacing the Grok Bot join path or the Northshore campus.
+ * Grok Bot World is built in chapters.
  *
- * WORLD
- * └── Earth / Northshore Estuary (ACTIVE_WORLD)
- *     └── CITY: Northshore
- *         ├── DISTRICTS (named campus + planned outer neighbourhoods)
- *         ├── STREETS (arterial grid)
- *         ├── BUILDINGS (hand-authored landmarks + procedural lots)
- *         ├── LANDMARKS (HQ, station, pavilion, inn, …)
- *         ├── PUBLIC SPACES (parks, plazas, water)
- *         └── AGENTS (tiny inhabitants + live walk-ins)
- *     └── COMPANIES (offices, labs, factories as building kinds)
+ * WORLD (Earth / Northshore Estuary)
+ * └── CITY
+ *     ├── Section 1 Starter City     ← open, this vertical slice
+ *     ├── Section 2 Tech District    ← locked
+ *     ├── Section 3 Creative District← locked
+ *     ├── Section 4 Business District← locked
+ *     └── Section 5 Public District  ← locked
+ *
+ * Inside an unlocked section:
+ *   DISTRICTS → STREETS → BUILDINGS → LANDMARKS → AGENTS
  */
 export const WORLD_SCOPE = {
   planet: "Earth",
   region: "Northshore Estuary",
   city: "Northshore",
+  openSection: "starter",
 } as const;

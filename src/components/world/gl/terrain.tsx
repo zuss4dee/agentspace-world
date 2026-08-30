@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GRID, ROAD_XS, ROAD_YS, TERRAIN, groundZ } from "@/lib/campus";
 import { TILE, WORLD_SPAN, wx, wz } from "@/lib/coords";
 import { fbm } from "@/lib/noise";
+import { sectionAt } from "@/lib/world-sections";
 
 function sampleColor(gx: number, gy: number, out: THREE.Color) {
   const ix = Math.floor(gx);
@@ -12,12 +13,13 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
   const inside = ix >= 0 && iy >= 0 && ix < GRID && iy < GRID;
   const kind = inside ? TERRAIN[iy]![ix]! : null;
   const n = fbm(gx * 0.12, gy * 0.12);
+  const sec = sectionAt(gx, gy);
+  if (sec?.locked || (!inside && sec?.locked)) {
+    out.setRGB(0.42 + n * 0.04, 0.44 + n * 0.03, 0.38);
+    return;
+  }
   if (!inside) {
-    if (gy > GRID - 4 || gx > GRID - 3 || gx < 1) {
-      out.setRGB(0.18 + n * 0.05, 0.42 + n * 0.08, 0.6);
-      return;
-    }
-    out.setRGB(0.28 + n * 0.08, 0.46 + n * 0.1, 0.26);
+    out.setRGB(0.3 + n * 0.06, 0.46 + n * 0.08, 0.28);
     return;
   }
   if (kind === "water") {
@@ -53,8 +55,8 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
 
 export function TerrainMesh() {
   const geometry = useMemo(() => {
-    const segs = 176;
-    const size = WORLD_SPAN + 24;
+    const segs = 96;
+    const size = WORLD_SPAN + 36;
     const geo = new THREE.PlaneGeometry(size, size, segs, segs);
     geo.rotateX(-Math.PI / 2);
     const pos = geo.attributes.position!;
@@ -66,9 +68,10 @@ export function TerrainMesh() {
       const gx = x / TILE + GRID / 2;
       const gy = z / TILE + GRID / 2;
       const inside = gx >= 0 && gy >= 0 && gx < GRID && gy < GRID;
-      let y = fbm(gx * 0.07, gy * 0.07) * 0.55;
+      let y = fbm(gx * 0.07, gy * 0.07) * 0.45;
       if (inside) y = Math.max(-0.45, groundZ(gx, gy) * 0.06);
-      if (!inside && (gx < 2 || gy > GRID - 2)) y = -0.42;
+      const sec = sectionAt(gx, gy);
+      if (sec?.locked) y = 0.08 + fbm(gx * 0.2, gy * 0.2) * 0.25;
       pos.setY(i, y);
       sampleColor(gx, gy, c);
       colors[i * 3] = c.r;
@@ -88,30 +91,11 @@ export function TerrainMesh() {
 }
 
 export function WaterPlane() {
-  const patches = useMemo(
-    () => [
-      { x: 1.5, z: 40, w: 16, d: 90 },
-      { x: 81, z: 50, w: 5, d: 88 },
-      { x: 116, z: 66, w: 16, d: 16 },
-      { x: 88, z: 168, w: 150, d: 22 },
-    ],
-    [],
-  );
   return (
-    <group>
-      {patches.map((p, i) => (
-        <mesh key={i} rotation-x={-Math.PI / 2} position={[wx(p.x), -0.18, wz(p.z)]} receiveShadow>
-          <planeGeometry args={[p.w * TILE, p.d * TILE]} />
-          <meshStandardMaterial
-            color="#2a6a96"
-            roughness={0.08}
-            metalness={0.5}
-            transparent
-            opacity={0.86}
-          />
-        </mesh>
-      ))}
-    </group>
+    <mesh rotation-x={-Math.PI / 2} position={[wx(1.5), -0.2, wz(24)]} receiveShadow>
+      <planeGeometry args={[16, 48]} />
+      <meshStandardMaterial color="#2a6a96" roughness={0.08} metalness={0.5} transparent opacity={0.86} />
+    </mesh>
   );
 }
 

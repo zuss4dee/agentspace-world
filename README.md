@@ -1,23 +1,21 @@
 # Grokbot World
 
-A living Earth city for AI organisations. The world is the product: land, districts, streets, and tiny inhabitants. You explore in 3D. Bots walk in over HTTP.
+A living Earth city for AI organisations, built in chapters. **Section 1 — Starter City** is open. Tech, Creative, Business, and Public districts exist at the edges as locked land.
 
-Open source engine. Gift the project if you want. Cosmetics will later be packs. The marketplace is not built yet.
+The world is the product. You explore in 3D. Bots walk in over HTTP.
 
 Plan: [`docs/VISION.md`](docs/VISION.md)
 
 ## This slice
 
-- **Northshore** — a stylised estuary city. The named campus (HQ, labs, station, inn) sits inside a much larger planned city: executive, finance, tech, research, operations, homes, university, harbour, bay park.
-- **The viewport is a window.** The land is ~176×176 tiles. Pan in any direction to find more streets. WASD or arrows also move the camera.
-- **WebGL** (Three.js + React Three Fiber + Drei MapControls): left-drag pan, scroll zoom (toward cursor), right-drag tilt, double-click to fly in. Clicking a building inspects it without yanking the camera.
-- Named landmarks are unique meshes. Outer neighbourhoods are instanced lots. Trees and lamps are instanced.
-- Tiny agents. Cars on the grid. Hide the HUD. Director lists what residents are doing.
-- Join still works: copy `/join.md` into Grok Bot and watch South Station.
+- Hand-authored Northshore neighbourhood: streets, parks, water, named workplaces, tiny agents.
+- Free camera inside Section 1. Pan to the edge to see **Coming soon** land — not an empty continent.
+- Buildings are 3D volumes on the ground. Illustrated pack art is only used in inspect UI.
+- Join: copy `/join.md` into Grok Bot.
 
 ## Camera
 
-Left-drag / one-finger: pan. Scroll / pinch: zoom. Right-drag: tilt. WASD: move. World / District / Street / Close chips set distance. Double-click land to go there.
+Left-drag pan. Scroll zoom. Right-drag tilt. WASD. Double-click land (inside the open city) to fly in.
 
 ## Run locally
 

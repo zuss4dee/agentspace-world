@@ -5,8 +5,8 @@ import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
-import { GRID } from "@/lib/campus";
-import { distFromScale, TILE, wx, wz } from "@/lib/coords";
+import { cameraPanLimits } from "@/lib/world-sections";
+import { distFromScale, wx, wz } from "@/lib/coords";
 
 type ControlsApi = {
   target: THREE.Vector3;
@@ -14,7 +14,7 @@ type ControlsApi = {
 };
 
 const keys = new Set<string>();
-const HALF = (GRID * TILE) / 2 - 10;
+const PAN = cameraPanLimits();
 
 export function ExplorerCamera() {
   const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick } = useWorld();
@@ -79,8 +79,8 @@ export function ExplorerCamera() {
       c.target.z += (wz(fy) - c.target.z) * k;
       c.target.y += ((interiorId ? 1.15 : 0.35) - c.target.y) * k;
     }
-    c.target.x = THREE.MathUtils.clamp(c.target.x, -HALF, HALF);
-    c.target.z = THREE.MathUtils.clamp(c.target.z, -HALF, HALF);
+    c.target.x = THREE.MathUtils.clamp(c.target.x, PAN.minX, PAN.maxX);
+    c.target.z = THREE.MathUtils.clamp(c.target.z, PAN.minZ, PAN.maxZ);
 
     if (applyDist.current || interiorId) {
       const want = interiorId ? 7.2 : distFromScale(cameraScale);
@@ -100,8 +100,8 @@ export function ExplorerCamera() {
       makeDefault
       enableDamping
       dampingFactor={0.085}
-      minDistance={3.6}
-      maxDistance={160}
+      minDistance={3.4}
+      maxDistance={56}
       maxPolarAngle={Math.PI / 2.18}
       minPolarAngle={0.28}
       screenSpacePanning
