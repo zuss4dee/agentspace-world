@@ -978,8 +978,7 @@
   width: 210px;
   height: 112px;
   background: transparent;
-  border: 0;
-  cursor: pointer;
+  pointer-events: none;
 }
 .ns-beacon-ring {
   position: absolute;
@@ -995,6 +994,7 @@
   transform: translate(-50%, -50%);
 }
 .ns-beacon-label {
+  pointer-events: auto;
   position: absolute;
   left: 50%;
   top: -2.2rem;
@@ -1013,6 +1013,7 @@
   font-weight: 700;
   letter-spacing: 0.045em;
   text-transform: uppercase;
+  cursor: pointer;
 }
 .ns-beacon-label strong {
   color: #86eac8;

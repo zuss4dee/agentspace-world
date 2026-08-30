@@ -83,7 +83,7 @@ function ExteriorScene() {
   return (
     <>
       <color attach="background" args={["#8eb8d6"]} />
-      <fog attach="fog" args={["#9fc4d6", 32, 96]} />
+      <fog attach="fog" args={["#9fc4d6", 22, 58]} />
       <hemisphereLight args={["#fff1dc", "#3f5a44", 0.78]} />
       <LightFollow />
       <ambientLight intensity={0.22} />
@@ -122,7 +122,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [16, 22, 16], fov: 42, near: 0.3, far: 140 }
+          : { position: [12, 18, 12], fov: 42, near: 0.3, far: 80 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none"

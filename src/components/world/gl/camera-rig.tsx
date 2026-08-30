@@ -5,7 +5,8 @@ import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
-import { distFromScale, wx, wz } from "@/lib/coords";
+import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, wx, wz } from "@/lib/coords";
+import { cameraPanLimits } from "@/lib/world-sections";
 
 type ControlsApi = {
   target: THREE.Vector3;
@@ -75,6 +76,13 @@ export function ExplorerCamera() {
     if (keys.has("a") || keys.has("arrowleft")) c.target.addScaledVector(right, -pan);
 
     c.target.y = interiorId ? 1.15 : 0.2;
+    c.update();
+
+    if (!interiorId) {
+      const lim = cameraPanLimits();
+      c.target.x = THREE.MathUtils.clamp(c.target.x, lim.minX, lim.maxX);
+      c.target.z = THREE.MathUtils.clamp(c.target.z, lim.minZ, lim.maxZ);
+    }
 
     if (applyDist.current || interiorId) {
       const want = interiorId ? 7.2 : distFromScale(cameraScale);
@@ -86,7 +94,17 @@ export function ExplorerCamera() {
       camera.position.copy(c.target).add(dir);
       if (!interiorId && Math.abs(want - next) < 0.35) applyDist.current = false;
     }
-    c.update();
+
+    if (!interiorId) {
+      const d = camera.position.distanceTo(c.target);
+      const capped = THREE.MathUtils.clamp(d, MIN_VIEW_DIST, MAX_VIEW_DIST);
+      if (Math.abs(capped - d) > 0.04) {
+        const dir = camera.position.clone().sub(c.target);
+        if (dir.lengthSq() < 0.001) dir.set(14, 16, 14);
+        dir.normalize().multiplyScalar(capped);
+        camera.position.copy(c.target).add(dir);
+      }
+    }
   });
 
   return (
@@ -101,8 +119,8 @@ export function ExplorerCamera() {
       panSpeed={1.6}
       rotateSpeed={0.55}
       zoomSpeed={1.15}
-      minDistance={2.6}
-      maxDistance={140}
+      minDistance={MIN_VIEW_DIST}
+      maxDistance={MAX_VIEW_DIST}
       maxPolarAngle={interiorId ? Math.PI / 2.05 : Math.PI / 3}
       minPolarAngle={interiorId ? 0.12 : Math.PI / 3}
       screenSpacePanning

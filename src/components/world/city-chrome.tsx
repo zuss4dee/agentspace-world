@@ -157,7 +157,7 @@ export function CityChrome() {
         <button type="button" aria-label="Zoom in" onClick={() => setCameraScale(Math.min(2.2, cameraScale + 0.22))}>
           <Plus className="size-4" />
         </button>
-        <button type="button" aria-label="Zoom out" onClick={() => setCameraScale(Math.max(0.12, cameraScale - 0.22))}>
+        <button type="button" aria-label="Zoom out" onClick={() => setCameraScale(Math.max(0.42, cameraScale - 0.22))}>
           <Minus className="size-4" />
         </button>
         <button

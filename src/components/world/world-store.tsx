@@ -344,7 +344,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCameraScale = useCallback((n: number) => {
-    setCameraScaleState(n);
+    setCameraScaleState(Math.min(2.2, Math.max(0.42, n)));
     setCameraTick((t) => t + 1);
   }, []);
 

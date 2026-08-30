@@ -64,13 +64,13 @@ export function sectionAt(x: number, y: number) {
   );
 }
 
-/** Camera may peek a little into locked land, not fly an empty continent. */
+/** Camera stays over the open city. A little pad, not the empty continent. */
 export function cameraPanLimits() {
-  const pad = 7 * TILE;
+  const inset = 3 * TILE;
   return {
-    minX: wx(SECTION_ONE.x) - pad,
-    maxX: wx(SECTION_ONE.x + SECTION_ONE.w) + pad,
-    minZ: wz(SECTION_ONE.y) - pad,
-    maxZ: wz(SECTION_ONE.y + SECTION_ONE.h) + pad,
+    minX: wx(SECTION_ONE.x) + inset,
+    maxX: wx(SECTION_ONE.x + SECTION_ONE.w) - inset,
+    minZ: wz(SECTION_ONE.y) + inset,
+    maxZ: wz(SECTION_ONE.y + SECTION_ONE.h) - inset,
   };
 }

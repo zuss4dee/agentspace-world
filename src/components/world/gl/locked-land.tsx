@@ -48,7 +48,7 @@ export function LockedLand() {
                 <meshStandardMaterial color="#8a9188" roughness={0.9} transparent opacity={0.45} />
               </mesh>
             ))}
-            <Html position={[0, 2.2, 0]} center distanceFactor={18} occlude={false}>
+            <Html position={[0, 2.2, 0]} center distanceFactor={18} occlude={false} pointerEvents="none">
               <div className="gbw-lockchip">
                 Locked · {s.label}
               </div>

@@ -11,23 +11,30 @@ export function BeaconMarker() {
   const next = Math.max(BEACON_NEXT_BID, beaconBidCents / 100 + 40);
   return (
     <group position={[wx(16.5), 0, wz(4)]}>
-      <Html position={[0, 7.2, 0]} center distanceFactor={22} occlude={false} zIndexRange={[20, 0]}>
-        <button
-          type="button"
-          className="ns-beacon-cta"
-          aria-label={`Bid ${formatUsd(next)} to take The Beacon`}
-          onClick={(e) => {
-            e.stopPropagation();
-            selectPlot("plot-b-hq");
-            focusCoord(16.5, 4, 1.25);
-            setBeaconOpen(true);
-          }}
-        >
-          <span className="ns-beacon-ring" aria-hidden />
-          <span className="ns-beacon-label">
+      <Html
+        position={[0, 7.2, 0]}
+        center
+        distanceFactor={22}
+        occlude={false}
+        zIndexRange={[20, 0]}
+        pointerEvents="none"
+      >
+        <div className="ns-beacon-cta" aria-hidden>
+          <span className="ns-beacon-ring" />
+          <button
+            type="button"
+            className="ns-beacon-label"
+            aria-label={`Bid ${formatUsd(next)} to take The Beacon`}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectPlot("plot-b-hq");
+              focusCoord(16.5, 4, 1.25);
+              setBeaconOpen(true);
+            }}
+          >
             Bid for the Beacon <strong>{formatUsd(next)}</strong>
-          </span>
-        </button>
+          </button>
+        </div>
       </Html>
       <mesh position={[0, 0.06, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[2.2 * TILE, 2.55 * TILE, 32]} />
