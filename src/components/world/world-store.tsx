@@ -43,10 +43,14 @@ type WorldApi = {
   link: "connecting" | "live" | "offline";
   cameraFocus: Vec2 | null;
   focusPoi: (id: string) => void;
+  focusCoord: (x: number, y: number, scale?: number) => void;
   followAgent: boolean;
   setFollowAgent: (v: boolean) => void;
   cameraScale: number;
   setCameraScale: (n: number) => void;
+  interiorId: string | null;
+  enterBuilding: (id: string) => void;
+  exitInterior: () => void;
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -60,7 +64,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
   const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 32, y: 32 });
   const [followAgent, setFollowAgent] = useState(false);
-  const [cameraScale, setCameraScale] = useState(0.22);
+  const [cameraScale, setCameraScale] = useState(0.2);
+  const [interiorId, setInteriorId] = useState<string | null>(null);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -299,6 +304,22 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const b = LOT_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
+    setCameraScale(1.12);
+  }, []);
+
+  const enterBuilding = useCallback((id: string) => {
+    const b = LOT_BUILDINGS.find((item) => item.id === id);
+    if (!b) return;
+    setInteriorId(id);
+    setSelectedBuildingId(id);
+    setSelectedAgentId(null);
+    setFollowAgent(false);
+    setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
+    setCameraScale(1.85);
+  }, []);
+
+  const exitInterior = useCallback(() => {
+    setInteriorId(null);
     setCameraScale(1.05);
   }, []);
 
@@ -308,6 +329,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraFocus({ x: poi.x, y: poi.y });
     if (id === "hearth") setCameraScale(0.2);
     else setCameraScale(0.72);
+  }, []);
+
+  const focusCoord = useCallback((x: number, y: number, scale = 1.05) => {
+    setCameraFocus({ x, y });
+    setCameraScale(scale);
   }, []);
 
   const value = useMemo<WorldApi>(
@@ -329,10 +355,14 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       link,
       cameraFocus,
       focusPoi,
+      focusCoord,
       followAgent,
       setFollowAgent,
       cameraScale,
       setCameraScale,
+      interiorId,
+      enterBuilding,
+      exitInterior,
     }),
     [
       world,
@@ -350,8 +380,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       link,
       cameraFocus,
       focusPoi,
+      focusCoord,
       followAgent,
       cameraScale,
+      interiorId,
+      enterBuilding,
+      exitInterior,
     ],
   );
 

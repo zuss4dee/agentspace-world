@@ -1,9 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useEffect, useRef } from "react";
 import { HabitatHud } from "@/components/world/habitat-hud";
-import { WorldCanvas } from "@/components/world/world-canvas";
 import { useWorld } from "@/components/world/world-store";
+
+const WorldCanvas = dynamic(() => import("@/components/world/world-canvas").then((m) => m.WorldCanvas), {
+  ssr: false,
+  loading: () => <div className="size-full bg-[#8eb8d6]" />,
+});
 
 export function HabitatView({
   mapId,
@@ -14,7 +19,7 @@ export function HabitatView({
   place: string;
   startPoi?: string;
 }) {
-  const { selectedAgentId, selectAgent, focusPoi } = useWorld();
+  const { focusPoi } = useWorld();
   const started = useRef(false);
   useEffect(() => {
     if (started.current) return;
@@ -23,7 +28,7 @@ export function HabitatView({
   }, [focusPoi, startPoi]);
   return (
     <div className="relative min-h-0 flex-1">
-      <WorldCanvas mapId={mapId} selectedAgentId={selectedAgentId} onSelectAgent={selectAgent} />
+      <WorldCanvas />
       <HabitatHud place={place} mapId={mapId} />
     </div>
   );

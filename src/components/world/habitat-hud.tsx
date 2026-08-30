@@ -15,6 +15,9 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
     selectAgent,
     selectedBuildingId,
     selectBuilding,
+    enterBuilding,
+    exitInterior,
+    interiorId,
     focusPoi,
     paused,
     setPaused,
@@ -72,7 +75,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       <div className="gbw-hud" data-link={link}>
         <div className="gbw-plaque">
           <div className="gbw-head">
-            <p className="gbw-kicker">Earth · Northshore</p>
+            <p className="gbw-kicker">Earth · {place}</p>
             <button type="button" className="gbw-help" aria-label="Hide interface" onClick={() => setChrome(false)}>
               Hide
             </button>
@@ -103,7 +106,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             <dl className="gbw-help-list">
               <div>
                 <dt>Drag</dt>
-                <dd>Move camera</dd>
+                <dd>Drag to pan · scroll to zoom · right-drag to tilt</dd>
               </div>
               <div>
                 <dt>Scroll</dt>
@@ -242,18 +245,32 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </div>
         </div>
       )}
+      {interiorId ? (
+        <button type="button" className="gbw-arrival" onClick={exitInterior}>
+          Inside {LOT_BUILDINGS.find((b) => b.id === interiorId)?.name} — click to return to the world
+        </button>
+      ) : null}
       {pickedBuilding ? (
-        <button type="button" className="gbw-inspect" onClick={() => selectBuilding(null)}>
-          <p className="gbw-kicker">Building</p>
+        <div className="gbw-inspect">
+          <p className="gbw-kicker">{DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label}</p>
           <p className="gbw-inspect-name">{pickedBuilding.name}</p>
           <p>
-            {DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label} · {pickedBuilding.style}
+            Status: {world.agents.some((a) => a.buildingId === pickedBuilding.id) ? "Active" : "Quiet"}
           </p>
-          <p className="gbw-inspect-thought">
-            Modular facade. Later this is something you collect, not a hardcoded box.
+          <p>
+            Agents:{" "}
+            {world.agents.filter((a) => a.buildingId === pickedBuilding.id).map((a) => a.name).join(", ") || "none inside"}
           </p>
-          <p>{pickedBuilding.stations.length} interior stations. Click again to close.</p>
-        </button>
+          <p className="gbw-inspect-thought">{pickedBuilding.stations.length} stations · {pickedBuilding.style} · {pickedBuilding.assetId}</p>
+          <div className="gbw-row" style={{ marginTop: 10 }}>
+            <button type="button" className="gbw-zone" onClick={() => enterBuilding(pickedBuilding.id)}>
+              Enter
+            </button>
+            <button type="button" className="gbw-zone" onClick={() => selectBuilding(null)}>
+              Close
+            </button>
+          </div>
+        </div>
       ) : selected ? (
         <button type="button" className="gbw-inspect" onClick={() => selectAgent(null)}>
           <p className="gbw-kicker">Resident</p>
@@ -270,7 +287,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </p>
           <p className="gbw-inspect-thought">“{selected.speech || selected.thought}”</p>
           <p>
-            {selected.status} at {building?.name ?? selected.poi ?? selected.buildingId}
+            {selected.status} · {selected.task} · {building?.name ?? selected.poi ?? selected.buildingId}
           </p>
         </button>
       ) : null}

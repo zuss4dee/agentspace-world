@@ -3,5 +3,5 @@
 import { HabitatView } from "@/components/world/habitat-view";
 
 export default function HomePage() {
-  return <HabitatView mapId="lot" place="Northshore Campus" />;
+  return <HabitatView mapId="lot" place="Northshore" />;
 }

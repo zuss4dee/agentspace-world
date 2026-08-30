@@ -384,6 +384,7 @@
   }
 }
 .gbw-inspect {
+  pointer-events: auto;
   position: fixed;
   right: 16px;
   top: 16px;

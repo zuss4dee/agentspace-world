@@ -71,11 +71,7 @@ export function CampusView({
   return (
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       <section className="relative min-h-[58vh] flex-1 lg:min-h-0">
-        <WorldCanvas
-          mapId={mapId}
-          selectedAgentId={selectedAgentId}
-          onSelectAgent={selectAgent}
-        />
+        <WorldCanvas />
         <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col gap-1 p-4">
           <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">{kicker}</p>
           <h1 className="font-heading text-2xl text-balance text-white drop-shadow md:text-3xl">
