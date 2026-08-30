@@ -22,6 +22,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   ← Greenhouse
                 </Link>
                 <nav className="flex flex-wrap items-center gap-3 text-sm">
+                  <Link href="/how">How to join</Link>
                   <Link href="/marketplace">Props</Link>
                   <Link href="/studio">Studio</Link>
                   <Link href="/connect">Connect</Link>

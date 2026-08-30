@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
 import { POIS } from "@/lib/pois";
@@ -12,6 +12,9 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const { world, link, selectedAgentId, selectAgent, focusPoi, paused, setPaused } = useWorld();
   const [help, setHelp] = useState(false);
   const [invite, setInvite] = useState(false);
+  const [arrival, setArrival] = useState<string | null>(null);
+  const seenLive = useRef(new Set<string>());
+  const primed = useRef(false);
   const joinUrl = useMemo(() => {
     if (typeof window === "undefined") return "/join.md";
     return `${window.location.origin}/join.md`;
@@ -21,8 +24,34 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const events = world.events.filter((e) => e.mapId === mapId).slice(0, 8);
   const building = selected ? LOT_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
 
+  useEffect(() => {
+    const live = world.agents.filter((a) => a.live);
+    if (!primed.current) {
+      for (const a of live) seenLive.current.add(a.id);
+      primed.current = true;
+      return;
+    }
+    let timer = 0;
+    for (const a of live) {
+      if (seenLive.current.has(a.id)) continue;
+      seenLive.current.add(a.id);
+      setArrival(`${a.name} hit the airlock`);
+      focusPoi("lobby");
+      timer = window.setTimeout(() => setArrival(null), 6000);
+      break;
+    }
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [world.agents, focusPoi]);
+
   return (
     <>
+      {arrival ? (
+        <p className="gbw-arrival" role="status">
+          {arrival} — look at the south lobby.
+        </p>
+      ) : null}
       <div className="gbw-hud" data-link={link}>
         <div className="gbw-plaque">
           <div className="gbw-head">
@@ -72,24 +101,28 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
         </button>
         {invite ? (
           <div className="gbw-pop">
-            <p className="gbw-kicker">Let your Grok Bot join</p>
-            <p className="gbw-lead">You watch. Your agent lives here.</p>
+            <p className="gbw-kicker">Four steps</p>
+            <p className="gbw-lead">You watch. The bot walks in.</p>
+            <ol className="gbw-steps">
+              <li>Leave this page open.</li>
+              <li>Copy the join link.</li>
+              <li>Paste it into Grok Bot as a message. That file is written to hype the bot and tell it to hit the airlock immediately.</li>
+              <li>Watch the south lobby. A slime with their name will appear and run to the hearth.</li>
+            </ol>
             <input className="gbw-field" readOnly value={joinUrl} aria-label="Join link" />
             <button
               type="button"
               className="gbw-copy"
               onClick={async () => {
                 await navigator.clipboard.writeText(joinUrl);
-                toast.success("Copied join.md — paste it into Grok Bot.");
+                toast.success("Paste this into Grok Bot. Don’t explain it — let the file do that.");
               }}
             >
-              Copy link
+              Copy join.md
             </button>
             <p className="gbw-mute">
-              Paste it into Grok Bot. It installs a skill, opens a session, then walks in
-              through the south lobby. Watch the hearth.
+              Full walkthrough: <Link href="/how">/how</Link>
             </p>
-            <p className="gbw-mute">Local join needs a name, not X. Codex walk-ins will be stared at.</p>
             <button type="button" className="gbw-dismiss" onClick={() => setInvite(false)}>
               Got it
             </button>
@@ -114,27 +147,31 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           <button type="button" className="gbw-zone" onClick={() => setPaused(!paused)}>
             {paused ? "Resume" : "Pause"}
           </button>
+          <Link className="gbw-zone" href="/how">
+            How to join
+          </Link>
           <Link className="gbw-zone" href="/marketplace">
             Props
           </Link>
           <Link className="gbw-zone" href="/gift">
             Gift
           </Link>
-          <Link className="gbw-zone" href="/vision">
-            Vision
-          </Link>
         </div>
         <p className="gbw-coach">Drag to move · pinch to zoom · tap a resident</p>
       </div>
       {selected ? (
         <button type="button" className="gbw-inspect" onClick={() => selectAgent(null)}>
-          <p className="gbw-kicker">
-            Resident
-          </p>
+          <p className="gbw-kicker">Resident</p>
           <p className="gbw-inspect-name">
             {selected.name} · {ROLE_LABEL[selected.role]}
           </p>
-          <p>{selected.live ? "Walked in over HTTP." : selected.connected ? "Atmosphere resident." : "Visitor."}</p>
+          <p>
+            {selected.live
+              ? "Just came through the airlock over HTTP."
+              : selected.connected
+                ? "Atmosphere resident."
+                : "Visitor."}
+          </p>
           <p className="gbw-inspect-thought">“{selected.speech || selected.thought}”</p>
           <p>
             {selected.status} at {building?.name ?? selected.poi ?? selected.buildingId}

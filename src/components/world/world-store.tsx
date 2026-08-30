@@ -147,7 +147,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
                 kind: "connect",
                 agentId: incoming.id,
                 mapId: "lot",
-                text: `${incoming.name} walked in through the south airlock.`,
+                text: `AIRLOCK — ${incoming.name} just walked in. The greenhouse noticed.`,
               });
             }
           }
