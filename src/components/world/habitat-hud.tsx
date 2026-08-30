@@ -5,7 +5,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
 import { roleLabel } from "@/lib/playbooks";
-import { DISTRICTS, LOT_BUILDINGS } from "@/lib/campus";
+import { DISTRICTS } from "@/lib/campus";
+import { isoForStyle } from "@/lib/asset-pack";
+import { ALL_BUILDINGS } from "@/lib/city-gen";
 
 export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "plaza" }) {
   const {
@@ -15,10 +17,13 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
     selectAgent,
     selectedBuildingId,
     selectBuilding,
+    selectedDistrictId,
+    selectDistrict,
     enterBuilding,
     exitInterior,
     interiorId,
     focusPoi,
+    focusCoord,
     paused,
     setPaused,
     followAgent,
@@ -40,8 +45,16 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
   const count = world.agents.filter((a) => a.mapId === mapId).length;
   const selected = world.agents.find((a) => a.id === selectedAgentId);
   const events = world.events.filter((e) => e.mapId === mapId).slice(0, 8);
-  const building = selected ? LOT_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
-  const pickedBuilding = selectedBuildingId ? LOT_BUILDINGS.find((b) => b.id === selectedBuildingId) : undefined;
+  const building = selected ? ALL_BUILDINGS.find((b) => b.id === selected.buildingId) : undefined;
+  const pickedBuilding = selectedBuildingId ? ALL_BUILDINGS.find((b) => b.id === selectedBuildingId) : undefined;
+  const pickedDistrict =
+    selectedDistrictId && selectedDistrictId !== "street"
+      ? DISTRICTS.find((d) => d.id === selectedDistrictId)
+      : undefined;
+  const directorLines = world.agents
+    .filter((a) => a.mapId === mapId && !a.live)
+    .slice(0, 10)
+    .map((a) => `${a.name} is ${a.task.charAt(0).toLowerCase()}${a.task.slice(1)}`);
 
   useEffect(() => {
     const live = world.agents.filter((a) => a.live);
@@ -106,15 +119,15 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             <dl className="gbw-help-list">
               <div>
                 <dt>Drag</dt>
-                <dd>Drag to pan · scroll to zoom · right-drag to tilt</dd>
+                <dd>Left-drag pan · WASD · scroll zoom · right-drag tilt</dd>
               </div>
               <div>
-                <dt>Scroll</dt>
-                <dd>Zoom</dd>
+                <dt>Double</dt>
+                <dd>Fly to that patch of land</dd>
               </div>
               <div>
                 <dt>Tap</dt>
-                <dd>Inspect a building or a resident</dd>
+                <dd>Inspect a street, district, building, or resident</dd>
               </div>
             </dl>
           </div>
@@ -189,8 +202,8 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
                 type="button"
                 className="gbw-zone"
                 onClick={() => {
-                  setCameraScale(0.55);
-                  focusPoi(d.id);
+                  selectDistrict(d.id);
+                  focusCoord(d.origin.x + d.size.x / 2, d.origin.y + d.size.y / 2, 0.5);
                 }}
               >
                 {d.label}
@@ -205,7 +218,10 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           <div className="gbw-pop gbw-log">
             <p className="gbw-kicker">Director</p>
             <ul>
-              {events.map((event) => (
+              {directorLines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+              {events.slice(0, 4).map((event) => (
                 <li key={event.id}>{event.text}</li>
               ))}
             </ul>
@@ -222,7 +238,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             Gift
           </Link>
         </div>
-        <p className="gbw-coach">The land first. Drag · scroll · tap a building. Hide the UI to explore.</p>
+        <p className="gbw-coach">Drag across the city. The map is a window, not a board.</p>
       </div>
       ) : (
         <div className="gbw-hud gbw-hud-min" data-link={link}>
@@ -247,13 +263,16 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       )}
       {interiorId ? (
         <button type="button" className="gbw-inside" onClick={exitInterior}>
-          Inside {LOT_BUILDINGS.find((b) => b.id === interiorId)?.name} — return to the world
+          Inside {ALL_BUILDINGS.find((b) => b.id === interiorId)?.name} — return to the world
         </button>
       ) : null}
       {pickedBuilding ? (
         <div className="gbw-inspect">
           <p className="gbw-kicker">{DISTRICTS.find((d) => d.id === pickedBuilding.districtId)?.label}</p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="gbw-thumb" src={isoForStyle(pickedBuilding.style)} alt="" />
           <p className="gbw-inspect-name">{pickedBuilding.name}</p>
+          <p>{pickedBuilding.purpose ?? `${pickedBuilding.style} · ${pickedBuilding.kind}`}</p>
           <p>
             Status: {world.agents.some((a) => a.buildingId === pickedBuilding.id) ? "Active" : "Quiet"}
           </p>
@@ -261,7 +280,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             Agents:{" "}
             {world.agents.filter((a) => a.buildingId === pickedBuilding.id).map((a) => a.name).join(", ") || "none inside"}
           </p>
-          <p className="gbw-inspect-thought">{pickedBuilding.stations.length} stations · {pickedBuilding.style} · {pickedBuilding.assetId}</p>
+          <p className="gbw-inspect-thought">{pickedBuilding.stations.length} workstations</p>
           <div className="gbw-row" style={{ marginTop: 10 }}>
             <button type="button" className="gbw-zone" onClick={() => enterBuilding(pickedBuilding.id)}>
               {interiorId === pickedBuilding.id ? "You’re inside" : "Enter"}
@@ -296,6 +315,31 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
             {selected.status} · {selected.task} · {building?.name ?? selected.poi ?? selected.buildingId}
           </p>
         </button>
+      ) : pickedDistrict ? (
+        <button type="button" className="gbw-inspect" onClick={() => selectDistrict(null)}>
+          <p className="gbw-kicker">District</p>
+          <p className="gbw-inspect-name">{pickedDistrict.label}</p>
+          <p>{pickedDistrict.blurb}</p>
+          <p>
+            {ALL_BUILDINGS.filter((b) => b.districtId === pickedDistrict.id).length} places ·{" "}
+            {world.agents.filter((a) => {
+              const home = ALL_BUILDINGS.find((b) => b.id === a.buildingId);
+              return home?.districtId === pickedDistrict.id;
+            }).length}{" "}
+            agents tied here
+          </p>
+        </button>
+      ) : selectedDistrictId === "street" ? (
+        <button type="button" className="gbw-inspect" onClick={() => selectDistrict(null)}>
+          <p className="gbw-kicker">Street</p>
+          <p className="gbw-inspect-name">Arterial</p>
+          <p>Cars and walkers use this grid. Double-click to drop in closer.</p>
+        </button>
+      ) : null}
+      {chrome && directorLines[0] ? (
+        <p className="gbw-ticker" role="status">
+          {directorLines[0]}
+        </p>
       ) : null}
     </>
   );

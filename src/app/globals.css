@@ -139,14 +139,14 @@
   --line: #c5cbd138;
   pointer-events: none;
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 14px;
+  left: 14px;
   z-index: 10;
   display: flex;
-  width: min(252px, calc(100vw - 32px));
+  width: min(220px, calc(100vw - 28px));
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   color: var(--ink);
   filter: drop-shadow(0 12px 28px #08060466);
 }
@@ -330,6 +330,23 @@
   color: var(--mute);
   font-size: 0.68rem;
 }
+.gbw-ticker {
+  pointer-events: none;
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 12;
+  max-width: min(420px, calc(100vw - 300px));
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid #c5cbd138;
+  border-radius: 2px;
+  background: #0a0b0db3;
+  color: #f3efe6;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
 .gbw-log ul {
   display: flex;
   flex-direction: column;
@@ -404,11 +421,12 @@
 .gbw-inspect {
   pointer-events: auto;
   position: fixed;
-  right: 16px;
-  top: 16px;
+  right: 14px;
+  bottom: 14px;
+  top: auto;
   z-index: 20;
-  width: min(276px, calc(100vw - 32px));
-  padding: 16px;
+  width: min(268px, calc(100vw - 28px));
+  padding: 14px;
   color: #3a2418;
   background: #fff6ecf0;
   border: 1px solid #5a322024;
@@ -417,7 +435,15 @@
   cursor: pointer;
   box-shadow: 0 14px 40px #46201033;
 }
-.gbw-inspect-name {
+.gbw-thumb {
+  display: block;
+  width: 100%;
+  height: 120px;
+  margin: 8px 0;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #d7e4ee;
+}
   margin: 6px 0 8px;
   font-size: 1.05rem;
   font-weight: 700;

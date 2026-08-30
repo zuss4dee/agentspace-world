@@ -92,6 +92,7 @@ export type District = {
   blurb: string;
   origin: Vec2;
   size: Vec2;
+  theme?: "executive" | "tech" | "creative" | "research" | "finance" | "operations" | "residential" | "public" | "campus";
 };
 
 export type Building = {
@@ -108,6 +109,8 @@ export type Building = {
   wallDark: string;
   accent: string;
   sign?: string;
+  purpose?: string;
+  procedural?: boolean;
   assetId: string;
   stations: { id: string; name: string; x: number; y: number }[];
 };

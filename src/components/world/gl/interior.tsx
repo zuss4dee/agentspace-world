@@ -3,7 +3,7 @@
 import { useLayoutEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { LOT_BUILDINGS } from "@/lib/campus";
+import { ALL_BUILDINGS } from "@/lib/city-gen";
 import { useWorld } from "@/components/world/world-store";
 
 function InteriorCamera() {
@@ -32,7 +32,7 @@ function InteriorCamera() {
 export function InteriorRoom() {
   const { interiorId, world, selectAgent, setFollowAgent, setCameraScale } = useWorld();
   if (!interiorId) return null;
-  const b = LOT_BUILDINGS.find((item) => item.id === interiorId);
+  const b = ALL_BUILDINGS.find((item) => item.id === interiorId);
   if (!b) return null;
   const w = 9.2;
   const d = 7.4;

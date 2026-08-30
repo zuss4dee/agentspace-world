@@ -1,5 +1,5 @@
 import { assetId } from "./assets";
-import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, buildingAt } from "./campus";
+import { CORE, DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, buildingAt } from "./campus";
 import { hash2 } from "./noise";
 import type { Scenery, TileKind } from "./types";
 
@@ -28,6 +28,9 @@ export function makeScenery(): Scenery[] {
 
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
+      if (x >= CORE || y >= CORE) {
+        if (x % 3 || y % 3) continue;
+      }
       const tile: TileKind = TERRAIN[y]![x]!;
       const h = hash2(x, y);
       if ((tile === "park" || tile === "grass") && h > 0.62 && !buildingAt(WORLD_BUILDINGS, x + 0.4, y + 0.35)) {

@@ -186,11 +186,12 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
 }
 
 export function BuildingsLayer() {
-  const { selectedBuildingId, interiorId, selectBuilding, focusBuilding } = useWorld();
+  const { selectedBuildingId, interiorId, selectBuilding, selectDistrict, cameraScale } = useWorld();
+  if (cameraScale < 0.55) return null;
   const onClick = (b: Building) => (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation();
     selectBuilding(b.id);
-    focusBuilding(b.id);
+    selectDistrict(b.districtId);
   };
   return (
     <group>

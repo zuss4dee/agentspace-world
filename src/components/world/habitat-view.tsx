@@ -13,7 +13,7 @@ const WorldCanvas = dynamic(() => import("@/components/world/world-canvas").then
 export function HabitatView({
   mapId,
   place,
-  startPoi = "hearth",
+  startPoi = "civic",
 }: {
   mapId: "lot" | "plaza";
   place: string;

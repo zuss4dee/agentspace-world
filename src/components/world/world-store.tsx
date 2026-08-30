@@ -22,6 +22,7 @@ import {
 } from "@/lib/simulation";
 import { tasksFor } from "@/lib/playbooks";
 import { LOT_BUILDINGS } from "@/lib/campus";
+import { ALL_BUILDINGS } from "@/lib/city-gen";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
@@ -31,9 +32,11 @@ type WorldApi = {
   paused: boolean;
   selectedAgentId: string | null;
   selectedBuildingId: string | null;
+  selectedDistrictId: string | null;
   setPaused: (v: boolean) => void;
   selectAgent: (id: string | null) => void;
   selectBuilding: (id: string | null) => void;
+  selectDistrict: (id: string | null) => void;
   focusBuilding: (id: string) => void;
   buyProp: (catalogId: string) => { ok: true; creatorPayout: number } | { ok: false; reason: string };
   gift: (cents: number, label: string) => void;
@@ -48,6 +51,7 @@ type WorldApi = {
   setFollowAgent: (v: boolean) => void;
   cameraScale: number;
   setCameraScale: (n: number) => void;
+  cameraTick: number;
   interiorId: string | null;
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
@@ -61,10 +65,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
-  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 32, y: 32 });
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 18, y: 18 });
   const [followAgent, setFollowAgent] = useState(false);
-  const [cameraScale, setCameraScale] = useState(0.2);
+  const [cameraScale, setCameraScaleState] = useState(0.68);
+  const [cameraTick, setCameraTick] = useState(0);
   const [interiorId, setInteriorId] = useState<string | null>(null);
   const pausedRef = useRef(paused);
   useEffect(() => {
@@ -300,40 +306,53 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const selectDistrict = useCallback((id: string | null) => {
+    setSelectedDistrictId(id);
+  }, []);
+
+  const setCameraScale = useCallback((n: number) => {
+    setCameraScaleState(n);
+    setCameraTick((t) => t + 1);
+  }, []);
+
   const focusBuilding = useCallback((id: string) => {
-    const b = LOT_BUILDINGS.find((item) => item.id === id);
+    const b = ALL_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
-    setCameraScale(1.12);
+    setCameraScaleState(1.12);
+    setCameraTick((t) => t + 1);
   }, []);
 
   const enterBuilding = useCallback((id: string) => {
-    const b = LOT_BUILDINGS.find((item) => item.id === id);
+    const b = ALL_BUILDINGS.find((item) => item.id === id) ?? LOT_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
     setInteriorId(id);
     setSelectedBuildingId(id);
     setSelectedAgentId(null);
     setFollowAgent(false);
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
-    setCameraScale(1.85);
+    setCameraScaleState(1.85);
+    setCameraTick((t) => t + 1);
   }, []);
 
   const exitInterior = useCallback(() => {
     setInteriorId(null);
-    setCameraScale(1.05);
+    setCameraScaleState(1.05);
+    setCameraTick((t) => t + 1);
   }, []);
 
   const focusPoi = useCallback((id: string) => {
     const poi = poiById(id);
     if (!poi) return;
     setCameraFocus({ x: poi.x, y: poi.y });
-    if (id === "hearth") setCameraScale(0.2);
-    else setCameraScale(0.72);
+    setCameraScaleState(id === "hearth" ? 0.52 : 0.72);
+    setCameraTick((t) => t + 1);
   }, []);
 
   const focusCoord = useCallback((x: number, y: number, scale = 1.05) => {
     setCameraFocus({ x, y });
-    setCameraScale(scale);
+    setCameraScaleState(scale);
+    setCameraTick((t) => t + 1);
   }, []);
 
   const value = useMemo<WorldApi>(
@@ -343,9 +362,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       paused,
       selectedAgentId,
       selectedBuildingId,
+      selectedDistrictId,
       setPaused,
       selectAgent,
       selectBuilding,
+      selectDistrict,
       focusBuilding,
       buyProp,
       gift,
@@ -360,6 +381,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setFollowAgent,
       cameraScale,
       setCameraScale,
+      cameraTick,
       interiorId,
       enterBuilding,
       exitInterior,
@@ -369,8 +391,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       paused,
       selectedAgentId,
       selectedBuildingId,
+      selectedDistrictId,
       selectAgent,
       selectBuilding,
+      selectDistrict,
       focusBuilding,
       buyProp,
       gift,
@@ -383,6 +407,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       focusCoord,
       followAgent,
       cameraScale,
+      cameraTick,
       interiorId,
       enterBuilding,
       exitInterior,

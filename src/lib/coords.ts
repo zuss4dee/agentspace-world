@@ -1,6 +1,7 @@
 import { GRID } from "./campus";
 
 export const TILE = 1.2;
+export const WORLD_SPAN = GRID * TILE;
 
 export function wx(gridX: number) {
   return (gridX - GRID / 2) * TILE;
@@ -15,13 +16,15 @@ export function fromWorld(x: number, z: number) {
 }
 
 export function buildingHeight(h: number) {
-  return Math.max(1.6, h / 12);
+  return Math.max(1.35, h / 14);
 }
 
+/** Camera distance for HUD zoom chips. Far is still closer than “see the whole board”. */
 export function distFromScale(scale: number) {
-  if (scale <= 0.22) return 92;
-  if (scale <= 0.5) return 44;
-  if (scale <= 1) return 20;
-  if (scale <= 1.45) return 11;
-  return 6.4;
+  if (scale <= 0.16) return 118;
+  if (scale <= 0.28) return 72;
+  if (scale <= 0.5) return 42;
+  if (scale <= 1) return 22;
+  if (scale <= 1.45) return 12;
+  return 6.2;
 }

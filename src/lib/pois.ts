@@ -33,6 +33,12 @@ export const POIS: Poi[] = [
   { id: "southpark", label: "South lawn", blurb: "Trees and empty land.", x: 10, y: 54 },
   { id: "southgate", label: "Southgate", blurb: "Room to grow.", x: 32, y: 54 },
   { id: "eastmarsh", label: "East marsh", blurb: "Water and sky.", x: 56, y: 56 },
+  { id: "executive-east", label: "Executive", blurb: "Leadership annexes.", x: 78, y: 12 },
+  { id: "finance-east", label: "Finance", blurb: "Clearing streets.", x: 110, y: 12 },
+  { id: "tech-north", label: "Tech", blurb: "Engineering grid.", x: 150, y: 16 },
+  { id: "univ", label: "University", blurb: "Halls and lawns.", x: 84, y: 98 },
+  { id: "harbour-town", label: "Harbour town", blurb: "Inns on the south shore.", x: 100, y: 128 },
+  { id: "bay-park", label: "Bay park", blurb: "Grass before the estuary.", x: 40, y: 156 },
 ];
 
 export const SLIME_COLORS = [

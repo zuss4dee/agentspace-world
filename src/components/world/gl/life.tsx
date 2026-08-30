@@ -1,36 +1,54 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
+import { extraLamps, extraTraffic, OUTER_TREES } from "@/lib/city-gen";
 import { TILE, wx, wz } from "@/lib/coords";
 import { SCENERY, TRAFFIC } from "@/lib/scenery";
 import { useWorld } from "@/components/world/world-store";
 
 export function TreeField() {
-  const trees = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
+  const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
+  const all = useMemo(
+    () => [...core.map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") })), ...OUTER_TREES],
+    [core],
+  );
+  const trunks = useRef<THREE.InstancedMesh>(null);
+  const canopies = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useLayoutEffect(() => {
+    const t = trunks.current;
+    const c = canopies.current;
+    if (!t || !c) return;
+    all.forEach((tree, i) => {
+      const s = 0.65 + ((tree.x * 7 + tree.y) % 5) * 0.07;
+      dummy.position.set(wx(tree.x), 0.42 * s, wz(tree.y));
+      dummy.scale.set(s, s, s);
+      dummy.updateMatrix();
+      t.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(wx(tree.x), 1.12 * s, wz(tree.y));
+      dummy.scale.set(tree.pine ? s * 0.9 : s, tree.pine ? s * 1.15 : s, tree.pine ? s * 0.9 : s);
+      dummy.updateMatrix();
+      c.setMatrixAt(i, dummy.matrix);
+    });
+    t.instanceMatrix.needsUpdate = true;
+    c.instanceMatrix.needsUpdate = true;
+  }, [all, dummy]);
+
+  if (!all.length) return null;
   return (
     <group>
-      {trees.map((t) => {
-        const s = 0.7 + ((t.x * 7 + t.y) % 5) * 0.08;
-        return (
-          <group key={t.id} position={[wx(t.x), 0, wz(t.y)]}>
-            <mesh position={[0, 0.45 * s, 0]} castShadow>
-              <cylinderGeometry args={[0.05 * s, 0.08 * s, 0.9 * s, 5]} />
-              <meshStandardMaterial color="#5a3c28" />
-            </mesh>
-            <mesh position={[0, 1.15 * s, 0]} castShadow>
-              {t.assetId.includes("pine") ? (
-                <coneGeometry args={[0.55 * s, 1.4 * s, 7]} />
-              ) : (
-                <sphereGeometry args={[0.55 * s, 8, 6]} />
-              )}
-              <meshStandardMaterial color={t.assetId.includes("maple") ? "#3d8a3a" : "#2f6d38"} roughness={0.85} />
-            </mesh>
-          </group>
-        );
-      })}
+      <instancedMesh ref={trunks} args={[undefined, undefined, all.length]} castShadow>
+        <cylinderGeometry args={[0.05, 0.08, 0.9, 5]} />
+        <meshStandardMaterial color="#5a3c28" />
+      </instancedMesh>
+      <instancedMesh ref={canopies} args={[undefined, undefined, all.length]} castShadow>
+        <sphereGeometry args={[0.52, 7, 5]} />
+        <meshStandardMaterial color="#2f6d38" roughness={0.86} />
+      </instancedMesh>
     </group>
   );
 }
@@ -50,18 +68,19 @@ export function BushField() {
 }
 
 export function AgentsLayer() {
-  const { world, liveRef, selectedAgentId, selectAgent, setFollowAgent, setCameraScale } = useWorld();
+  const { world, liveRef, selectedAgentId, selectAgent, setFollowAgent, setCameraScale, cameraScale } = useWorld();
   const group = useRef<THREE.Group>(null);
   const agents = world.agents.filter((a) => a.mapId === "lot");
+  const far = cameraScale < 0.55;
   useFrame(() => {
     const g = group.current;
     if (!g) return;
-    const agents = liveRef.current.agents.filter((a) => a.mapId === "lot");
+    const list = liveRef.current.agents.filter((a) => a.mapId === "lot");
     for (let i = 0; i < g.children.length; i++) {
       const child = g.children[i];
-      const a = agents[i];
+      const a = list[i];
       if (!child || !a) continue;
-      child.position.set(wx(a.x), 0.12, wz(a.y));
+      child.position.set(wx(a.x), far ? 0.2 : 0.12, wz(a.y));
     }
   });
   return (
@@ -77,11 +96,11 @@ export function AgentsLayer() {
             setCameraScale(1.75);
           }}
         >
-          <capsuleGeometry args={[0.09, 0.08, 4, 8]} />
+          <capsuleGeometry args={far ? [0.07, 0.04, 3, 6] : [0.085, 0.07, 4, 8]} />
           <meshStandardMaterial
             color={a.color}
             emissive={selectedAgentId === a.id ? "#ed712e" : a.color}
-            emissiveIntensity={selectedAgentId === a.id ? 0.4 : 0.05}
+            emissiveIntensity={selectedAgentId === a.id ? 0.4 : 0.06}
           />
         </mesh>
       ))}
@@ -89,13 +108,15 @@ export function AgentsLayer() {
   );
 }
 
+const CARS = [...TRAFFIC, ...extraTraffic()];
+
 export function TrafficLayer() {
   const group = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const g = group.current;
     if (!g) return;
-    TRAFFIC.forEach((car, i) => {
+    CARS.forEach((car, i) => {
       const child = g.children[i];
       if (!child) return;
       const u = ((t * car.speed * 6 + car.phase * GRID) % GRID + GRID) % GRID;
@@ -112,15 +133,15 @@ export function TrafficLayer() {
         return;
       }
       child.visible = true;
-      child.position.set(wx(x), 0.18, wz(y));
+      child.position.set(wx(x), 0.16, wz(y));
       child.rotation.y = car.axis === "x" ? Math.PI / 2 : 0;
     });
   });
   return (
     <group ref={group}>
-      {TRAFFIC.map((car, i) => (
+      {CARS.map((car, i) => (
         <mesh key={i} castShadow>
-          <boxGeometry args={[0.55, 0.22, 0.28]} />
+          <boxGeometry args={[0.48, 0.18, 0.24]} />
           <meshStandardMaterial color={car.color} metalness={0.35} roughness={0.4} />
         </mesh>
       ))}
@@ -129,22 +150,28 @@ export function TrafficLayer() {
 }
 
 export function Lamps() {
-  const lamps = useMemo(() => SCENERY.filter((s) => s.kind === "lamp"), []);
+  const lamps = useMemo(() => {
+    const core = SCENERY.filter((s) => s.kind === "lamp").map((s) => ({ x: s.x, y: s.y }));
+    return [...core, ...extraLamps()];
+  }, []);
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  useLayoutEffect(() => {
+    const m = mesh.current;
+    if (!m) return;
+    lamps.forEach((s, i) => {
+      dummy.position.set(wx(s.x), 1.35, wz(s.y));
+      dummy.updateMatrix();
+      m.setMatrixAt(i, dummy.matrix);
+    });
+    m.instanceMatrix.needsUpdate = true;
+  }, [lamps, dummy]);
+  if (!lamps.length) return null;
   return (
-    <group>
-      {lamps.map((s) => (
-        <group key={s.id} position={[wx(s.x), 0, wz(s.y)]}>
-          <mesh position={[0, 0.7, 0]}>
-            <cylinderGeometry args={[0.03, 0.04, 1.4, 5]} />
-            <meshStandardMaterial color="#3a3f46" />
-          </mesh>
-          <mesh position={[0, 1.42, 0]}>
-            <sphereGeometry args={[0.08, 6, 6]} />
-            <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.8} />
-          </mesh>
-        </group>
-      ))}
-    </group>
+    <instancedMesh ref={mesh} args={[undefined, undefined, lamps.length]}>
+      <sphereGeometry args={[0.07, 6, 6]} />
+      <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.75} />
+    </instancedMesh>
   );
 }
 
