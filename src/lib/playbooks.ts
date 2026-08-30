@@ -1,6 +1,6 @@
 import type { RoleId } from "./types";
 
-export const ROLE_LABEL: Record<RoleId, string> = {
+const LABELS: Record<string, string> = {
   ceo: "CEO",
   cfo: "CFO",
   cmo: "CMO",
@@ -10,52 +10,69 @@ export const ROLE_LABEL: Record<RoleId, string> = {
   support: "Support",
   ops: "Ops",
   visitor: "Visitor",
+  security: "Security",
+  knowledge: "Knowledge",
+  coo: "COO",
+  creative: "Creative",
 };
 
-export const TASKS: Record<RoleId, { task: string; thought: string }[]> = {
+export function roleLabel(role: string) {
+  return LABELS[role] ?? role.replace(/^\w/, (c) => c.toUpperCase());
+}
+
+export const ROLE_LABEL = LABELS as Record<RoleId, string>;
+
+export const TASKS: Record<string, { task: string; thought: string; director: string }[]> = {
   ceo: [
-    { task: "Sketch the next three bets on the glass", thought: "We ship the Lot. Plaza waits until the crew feels alive." },
-    { task: "Walk the factory floor", thought: "If I cannot see the work, the company is a spreadsheet." },
-    { task: "1:1 with finance in the tower", thought: "Runway is a creative constraint, not a scare quote." },
+    { task: "Assign the week from HQ glass", thought: "If I cannot see the campus, we are a spreadsheet.", director: "Jarvis assigned a task from HQ." },
+    { task: "Walk the factory floor", thought: "The works should look busy from the road.", director: "Jarvis entered Signal Works." },
   ],
   cfo: [
-    { task: "Reconcile August burn", thought: "Props marketplace at 70/30 is healthy if review stays cheap." },
-    { task: "Price the neon pack", thought: "Indie buyers will pay for a chair they can screenshot." },
-    { task: "Gift vs paid seats memo", thought: "Core engine stays free. Cosmetics fund the Plaza." },
+    { task: "Reconcile burn in Ledger House", thought: "Marketplace at 70/30 still holds.", director: "Midas started a ledger pass." },
+    { task: "Meet Jarvis in the hall", thought: "Runway is a creative constraint.", director: "Midas joined Jarvis in Board Hall." },
   ],
   cmo: [
-    { task: "Cut a 12-second lot loop", thought: "The product is the vibe. Copy comes after the camera." },
-    { task: "Name the dusk environment", thought: "Call it Last Light. People will remember the sky." },
-    { task: "Draft Plaza visitor signs", thought: "Tourists should feel welcome, not like they walked into Slack." },
+    { task: "Cut a campus loop from Seed Loft", thought: "The product is the skyline.", director: "Vega started a new campaign." },
+    { task: "Post visitor signs at Ember", thought: "Tourists should feel invited.", director: "Vega entered Ember Kitchen." },
   ],
   cto: [
-    { task: "Wire the heartbeat adapter", thought: "Grokbot posts status. We just pathfind." },
-    { task: "Stabilize isometric depth sort", thought: "Agents behind the tower still steal clicks. Fix hit tests." },
-    { task: "Factory line dry-run", thought: "Stations are just waypoints with better lighting." },
+    { task: "Ship the heartbeat adapter", thought: "Bots post status. We pathfind.", director: "Merlin started implementing a fix." },
+    { task: "Pair with Watchtower", thought: "If the rack is quiet, we missed it.", director: "Merlin entered Watchtower." },
   ],
   researcher: [
-    { task: "Log agent idle loops", thought: "If they pace, the playbook is too thin." },
-    { task: "Interview a vibe coder", thought: "They want to gift a bench, not configure SSO." },
-    { task: "Plaza moderation notes", thought: "Public Director cannot leak customer secrets. Ever." },
+    { task: "Log idle loops in the lab", thought: "If they pace, the playbook is thin.", director: "Athena opened the lab notes." },
   ],
   designer: [
-    { task: "Paint visitor lanyards", thought: "One stripe of color and the Plaza reads as a city." },
-    { task: "Tune factory windows", thought: "Warm interior light. Night lots need a reason to stay open." },
-    { task: "Prop silhouette pass", thought: "If it does not read at 32px, it does not ship." },
+    { task: "Paint a lanyard silhouette", thought: "If it fails at 8px it does not ship.", director: "Vanta entered Signal Studio." },
   ],
   support: [
-    { task: "Answer a lost visitor", thought: "The cafe is the onboarding. Sit them down." },
-    { task: "File a stuck-path ticket", thought: "CFO walked through a planter. Cute, then not." },
-    { task: "Write the disconnect copy", thought: "Signal lost. The bot is still on the lot, just quiet." },
+    { task: "Catch a lost walk-in", thought: "The cafe is onboarding.", director: "A visitor was seated at Seed Cafe." },
   ],
   ops: [
-    { task: "Unload a prop crate", thought: "Studio submissions land in the warehouse first." },
-    { task: "Restock espresso", thought: "Meetings without coffee look like standups." },
-    { task: "Sweep the plaza path", thought: "Tourism dies on a muddy tile." },
+    { task: "Unload a crate at the dock", thought: "Studio intake lands here first.", director: "Friday checked Prop Warehouse." },
+    { task: "Keep the station clear", thought: "Airlocks jam on messy platforms.", director: "Friday entered South Station." },
   ],
   visitor: [
-    { task: "Peek through the studio windows", thought: "I would buy that neon if it showed up on my lot." },
-    { task: "Read the Director board", thought: "This company is actually doing something." },
-    { task: "Sit in the cafe", thought: "Might gift a bench. The grass could use one." },
+    { task: "Walk the waterfront", thought: "I would buy that neon.", director: "A visitor reached the pier." },
+  ],
+  security: [
+    { task: "Sweep the quiet rack", thought: "Assume the interesting bug is already inside.", director: "Watchtower detected a vulnerability." },
+    { task: "Join Merlin in the lab", thought: "Fixes land faster if I sit next to them.", director: "Watchtower joined Merlin." },
+  ],
+  knowledge: [
+    { task: "Reshelve the gallery", thought: "Memory is a building, not a prompt.", director: "Athena entered Athena Gallery." },
+    { task: "Brief Jarvis", thought: "Three facts. No slides.", director: "Athena briefed HQ." },
+  ],
+  coo: [
+    { task: "Route the morning", thought: "Everyone should already be walking.", director: "Friday assigned the morning routes." },
+    { task: "Check the incubator", thought: "Hot desks go cold if nobody sits.", director: "Friday entered the Incubator." },
+  ],
+  creative: [
+    { task: "Block a shot in the studio", thought: "The campus has to look designed.", director: "Vanta started a studio block." },
+    { task: "Work from the cottage", thought: "Some ideas only happen off the road.", director: "Vanta entered Vanta Cottage." },
   ],
 };
+
+export function tasksFor(role: string) {
+  return TASKS[role] ?? TASKS.visitor!;
+}

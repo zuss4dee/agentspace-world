@@ -1,231 +1,201 @@
 import type { Agent, DirectorEvent, MapId, PlacedProp, WorldSnapshot } from "./types";
-import { LOT_BUILDINGS } from "./campus";
-import { TASKS } from "./playbooks";
+import { LOT_BUILDINGS, nearestRoad } from "./campus";
+import { tasksFor } from "./playbooks";
 
 function pick<T>(list: T[]) {
   return list[Math.floor(Math.random() * list.length)]!;
 }
 
+function agent(partial: Omit<Agent, "waypoints" | "organization" | "mapId" | "connected" | "outfitId"> & Partial<Agent>): Agent {
+  return {
+    waypoints: [],
+    organization: "Northshore",
+    mapId: "lot",
+    connected: true,
+    outfitId: "founder-hoodie",
+    ...partial,
+  };
+}
+
 export const DEMO_AGENTS: Agent[] = [
-  {
-    id: "nova",
-    name: "Nova",
+  agent({
+    id: "jarvis",
+    name: "Jarvis",
     role: "ceo",
     color: "#f59e0b",
-    x: 3.2,
-    y: 3.1,
-    targetX: 3.2,
-    targetY: 3.1,
-    buildingId: "tower",
-    stationId: "ceo-desk",
-    outfitId: "founder-hoodie",
+    x: 15.2,
+    y: 3.2,
+    targetX: 15.2,
+    targetY: 3.2,
+    buildingId: "hq",
+    stationId: "jarvis-desk",
     status: "working",
-    task: TASKS.ceo[0]!.task,
-    thought: TASKS.ceo[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "jules",
-    name: "Jules",
+    task: "Assign the week from HQ glass",
+    thought: "If I cannot see the campus, we are a spreadsheet.",
+  }),
+  agent({
+    id: "midas",
+    name: "Midas",
     role: "cfo",
     color: "#60a5fa",
-    x: 5.1,
-    y: 4.1,
-    targetX: 5.1,
-    targetY: 4.1,
-    buildingId: "tower",
-    stationId: "cfo-desk",
-    outfitId: "chalk-stripe",
+    x: 21.4,
+    y: 3.4,
+    targetX: 21.4,
+    targetY: 3.4,
+    buildingId: "finance",
+    stationId: "midas-desk",
     status: "working",
-    task: TASKS.cfo[0]!.task,
-    thought: TASKS.cfo[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "mira",
-    name: "Mira",
+    task: "Reconcile burn in Ledger House",
+    thought: "Marketplace at 70/30 still holds.",
+    outfitId: "chalk-stripe",
+  }),
+  agent({
+    id: "merlin",
+    name: "Merlin",
+    role: "cto",
+    color: "#34d399",
+    x: 27.6,
+    y: 27.6,
+    targetX: 27.6,
+    targetY: 27.6,
+    buildingId: "lab",
+    stationId: "bench",
+    status: "working",
+    task: "Ship the heartbeat adapter",
+    thought: "Bots post status. We pathfind.",
+    outfitId: "coveralls",
+  }),
+  agent({
+    id: "vega",
+    name: "Vega",
     role: "cmo",
     color: "#f472b6",
-    x: 11.6,
+    x: 27.6,
+    y: 3.3,
+    targetX: 27.6,
+    targetY: 3.3,
+    buildingId: "loft",
+    stationId: "vega-desk",
+    status: "working",
+    task: "Cut a campus loop from Seed Loft",
+    thought: "The product is the skyline.",
+  }),
+  agent({
+    id: "vanta",
+    name: "Vanta",
+    role: "creative",
+    color: "#fb7185",
+    x: 39.5,
     y: 3.2,
-    targetX: 11.6,
+    targetX: 39.5,
     targetY: 3.2,
     buildingId: "studio",
     stationId: "edit",
-    outfitId: "founder-hoodie",
     status: "working",
-    task: TASKS.cmo[0]!.task,
-    thought: TASKS.cmo[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "rex",
-    name: "Rex",
-    role: "cto",
-    color: "#34d399",
-    x: 4.1,
-    y: 12.1,
-    targetX: 4.1,
-    targetY: 12.1,
-    buildingId: "factory",
-    stationId: "line-a",
-    outfitId: "coveralls",
-    status: "working",
-    task: TASKS.cto[0]!.task,
-    thought: TASKS.cto[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "pip",
-    name: "Pip",
-    role: "researcher",
+    task: "Block a shot in the studio",
+    thought: "The campus has to look designed.",
+  }),
+  agent({
+    id: "athena",
+    name: "Athena",
+    role: "knowledge",
     color: "#a78bfa",
-    x: 7.4,
-    y: 11.3,
-    targetX: 7.4,
-    targetY: 11.3,
-    buildingId: "factory",
-    stationId: "lab",
+    x: 46,
+    y: 3.4,
+    targetX: 46,
+    targetY: 3.4,
+    buildingId: "gallery",
+    stationId: "stacks",
+    status: "working",
+    task: "Reshelve the gallery",
+    thought: "Memory is a building, not a prompt.",
+  }),
+  agent({
+    id: "watchtower",
+    name: "Watchtower",
+    role: "security",
+    color: "#22c55e",
+    x: 33.4,
+    y: 28.2,
+    targetX: 33.4,
+    targetY: 28.2,
+    buildingId: "data",
+    stationId: "rack",
+    status: "working",
+    task: "Sweep the quiet rack",
+    thought: "Assume the interesting bug is already inside.",
     outfitId: "coveralls",
-    status: "working",
-    task: TASKS.researcher[0]!.task,
-    thought: TASKS.researcher[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "kit",
-    name: "Kit",
-    role: "designer",
-    color: "#fb7185",
-    x: 13.4,
-    y: 4.1,
-    targetX: 13.4,
-    targetY: 4.1,
-    buildingId: "studio",
-    stationId: "mood",
-    outfitId: "visitor-lanyard",
-    status: "working",
-    task: TASKS.designer[0]!.task,
-    thought: TASKS.designer[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "sage",
-    name: "Sage",
-    role: "support",
-    color: "#fbbf24",
-    x: 13.3,
-    y: 11.1,
-    targetX: 13.3,
-    targetY: 11.1,
-    buildingId: "cafe",
-    stationId: "bar",
-    outfitId: "visitor-lanyard",
-    status: "working",
-    task: TASKS.support[0]!.task,
-    thought: TASKS.support[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
-  {
-    id: "orbit",
-    name: "Orbit",
-    role: "ops",
+  }),
+  agent({
+    id: "friday",
+    name: "Friday",
+    role: "coo",
     color: "#94a3b8",
-    x: 13.6,
-    y: 15.1,
-    targetX: 13.6,
-    targetY: 15.1,
-    buildingId: "warehouse",
-    stationId: "dock",
-    outfitId: "coveralls",
+    x: 17.2,
+    y: 4.2,
+    targetX: 17.2,
+    targetY: 4.2,
+    buildingId: "hq",
+    stationId: "friday-desk",
     status: "working",
-    task: TASKS.ops[0]!.task,
-    thought: TASKS.ops[0]!.thought,
-    connected: true,
-    mapId: "lot",
-  },
+    task: "Route the morning",
+    thought: "Everyone should already be walking.",
+  }),
 ];
 
 export const PLAZA_AGENTS: Agent[] = [
-  {
-    id: "visit-1",
-    name: "Ada",
-    role: "visitor",
-    color: "#fda4af",
-    x: 8,
-    y: 8,
-    targetX: 12,
-    targetY: 13,
-    buildingId: "ember",
-    stationId: "door",
-    outfitId: "visitor-lanyard",
-    status: "walking",
-    task: TASKS.visitor[2]!.task,
-    thought: TASKS.visitor[2]!.thought,
-    connected: false,
-    mapId: "plaza",
-  },
-  {
-    id: "nw-cto",
+  agent({
+    id: "helix",
     name: "Helix",
     role: "cto",
+    organization: "Northwind",
     color: "#34d399",
-    x: 4,
-    y: 5,
-    targetX: 4,
-    targetY: 5,
+    x: 40,
+    y: 39.5,
+    targetX: 40,
+    targetY: 39.5,
     buildingId: "northwind",
-    stationId: "lab",
-    outfitId: "coveralls",
+    stationId: "line",
     status: "working",
+    mapId: "lot",
     task: "Calibrate Line B",
-    thought: "Tourists can watch. They cannot copy the firmware.",
-    connected: true,
-    mapId: "plaza",
-  },
-  {
-    id: "harbor-cfo",
+    thought: "Tourists can watch.",
+  }),
+  agent({
+    id: "quill",
     name: "Quill",
     role: "cfo",
+    organization: "Harbor",
     color: "#60a5fa",
-    x: 5,
-    y: 12.5,
-    targetX: 5,
-    targetY: 12.5,
+    x: 45,
+    y: 39.4,
+    targetX: 45,
+    targetY: 39.4,
     buildingId: "harbor",
-    stationId: "desk",
-    outfitId: "chalk-stripe",
+    stationId: "glass",
     status: "working",
+    mapId: "lot",
     task: "Publish a public burn chart",
-    thought: "If the Plaza can see it, it is already a story.",
-    connected: true,
-    mapId: "plaza",
-  },
-  {
-    id: "lumen-cmo",
-    name: "Vesper",
-    role: "cmo",
-    color: "#f472b6",
-    x: 12,
-    y: 4.5,
-    targetX: 12,
-    targetY: 4.5,
-    buildingId: "lumen",
-    stationId: "wall",
-    outfitId: "founder-hoodie",
+    thought: "If the pier can see it, it is already a story.",
+  }),
+  agent({
+    id: "ada",
+    name: "Ada",
+    role: "visitor",
+    organization: "Visitor",
+    color: "#fda4af",
+    x: 40,
+    y: 44.6,
+    targetX: 40,
+    targetY: 44.6,
+    buildingId: "ember",
+    stationId: "pier",
     status: "working",
-    task: "Hang tonight's zine",
-    thought: "Leave one on the cafe counter.",
-    connected: true,
-    mapId: "plaza",
-  },
+    mapId: "lot",
+    connected: false,
+    task: "Walk the waterfront",
+    thought: "I would buy that neon.",
+  }),
 ];
 
 function nid() {
@@ -235,38 +205,10 @@ function nid() {
 export function seedEvents(): DirectorEvent[] {
   const now = Date.now();
   return [
-    {
-      id: nid(),
-      t: now - 4000,
-      kind: "work",
-      agentId: "nova",
-      mapId: "lot",
-      text: "Nova opened the Lot. The crew is already on stations.",
-    },
-    {
-      id: nid(),
-      t: now - 2000,
-      kind: "work",
-      agentId: "jules",
-      mapId: "lot",
-      text: "Jules is reconciling August burn at the ledger desk.",
-    },
-    {
-      id: nid(),
-      t: now - 3000,
-      kind: "plaza",
-      agentId: "visit-1",
-      mapId: "plaza",
-      text: "Ada sat at Ember Kitchen. The zine rack is full.",
-    },
-    {
-      id: nid(),
-      t: now - 1000,
-      kind: "plaza",
-      agentId: "harbor-cfo",
-      mapId: "plaza",
-      text: "Quill posted Harbor Ledger’s public burn chart on the glass.",
-    },
+    { id: nid(), t: now - 5000, kind: "work", agentId: "friday", mapId: "lot", text: "Friday assigned the morning routes." },
+    { id: nid(), t: now - 3200, kind: "work", agentId: "merlin", mapId: "lot", text: "Merlin entered Northshore Lab." },
+    { id: nid(), t: now - 1800, kind: "work", agentId: "watchtower", mapId: "lot", text: "Watchtower detected a vulnerability." },
+    { id: nid(), t: now - 800, kind: "work", agentId: "vega", mapId: "lot", text: "Vega started a new campaign." },
   ];
 }
 
@@ -274,8 +216,9 @@ export function createSnapshot(): WorldSnapshot {
   return {
     agents: [...DEMO_AGENTS, ...PLAZA_AGENTS],
     props: [
-      { id: nid(), catalogId: "planter", x: 8.5, y: 8.2, mapId: "lot" },
-      { id: nid(), catalogId: "bench-gift", x: 9.2, y: 9.4, mapId: "lot" },
+      { id: nid(), catalogId: "planter", x: 23.4, y: 23.2, mapId: "lot" },
+      { id: nid(), catalogId: "bench-gift", x: 24.6, y: 24.4, mapId: "lot" },
+      { id: nid(), catalogId: "neon-open", x: 32.2, y: 5.2, mapId: "lot" },
     ],
     events: seedEvents(),
     ownedCatalogIds: ["planter", "bench-gift", "founder-hoodie"],
@@ -296,45 +239,40 @@ export function pushEvent(
   return [next, ...events].slice(0, 80);
 }
 
-function pathAround(agent: Agent, tx: number, ty: number) {
-  // Simple steer: if a building blocks the straight line, detour via a path tile (row 8 / col 8)
-  const midX = 8.5;
-  const midY = 8.5;
-  const crossingBuilding = LOT_BUILDINGS.some((b) => {
-    const minx = Math.min(agent.x, tx);
-    const maxx = Math.max(agent.x, tx);
-    const miny = Math.min(agent.y, ty);
-    const maxy = Math.max(agent.y, ty);
-    const bx = b.origin.x + b.size.x / 2;
-    const by = b.origin.y + b.size.y / 2;
-    return bx >= minx && bx <= maxx && by >= miny && by <= maxy;
-  });
-  if (crossingBuilding) {
-    return { x: midX, y: midY };
-  }
-  return { x: tx, y: ty };
-}
-
 export function assignNewTask(agent: Agent): Agent {
-  const play = pick(TASKS[agent.role]);
-  const building = LOT_BUILDINGS.find((b) => b.id === agent.buildingId);
+  const play = pick(tasksFor(agent.role));
+  const home = LOT_BUILDINGS.find((b) => b.id === agent.buildingId);
   const others = LOT_BUILDINGS.filter((b) => b.stations.length);
-  const goOut = Math.random() < 0.35 && agent.mapId === "lot";
-  const destBuilding = goOut ? pick(others) : building;
+  const destBuilding = Math.random() < 0.55 ? pick(others) : home;
   const station = destBuilding ? pick(destBuilding.stations) : undefined;
   const tx = station?.x ?? agent.x;
   const ty = station?.y ?? agent.y;
-  const via = pathAround(agent, tx, ty);
+  const via = nearestRoad(agent.x, agent.y);
+  const via2 = nearestRoad(tx, ty);
+  const waypoints = [
+    { x: via.x + 0.15, y: via.y },
+    { x: via2.x + 0.15, y: via2.y },
+    { x: tx, y: ty },
+  ];
   return {
     ...agent,
     task: play.task,
     thought: play.thought,
     buildingId: destBuilding?.id ?? agent.buildingId,
     stationId: station?.id ?? agent.stationId,
-    targetX: via.x,
-    targetY: via.y,
+    targetX: waypoints[0]!.x,
+    targetY: waypoints[0]!.y,
+    waypoints: waypoints.slice(1),
     status: "walking",
+    speech: undefined,
   };
+}
+
+export function directorLine(agent: Agent, kind: "arrive" | "work") {
+  const building = LOT_BUILDINGS.find((b) => b.id === agent.buildingId);
+  const play = tasksFor(agent.role).find((p) => p.task === agent.task);
+  if (kind === "arrive" && building) return `${agent.name} entered ${building.name}.`;
+  return play?.director ?? `${agent.name} is working: ${agent.task}`;
 }
 
 export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[] {
@@ -344,22 +282,23 @@ export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[
     const dx = agent.targetX - agent.x;
     const dy = agent.targetY - agent.y;
     const dist = Math.hypot(dx, dy);
-    if (dist < 0.08) {
+    if (dist < 0.12) {
+      if (agent.waypoints.length) {
+        const [next, ...rest] = agent.waypoints;
+        return { ...agent, x: agent.targetX, y: agent.targetY, targetX: next!.x, targetY: next!.y, waypoints: rest, status: "walking" };
+      }
       if (agent.status === "walking") {
-        // Arrive at waypoint — if not at station, continue
-        const building = LOT_BUILDINGS.find((b) => b.id === agent.buildingId);
-        const station = building?.stations.find((s) => s.id === agent.stationId);
-        if (station && (Math.hypot(station.x - agent.x, station.y - agent.y) > 0.2)) {
-          return { ...agent, targetX: station.x, targetY: station.y, status: "walking" };
-        }
-        return { ...agent, x: agent.targetX, y: agent.targetY, status: Math.random() < 0.2 ? "meeting" : "working" };
+        return {
+          ...agent,
+          x: agent.targetX,
+          y: agent.targetY,
+          status: Math.random() < 0.22 ? "meeting" : "working",
+        };
       }
-      if (Math.random() < dt * 0.12) {
-        return assignNewTask(agent);
-      }
+      if (Math.random() < dt * 0.045) return assignNewTask(agent);
       return agent;
     }
-    const speed = agent.status === "walking" ? 1.35 : 0.9;
+    const speed = 1.7;
     const step = Math.min(dist, speed * dt);
     return {
       ...agent,
@@ -371,8 +310,8 @@ export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[
 }
 
 export function placeProp(props: PlacedProp[], catalogId: string, mapId: MapId): PlacedProp[] {
-  const x = 7 + Math.random() * 4;
-  const y = 7 + Math.random() * 3;
+  const x = 22 + Math.random() * 6;
+  const y = 22 + Math.random() * 6;
   return [...props, { id: nid(), catalogId, x, y, mapId }];
 }
 

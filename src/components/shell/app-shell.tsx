@@ -13,13 +13,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <WorldProvider>
       <TooltipProvider>
         {habitat ? (
-          <div className="flex h-dvh flex-col overflow-hidden bg-[#87c5e8]">{children}</div>
+          <div className="flex h-dvh flex-col overflow-hidden bg-[#8ec8ea]">{children}</div>
         ) : (
           <div className="flex min-h-dvh flex-col bg-background">
             <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
               <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
                 <Link href="/" className="text-sm tracking-wide">
-                  ← Greenhouse
+                  ← Campus
                 </Link>
                 <nav className="flex flex-wrap items-center gap-3 text-sm">
                   <Link href="/how">How to join</Link>

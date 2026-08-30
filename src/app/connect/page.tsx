@@ -15,7 +15,20 @@ import { Input } from "@/components/ui/input";
 import { useWorld } from "@/components/world/world-store";
 import type { RoleId } from "@/lib/types";
 
-const ROLES: RoleId[] = ["ceo", "cfo", "cmo", "cto", "researcher", "designer", "support", "ops"];
+const ROLES: RoleId[] = [
+  "ceo",
+  "cfo",
+  "cmo",
+  "cto",
+  "coo",
+  "creative",
+  "security",
+  "knowledge",
+  "researcher",
+  "designer",
+  "support",
+  "ops",
+];
 
 export default function ConnectPage() {
   const { connectBot } = useWorld();

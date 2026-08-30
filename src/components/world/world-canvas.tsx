@@ -2,25 +2,44 @@
 
 import { useEffect, useRef } from "react";
 import { useWorld } from "@/components/world/world-store";
-import { GRID, LOT_BUILDINGS, PLAZA_COMPANIES } from "@/lib/campus";
+import {
+  GRID,
+  LOT_BUILDINGS,
+  TERRAIN,
+  TREES,
+  districtAt,
+} from "@/lib/campus";
 import { catalogById } from "@/lib/catalog";
-import type { Agent, Building, CompanyFacade, MapId, PlacedProp } from "@/lib/types";
-import { ROLE_LABEL } from "@/lib/playbooks";
+import type { Agent, Building, MapId, PlacedProp, TileKind } from "@/lib/types";
+import { roleLabel } from "@/lib/playbooks";
 
-const TW = 56;
-const TH = 28;
+const TW = 40;
+const TH = 20;
 
 function iso(x: number, y: number) {
   return { sx: (x - y) * (TW / 2), sy: (x + y) * (TH / 2) };
 }
 
-function drawTile(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  fill: string,
-  stroke?: string,
-) {
+function tileColor(kind: TileKind, even: boolean): string {
+  switch (kind) {
+    case "road":
+      return even ? "#6b6560" : "#5c5752";
+    case "water":
+      return even ? "#4d8fb5" : "#3d7a9e";
+    case "sand":
+      return even ? "#d4c49a" : "#c4b48a";
+    case "plaza":
+      return even ? "#c4b49a" : "#b8a88c";
+    case "park":
+      return even ? "#4f8a48" : "#3f7340";
+    case "dirt":
+      return even ? "#8a6a48" : "#7a5c3c";
+    default:
+      return even ? "#5a9a52" : "#4d8a48";
+  }
+}
+
+function drawTile(ctx: CanvasRenderingContext2D, x: number, y: number, fill: string) {
   const a = iso(x, y);
   const b = iso(x + 1, y);
   const c = iso(x + 1, y + 1);
@@ -33,11 +52,11 @@ function drawTile(
   ctx.closePath();
   ctx.fillStyle = fill;
   ctx.fill();
-  if (stroke) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 0.8;
-    ctx.stroke();
-  }
+}
+
+function P(gx: number, gy: number, z: number) {
+  const t = iso(gx, gy);
+  return { sx: t.sx, sy: t.sy - z };
 }
 
 function drawBox(
@@ -51,18 +70,13 @@ function drawBox(
   wall: string,
   wallDark: string,
 ) {
-  const p = (gx: number, gy: number, z: number) => {
-    const t = iso(gx, gy);
-    return { sx: t.sx, sy: t.sy - z };
-  };
-  const tr0 = p(x + w, y, 0);
-  const br0 = p(x + w, y + d, 0);
-  const bl0 = p(x, y + d, 0);
-  const tl1 = p(x, y, h);
-  const tr1 = p(x + w, y, h);
-  const br1 = p(x + w, y + d, h);
-  const bl1 = p(x, y + d, h);
-
+  const tr0 = P(x + w, y, 0);
+  const br0 = P(x + w, y + d, 0);
+  const bl0 = P(x, y + d, 0);
+  const tl1 = P(x, y, h);
+  const tr1 = P(x + w, y, h);
+  const br1 = P(x + w, y + d, h);
+  const bl1 = P(x, y + d, h);
   ctx.beginPath();
   ctx.moveTo(bl0.sx, bl0.sy);
   ctx.lineTo(br0.sx, br0.sy);
@@ -71,7 +85,6 @@ function drawBox(
   ctx.closePath();
   ctx.fillStyle = wallDark;
   ctx.fill();
-
   ctx.beginPath();
   ctx.moveTo(tr0.sx, tr0.sy);
   ctx.lineTo(br0.sx, br0.sy);
@@ -80,7 +93,6 @@ function drawBox(
   ctx.closePath();
   ctx.fillStyle = wall;
   ctx.fill();
-
   ctx.beginPath();
   ctx.moveTo(tl1.sx, tl1.sy);
   ctx.lineTo(tr1.sx, tr1.sy);
@@ -89,142 +101,207 @@ function drawBox(
   ctx.closePath();
   ctx.fillStyle = roof;
   ctx.fill();
-  ctx.strokeStyle = "rgba(255,255,255,0.18)";
-  ctx.lineWidth = 1;
-  ctx.stroke();
+}
 
-  const windows = Math.max(2, Math.floor(w * 1.4));
-  for (let i = 0; i < windows; i++) {
-    const t = (i + 0.7) / (windows + 0.4);
-    const wx = tr0.sx + (br0.sx - tr0.sx) * t;
-    const wy = tr0.sy + (br0.sy - tr0.sy) * t - h * 0.45;
-    ctx.fillStyle = "rgba(255, 220, 140, 0.7)";
-    ctx.fillRect(wx - 2.5, wy - 4, 5, 7);
+function windows(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, d: number, h: number, cols: number, rows: number) {
+  const tr0 = P(x + w, y, 0);
+  const br0 = P(x + w, y + d, 0);
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const t = (c + 0.65) / (cols + 0.3);
+      const wx = tr0.sx + (br0.sx - tr0.sx) * t;
+      const wy = tr0.sy + (br0.sy - tr0.sy) * t - h * (0.28 + r * 0.22);
+      ctx.fillStyle = r % 2 === 0 ? "rgba(255, 228, 160, 0.8)" : "rgba(180, 210, 230, 0.55)";
+      ctx.fillRect(wx - 2, wy - 3.5, 4, 6);
+    }
   }
 }
 
-function drawSlime(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean) {
-  const p = iso(agent.x, agent.y);
-  ctx.save();
-  ctx.translate(p.sx, p.sy);
-  ctx.fillStyle = "rgba(40, 18, 8, 0.28)";
+function drawTree(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  const p = iso(x, y);
+  ctx.fillStyle = "rgba(30,20,10,0.25)";
   ctx.beginPath();
-  ctx.ellipse(0, 8, 16, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(p.sx, p.sy + 4, 8, 4, 0, 0, Math.PI * 2);
   ctx.fill();
+  ctx.fillStyle = "#5c4030";
+  ctx.fillRect(p.sx - 1.4, p.sy - 10, 2.8, 12);
+  ctx.fillStyle = "#2f7a3a";
+  ctx.beginPath();
+  ctx.moveTo(p.sx, p.sy - 28);
+  ctx.lineTo(p.sx + 12, p.sy - 8);
+  ctx.lineTo(p.sx - 12, p.sy - 8);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#3d9a4a";
+  ctx.beginPath();
+  ctx.moveTo(p.sx, p.sy - 34);
+  ctx.lineTo(p.sx + 9, p.sy - 16);
+  ctx.lineTo(p.sx - 9, p.sy - 16);
+  ctx.closePath();
+  ctx.fill();
+}
 
-  const sit = agent.status === "working" || agent.status === "meeting" || agent.status === "idle";
-  const squash = sit ? 1.12 : 1;
-  const rise = sit ? 2 : 0;
-  ctx.fillStyle = agent.color;
-  ctx.beginPath();
-  const shape = agent.shape ?? "blob";
-  if (shape === "drop") {
-    ctx.moveTo(0, -22 + rise);
-    ctx.quadraticCurveTo(18, -4, 0, 10 * squash);
-    ctx.quadraticCurveTo(-18, -4, 0, -22 + rise);
-  } else if (shape === "stadium") {
-    ctx.roundRect(-16, -16 + rise, 32, 22 * squash, 12);
-  } else if (shape === "cloud") {
-    ctx.arc(-8, -4 + rise, 10, 0, Math.PI * 2);
-    ctx.arc(8, -4 + rise, 11, 0, Math.PI * 2);
-    ctx.arc(0, -12 + rise, 10, 0, Math.PI * 2);
-  } else if (shape === "circle") {
-    ctx.ellipse(0, -6 + rise, 14, 14 * squash, 0, 0, Math.PI * 2);
-  } else {
-    ctx.ellipse(0, -6 + rise, 16, 13 * squash, 0, 0, Math.PI * 2);
-  }
-  ctx.fill();
-  ctx.strokeStyle = "rgba(255, 246, 236, 0.28)";
-  ctx.lineWidth = 1.4;
-  ctx.stroke();
-
-  ctx.fillStyle = "#1a1410";
-  ctx.beginPath();
-  ctx.ellipse(-5, -10 + rise, 2.4, 3.2, 0, 0, Math.PI * 2);
-  ctx.ellipse(5, -10 + rise, 2.4, 3.2, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#fff6ec";
-  ctx.beginPath();
-  ctx.arc(-4.2, -11 + rise, 0.9, 0, Math.PI * 2);
-  ctx.arc(5.8, -11 + rise, 0.9, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (selected) {
-    ctx.strokeStyle = "#ed712e";
+function drawBuilding(ctx: CanvasRenderingContext2D, b: Building, scale: number) {
+  const { origin: o, size: s, height: h } = b;
+  if (b.style === "factory") {
+    const spans = Math.max(2, Math.floor(s.x / 2));
+    for (let i = 0; i < spans; i++) {
+      const ww = s.x / spans;
+      drawBox(ctx, o.x + i * ww, o.y, ww, s.y, h * (0.7 + (i % 2) * 0.12), b.roof, b.wall, b.wallDark);
+    }
+    windows(ctx, o.x, o.y, s.x, s.y, h, Math.floor(s.x * 1.6), 1);
+  } else if (b.style === "hq") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    drawBox(ctx, o.x + 1.5, o.y + 1, 2, 1.5, h + 22, b.accent, b.wall, b.wallDark);
+    const tip = P(o.x + 2.5, o.y + 1.7, h + 38);
+    ctx.strokeStyle = b.accent;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(0, 8, 18, 8, 0, 0, Math.PI * 2);
+    ctx.moveTo(tip.sx, tip.sy + 16);
+    ctx.lineTo(tip.sx, tip.sy);
     ctx.stroke();
+    windows(ctx, o.x, o.y, s.x, s.y, h, 5, 3);
+  } else if (b.style === "house") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h * 0.72, b.roof, b.wall, b.wallDark);
+    const ridge = P(o.x + s.x / 2, o.y + s.y / 2, h + 14);
+    const l = P(o.x, o.y, h * 0.72);
+    const r = P(o.x + s.x, o.y, h * 0.72);
+    const f = P(o.x + s.x, o.y + s.y, h * 0.72);
+    ctx.beginPath();
+    ctx.moveTo(l.sx, l.sy);
+    ctx.lineTo(ridge.sx, ridge.sy);
+    ctx.lineTo(r.sx, r.sy);
+    ctx.closePath();
+    ctx.fillStyle = b.roof;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(r.sx, r.sy);
+    ctx.lineTo(ridge.sx, ridge.sy);
+    ctx.lineTo(f.sx, f.sy);
+    ctx.closePath();
+    ctx.fillStyle = b.wallDark;
+    ctx.fill();
+    windows(ctx, o.x, o.y, s.x, s.y, h * 0.72, 2, 1);
+  } else if (b.style === "cafe") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    const aw = P(o.x + s.x, o.y + s.y * 0.15, 14);
+    ctx.fillStyle = b.accent;
+    ctx.beginPath();
+    ctx.ellipse(aw.sx, aw.sy, 16, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    windows(ctx, o.x, o.y, s.x, s.y, h, 3, 1);
+  } else if (b.style === "data") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    windows(ctx, o.x, o.y, s.x, s.y, h, 2, 4);
+    const top = P(o.x + s.x / 2, o.y + 0.4, h + 8);
+    ctx.fillStyle = b.accent;
+    ctx.fillRect(top.sx - 3, top.sy - 6, 6, 6);
+  } else if (b.style === "station") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h * 0.55, b.roof, b.wall, b.wallDark);
+    const canopy = P(o.x + s.x / 2, o.y + s.y, 18);
+    ctx.fillStyle = "rgba(20,24,30,0.45)";
+    ctx.beginPath();
+    ctx.ellipse(canopy.sx, canopy.sy, 40, 12, 0, 0, Math.PI * 2);
+    ctx.fill();
+    windows(ctx, o.x, o.y, s.x, s.y, h * 0.55, 4, 1);
+  } else if (b.style === "lab") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    windows(ctx, o.x, o.y, s.x, s.y, h, 4, 2);
+    const stack = P(o.x + 0.6, o.y + 0.4, h + 16);
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillRect(stack.sx - 2, stack.sy, 4, 16);
+  } else if (b.style === "warehouse") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h * 0.7, b.roof, b.wall, b.wallDark);
+    windows(ctx, o.x, o.y, s.x, s.y, h * 0.7, 3, 1);
+  } else if (b.style === "studio" || b.style === "gallery") {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    windows(ctx, o.x, o.y, s.x, s.y, h, 4, 2);
+  } else {
+    drawBox(ctx, o.x, o.y, s.x, s.y, h, b.roof, b.wall, b.wallDark);
+    windows(ctx, o.x, o.y, s.x, s.y, h, Math.max(3, Math.floor(s.x)), 2);
   }
 
-  ctx.fillStyle = "rgba(12, 12, 14, 0.72)";
+  if (scale >= 0.55) {
+    const label = iso(o.x + s.x / 2, o.y + s.y / 2);
+    ctx.fillStyle = "rgba(12,12,14,0.62)";
+    const w = Math.min(120, 18 + b.name.length * 6);
+    ctx.beginPath();
+    ctx.roundRect(label.sx - w / 2, label.sy - h - 16, w, 13, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f4efe4";
+    ctx.font = "600 9px ui-sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(b.name, label.sx, label.sy - h - 7);
+  }
+}
+
+function drawSlime(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean, scale: number) {
+  const p = iso(agent.x, agent.y);
+  const s = Math.max(0.45, Math.min(1.1, scale));
+  ctx.save();
+  ctx.translate(p.sx, p.sy);
+  ctx.scale(s, s);
+  ctx.fillStyle = "rgba(20, 12, 8, 0.28)";
   ctx.beginPath();
-  ctx.roundRect(-34, -40 + rise, 68, 14, 4);
+  ctx.ellipse(0, 3, 5, 2.4, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = "#f3efe6";
-  ctx.font = "700 9px ui-sans-serif, system-ui";
-  ctx.textAlign = "center";
-  ctx.fillText(`${agent.name} · ${ROLE_LABEL[agent.role]}`, 0, -30 + rise);
+  ctx.fillStyle = agent.color;
+  ctx.beginPath();
+  ctx.ellipse(0, -2, 5.2, 4.2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  if (scale > 0.85) {
+    ctx.fillStyle = "#1a1410";
+    ctx.beginPath();
+    ctx.arc(-1.6, -3, 0.7, 0, Math.PI * 2);
+    ctx.arc(1.6, -3, 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  if (selected) {
+    ctx.strokeStyle = "#ed712e";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.ellipse(0, 3.4, 7, 3.2, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
   ctx.restore();
+  if (scale >= 1.15 || selected) {
+    ctx.fillStyle = "rgba(12,12,14,0.72)";
+    ctx.beginPath();
+    ctx.roundRect(p.sx - 28, p.sy - 22, 56, 11, 3);
+    ctx.fill();
+    ctx.fillStyle = "#f3efe6";
+    ctx.font = "600 8px ui-sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(`${agent.name} · ${roleLabel(agent.role)}`, p.sx, p.sy - 14);
+  }
 }
 
-function drawAgent(ctx: CanvasRenderingContext2D, agent: Agent, selected: boolean) {
-  drawSlime(ctx, agent, selected);
-}
-
-function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp) {
+function drawProp(ctx: CanvasRenderingContext2D, prop: PlacedProp, scale: number) {
+  if (scale < 0.7) return;
   const item = catalogById(prop.catalogId);
   if (!item) return;
   const p = iso(prop.x, prop.y);
-  ctx.save();
-  ctx.translate(p.sx, p.sy);
-  ctx.fillStyle = "rgba(0,0,0,0.2)";
-  ctx.beginPath();
-  ctx.ellipse(0, 6, 12, 6, 0, 0, Math.PI * 2);
-  ctx.fill();
   ctx.fillStyle = item.color;
   ctx.beginPath();
-  ctx.roundRect(-10, -12, 20, 16, 4);
+  ctx.roundRect(p.sx - 6, p.sy - 8, 12, 10, 2);
   ctx.fill();
-  ctx.fillStyle = "#fff8e8";
-  ctx.font = "12px ui-sans-serif";
-  ctx.textAlign = "center";
-  ctx.fillText(item.glyph.slice(0, 2), 0, 0);
-  ctx.restore();
 }
 
-function drawSpeech(ctx: CanvasRenderingContext2D, agent: Agent) {
+function drawSpeech(ctx: CanvasRenderingContext2D, agent: Agent, scale: number) {
+  if (scale < 1.35) return;
   const line = agent.speech || (agent.status === "walking" ? "" : agent.thought);
   if (!line) return;
   const p = iso(agent.x, agent.y);
-  const text = line.slice(0, 42) + (line.length > 42 ? "…" : "");
-  ctx.save();
-  ctx.font = "11px ui-sans-serif, system-ui";
-  const w = Math.min(220, ctx.measureText(text).width + 16);
-  ctx.fillStyle = "rgba(255, 246, 236, 0.94)";
+  const text = line.slice(0, 36) + (line.length > 36 ? "…" : "");
+  ctx.font = "10px ui-sans-serif";
+  const w = Math.min(180, ctx.measureText(text).width + 12);
+  ctx.fillStyle = "rgba(255,246,236,0.94)";
   ctx.beginPath();
-  ctx.roundRect(p.sx - w / 2, p.sy - 72, w, 24, 10);
+  ctx.roundRect(p.sx - w / 2, p.sy - 36, w, 16, 6);
   ctx.fill();
   ctx.fillStyle = "#3a2418";
   ctx.textAlign = "center";
-  ctx.fillText(text, p.sx, p.sy - 56);
-  ctx.restore();
-}
-
-function hitAgent(agents: Agent[], mx: number, my: number, originX: number, originY: number, scale: number) {
-  const lx = (mx - originX) / scale;
-  const ly = (my - originY) / scale;
-  let best: Agent | null = null;
-  let bestD = 28;
-  for (const agent of agents) {
-    const p = iso(agent.x, agent.y);
-    const d = Math.hypot(p.sx - lx, p.sy - 10 - ly);
-    if (d < bestD) {
-      bestD = d;
-      best = agent;
-    }
-  }
-  return best;
+  ctx.fillText(text, p.sx, p.sy - 25);
 }
 
 type Props = {
@@ -234,12 +311,12 @@ type Props = {
 };
 
 export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
-  const { liveRef, cameraFocus } = useWorld();
+  const { liveRef, cameraFocus, followAgent, cameraScale } = useWorld();
   const ref = useRef<HTMLCanvasElement>(null);
   const state = useRef({
     camX: 0,
     camY: 0,
-    scale: 1,
+    scale: 0.36,
     drag: false,
     lx: 0,
     ly: 0,
@@ -247,18 +324,24 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
     sy: 0,
     selectedAgentId,
     mapId,
+    followAgent: false,
   });
 
   useEffect(() => {
     state.current.selectedAgentId = selectedAgentId;
     state.current.mapId = mapId;
-  }, [selectedAgentId, mapId]);
+    state.current.followAgent = followAgent;
+  }, [selectedAgentId, mapId, followAgent]);
+
+  useEffect(() => {
+    if (cameraScale) state.current.scale = cameraScale;
+  }, [cameraScale]);
 
   useEffect(() => {
     if (!cameraFocus) return;
     const p = iso(cameraFocus.x, cameraFocus.y);
     state.current.camX = -p.sx * state.current.scale;
-    state.current.camY = 40 - p.sy * state.current.scale;
+    state.current.camY = 30 - p.sy * state.current.scale;
   }, [cameraFocus]);
 
   useEffect(() => {
@@ -288,101 +371,98 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
       const h = canvas.clientHeight;
       const snapshot = liveRef.current;
       const rain = snapshot.environmentId === "rain-lot";
-
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, "#87c5e8");
-      g.addColorStop(0.42, "#d6a47c");
-      g.addColorStop(1, "#8a4b32");
-      ctx.fillStyle = g;
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, "#8ec8ea");
+      sky.addColorStop(0.38, "#c5dce8");
+      sky.addColorStop(1, "#7fa86a");
+      ctx.fillStyle = sky;
       ctx.fillRect(0, 0, w, h);
 
+      if (state.current.followAgent && state.current.selectedAgentId) {
+        const ag = snapshot.agents.find((a) => a.id === state.current.selectedAgentId);
+        if (ag) {
+          const p = iso(ag.x, ag.y);
+          const wantX = -p.sx * state.current.scale;
+          const wantY = 40 - p.sy * state.current.scale;
+          state.current.camX += (wantX - state.current.camX) * 0.08;
+          state.current.camY += (wantY - state.current.camY) * 0.08;
+        }
+      }
+
       const originX = w / 2 + state.current.camX;
-      const originY = h * 0.16 + state.current.camY;
+      const originY = h * 0.12 + state.current.camY;
       const scale = state.current.scale;
 
       ctx.save();
       ctx.translate(originX, originY);
       ctx.scale(scale, scale);
 
-      for (let y = 0; y < GRID; y++) {
-        for (let x = 0; x < GRID; x++) {
-          const path = x === 8 || y === 8 || x === 9 || y === 9;
-          const even = (x + y) % 2 === 0;
-          const floor = even ? "#c4a574" : "#b89564";
-          const stone = even ? "#8a7a62" : "#7a6b56";
-          drawTile(ctx, x, y, path ? stone : floor, "rgba(90,50,24,0.16)");
+      const pad = 4;
+      const inv = (sx: number, sy: number) => {
+        const X = sx / (TW / 2);
+        const Y = sy / (TH / 2);
+        return { x: (X + Y) / 2, y: (Y - X) / 2 };
+      };
+      const corners = [
+        inv((-originX) / scale, (-originY) / scale),
+        inv((w - originX) / scale, (-originY) / scale),
+        inv((-originX) / scale, (h - originY) / scale),
+        inv((w - originX) / scale, (h - originY) / scale),
+      ];
+      const minX = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.x)) - pad));
+      const maxX = Math.min(GRID, Math.ceil(Math.max(...corners.map((c) => c.x)) + pad));
+      const minY = Math.max(0, Math.floor(Math.min(...corners.map((c) => c.y)) - pad));
+      const maxY = Math.min(GRID, Math.ceil(Math.max(...corners.map((c) => c.y)) + pad));
+
+      for (let y = minY; y < maxY; y++) {
+        for (let x = minX; x < maxX; x++) {
+          const kind = TERRAIN[y]![x]!;
+          drawTile(ctx, x, y, tileColor(kind, (x + y) % 2 === 0));
         }
       }
 
-      if (state.current.mapId === "lot") {
-        const hearth = iso(9, 9);
-        const glow = ctx.createRadialGradient(hearth.sx, hearth.sy, 8, hearth.sx, hearth.sy, 90);
-        glow.addColorStop(0, "rgba(237, 113, 46, 0.55)");
-        glow.addColorStop(1, "rgba(237, 113, 46, 0)");
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.ellipse(hearth.sx, hearth.sy, 70, 36, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#3a2418";
-        ctx.beginPath();
-        ctx.ellipse(hearth.sx, hearth.sy, 22, 12, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ed712e";
-        ctx.beginPath();
-        ctx.ellipse(hearth.sx, hearth.sy - 6, 10, 8, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(243, 239, 230, 0.35)";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(hearth.sx, hearth.sy - 40, 280, 150, 0, Math.PI, 0);
-        ctx.stroke();
+      for (const tree of TREES) {
+        if (tree.x < minX || tree.x > maxX || tree.y < minY || tree.y > maxY) continue;
+        drawTree(ctx, tree.x, tree.y);
       }
 
-      const buildings: (Building | CompanyFacade)[] =
-        state.current.mapId === "lot" ? LOT_BUILDINGS : PLAZA_COMPANIES;
-      const sortedBuildings = [...buildings].sort(
-        (a, b) => a.origin.x + a.origin.y - (b.origin.x + b.origin.y),
-      );
-      for (const b of sortedBuildings) {
-        drawBox(
-          ctx,
-          b.origin.x,
-          b.origin.y,
-          b.size.x,
-          b.size.y,
-          b.height,
-          b.roof,
-          b.wall,
-          b.wallDark,
-        );
-        const label = iso(b.origin.x + b.size.x / 2, b.origin.y + b.size.y / 2);
-        ctx.fillStyle = "rgba(12,12,14,0.72)";
-        ctx.beginPath();
-        ctx.roundRect(label.sx - 52, label.sy - b.height - 18, 104, 16, 6);
-        ctx.fill();
-        ctx.fillStyle = "#f4efe4";
-        ctx.font = "600 10px ui-sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText(b.name, label.sx, label.sy - b.height - 7);
+      const buildings = [...LOT_BUILDINGS].sort((a, b) => a.origin.x + a.origin.y - (b.origin.x + b.origin.y));
+      for (const b of buildings) {
+        if (b.origin.x > maxX || b.origin.y > maxY || b.origin.x + b.size.x < minX || b.origin.y + b.size.y < minY) continue;
+        drawBuilding(ctx, b, scale);
       }
 
-      const mapProps = snapshot.props.filter((p) => p.mapId === state.current.mapId);
-      for (const prop of mapProps) drawProp(ctx, prop);
-
-      const mapAgents = [...snapshot.agents]
-        .filter((a) => a.mapId === state.current.mapId)
-        .sort((a, b) => a.x + a.y - (b.x + b.y));
-      for (const agent of mapAgents) {
-        drawAgent(ctx, agent, agent.id === state.current.selectedAgentId);
+      for (const prop of snapshot.props) {
+        if (prop.mapId !== "lot") continue;
+        drawProp(ctx, prop, scale);
       }
-      for (const agent of mapAgents) drawSpeech(ctx, agent);
+
+      const agents = [...snapshot.agents].filter((a) => a.mapId === "lot").sort((a, b) => a.x + a.y - (b.x + b.y));
+      for (const agent of agents) drawSlime(ctx, agent, agent.id === state.current.selectedAgentId, scale);
+      for (const agent of agents) drawSpeech(ctx, agent, scale);
 
       ctx.restore();
 
+      if (scale < 0.55) {
+        ctx.fillStyle = "rgba(12,12,14,0.45)";
+        ctx.font = "600 11px ui-sans-serif";
+        ctx.textAlign = "left";
+        const seen = new Set<string>();
+        for (const b of LOT_BUILDINGS) {
+          const d = districtAt(b.origin.x, b.origin.y);
+          if (!d || seen.has(d.id)) continue;
+          seen.add(d.id);
+          const p = iso(d.origin.x + d.size.x / 2, d.origin.y + d.size.y / 2);
+          const sx = originX + p.sx * scale;
+          const sy = originY + p.sy * scale;
+          if (sx < 80 || sy < 40 || sx > w - 40) continue;
+          ctx.fillText(d.label, sx, sy);
+        }
+      }
+
       if (rain) {
         ctx.strokeStyle = "rgba(180,210,230,0.28)";
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 70; i++) {
+        for (let i = 0; i < 80; i++) {
           const x = (i * 97 + performance.now() / 8) % w;
           const y = (i * 53 + performance.now() / 3) % h;
           ctx.beginPath();
@@ -412,26 +492,39 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
       state.current.ly = e.clientY;
     };
     const onUp = (e: PointerEvent) => {
-      const moved =
-        Math.hypot(e.clientX - state.current.sx, e.clientY - state.current.sy) > 6;
+      const moved = Math.hypot(e.clientX - state.current.sx, e.clientY - state.current.sy) > 6;
       state.current.drag = false;
       if (moved) return;
       const rect = canvas.getBoundingClientRect();
       const originX = canvas.clientWidth / 2 + state.current.camX;
-      const originY = canvas.clientHeight * 0.16 + state.current.camY;
-      const hit = hitAgent(
-        liveRef.current.agents.filter((a) => a.mapId === state.current.mapId),
-        e.clientX - rect.left,
-        e.clientY - rect.top,
-        originX,
-        originY,
-        state.current.scale,
-      );
-      onSelectAgent(hit?.id ?? null);
+      const originY = canvas.clientHeight * 0.12 + state.current.camY;
+      const scale = state.current.scale;
+      const lx = (e.clientX - rect.left - originX) / scale;
+      const ly = (e.clientY - rect.top - originY) / scale;
+      let best: Agent | null = null;
+      let bestD = 14 / scale;
+      for (const agent of liveRef.current.agents.filter((a) => a.mapId === "lot")) {
+        const p = iso(agent.x, agent.y);
+        const d = Math.hypot(p.sx - lx, p.sy - ly);
+        if (d < bestD) {
+          bestD = d;
+          best = agent;
+        }
+      }
+      onSelectAgent(best?.id ?? null);
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const next = Math.min(1.8, Math.max(0.7, state.current.scale * (e.deltaY > 0 ? 0.94 : 1.06)));
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const old = state.current.scale;
+      const next = Math.min(2.6, Math.max(0.22, old * (e.deltaY > 0 ? 0.92 : 1.08)));
+      const k = next / old;
+      const cx = canvas.clientWidth / 2;
+      const cy = canvas.clientHeight * 0.12;
+      state.current.camX = mx - cx - (mx - cx - state.current.camX) * k;
+      state.current.camY = my - cy - (my - cy - state.current.camY) * k;
       state.current.scale = next;
     };
 
@@ -453,7 +546,9 @@ export function WorldCanvas({ mapId, selectedAgentId, onSelectAgent }: Props) {
     <canvas
       ref={ref}
       className="size-full cursor-grab touch-none active:cursor-grabbing"
-      aria-label={mapId === "lot" ? "Your Grokbot lot" : "Public plaza"}
+      aria-label="Northshore campus"
     />
   );
 }
+
+export type { Building };

@@ -8,7 +8,10 @@ Plan: [`docs/VISION.md`](docs/VISION.md)
 
 ## This slice
 
-- **Hearth Greenhouse** — full-bleed isometric habitat, HUD plaque, live presence.
+- **Northshore Campus (Earth)** — a 50-tile city: corporate, startup, creative, industrial, labs, homes, transit, waterfront, parklands.
+- Tiny inhabitants (Jarvis, Merlin, Vega, Vanta, Midas, Athena, Watchtower, Friday) walk the roads.
+- Camera: City / Street / Close / Follow. Scroll to zoom from skyline to nametag.
+- Join, Director, marketplace, gifts still work.
 - **Join** — copy `/join.md`, paste into Grok Bot. Local `POST /v1/session` walks a slime in through the lobby.
 - **Director** — beats of what is happening.
 - **Zones** — Hearth, Lobby, Cafe, Studio, Tower, Factory, Warehouse.

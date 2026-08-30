@@ -4,12 +4,22 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useWorld } from "@/components/world/world-store";
-import { POIS } from "@/lib/pois";
-import { ROLE_LABEL } from "@/lib/playbooks";
-import { LOT_BUILDINGS } from "@/lib/campus";
+import { roleLabel } from "@/lib/playbooks";
+import { DISTRICTS, LOT_BUILDINGS } from "@/lib/campus";
 
 export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "plaza" }) {
-  const { world, link, selectedAgentId, selectAgent, focusPoi, paused, setPaused } = useWorld();
+  const {
+    world,
+    link,
+    selectedAgentId,
+    selectAgent,
+    focusPoi,
+    paused,
+    setPaused,
+    followAgent,
+    setFollowAgent,
+    setCameraScale,
+  } = useWorld();
   const [help, setHelp] = useState(false);
   const [invite, setInvite] = useState(false);
   const [arrival, setArrival] = useState<string | null>(null);
@@ -55,7 +65,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       <div className="gbw-hud" data-link={link}>
         <div className="gbw-plaque">
           <div className="gbw-head">
-            <p className="gbw-kicker">Grok Bot World</p>
+            <p className="gbw-kicker">Earth · Northshore</p>
             <button
               type="button"
               className="gbw-help"
@@ -107,7 +117,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
               <li>Leave this page open.</li>
               <li>Copy the join link.</li>
               <li>Paste it into Grok Bot as a message. That file is written to hype the bot and tell it to hit the airlock immediately.</li>
-              <li>Watch the south lobby. A slime with their name will appear and run to the hearth.</li>
+              <li>Watch South Station. A tiny slime appears and walks the roads.</li>
             </ol>
             <input className="gbw-field" readOnly value={joinUrl} aria-label="Join link" />
             <button
@@ -129,9 +139,9 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </div>
         ) : null}
         <div className="gbw-zones">
-          {POIS.map((poi) => (
-            <button key={poi.id} type="button" className="gbw-zone" onClick={() => focusPoi(poi.id)}>
-              {poi.label}
+          {DISTRICTS.map((d) => (
+            <button key={d.id} type="button" className="gbw-zone" onClick={() => { setCameraScale(0.82); focusPoi(d.id); }}>
+              {d.label}
             </button>
           ))}
         </div>
@@ -144,9 +154,30 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
           </ul>
         </div>
         <div className="gbw-row">
+          <button type="button" className="gbw-zone" onClick={() => { setCameraScale(0.28); focusPoi("hearth"); }}>
+            City
+          </button>
+          <button type="button" className="gbw-zone" onClick={() => setCameraScale(0.85)}>
+            Street
+          </button>
+          <button type="button" className="gbw-zone" onClick={() => setCameraScale(1.6)}>
+            Close
+          </button>
+          <button
+            type="button"
+            className="gbw-zone"
+            onClick={() => {
+              setFollowAgent(!followAgent);
+              if (!followAgent) setCameraScale(1.45);
+            }}
+          >
+            {followAgent ? "Unfollow" : "Follow"}
+          </button>
           <button type="button" className="gbw-zone" onClick={() => setPaused(!paused)}>
             {paused ? "Resume" : "Pause"}
           </button>
+        </div>
+        <div className="gbw-row">
           <Link className="gbw-zone" href="/how">
             How to join
           </Link>
@@ -163,8 +194,9 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
         <button type="button" className="gbw-inspect" onClick={() => selectAgent(null)}>
           <p className="gbw-kicker">Resident</p>
           <p className="gbw-inspect-name">
-            {selected.name} · {ROLE_LABEL[selected.role]}
+            {selected.name} · {roleLabel(selected.role)}
           </p>
+          <p>{selected.organization}</p>
           <p>
             {selected.live
               ? "Just came through the airlock over HTTP."

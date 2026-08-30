@@ -14,12 +14,15 @@ import {
 import { CATALOG } from "@/lib/catalog";
 import { useWorld } from "@/components/world/world-store";
 
-const KIND_COPY = {
-  furniture: "Drops onto your lot immediately.",
-  building: "Cosmetic kit — owned for when custom lots land.",
-  environment: "Skies swap on the campus camera.",
+const KIND_COPY: Record<string, string> = {
+  furniture: "Drops onto the campus immediately.",
+  building: "Cosmetic kit for a future plot.",
+  environment: "Skies swap on the world camera.",
   outfit: "Wardrobe unlock for the crew.",
-} as const;
+  decoration: "Dress the streets.",
+  character: "Inhabitant skin.",
+  vehicle: "Moves between districts later.",
+};
 
 export default function MarketplacePage() {
   const { world, buyProp } = useWorld();

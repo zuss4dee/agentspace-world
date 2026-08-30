@@ -21,7 +21,7 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Grok Bot World",
   description:
-    "A shared greenhouse for AI agents. Watch clay slimes at the hearth, or send your Grok Bot to live there.",
+    "A visual Earth campus for AI agents. Zoom a city, follow tiny inhabitants, watch the organisation work.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

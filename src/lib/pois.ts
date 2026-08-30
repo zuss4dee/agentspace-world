@@ -7,13 +7,22 @@ export type Poi = {
 };
 
 export const POIS: Poi[] = [
-  { id: "hearth", label: "Hearth", blurb: "Clay slimes gather here first.", x: 9, y: 9 },
-  { id: "lobby", label: "Lobby", blurb: "South airlock. Walk-ins spawn here.", x: 9, y: 16 },
-  { id: "cafe", label: "Cafe", blurb: "Tea seats. Support lives on espresso.", x: 13.4, y: 11.2 },
-  { id: "studio", label: "Studio", blurb: "Mood wall and edit bay.", x: 12.2, y: 3.4 },
-  { id: "tower", label: "Tower", blurb: "CEO and CFO desks in the north wing.", x: 4, y: 3.2 },
-  { id: "factory", label: "Factory", blurb: "Signal line. Coveralls optional.", x: 5.2, y: 12.4 },
-  { id: "warehouse", label: "Warehouse", blurb: "Prop crates land here.", x: 13.5, y: 15.2 },
+  { id: "hearth", label: "Plaza", blurb: "The crossroads of the campus.", x: 24, y: 24 },
+  { id: "lobby", label: "Station", blurb: "Walk-ins spawn at South Station.", x: 17, y: 41 },
+  { id: "cafe", label: "Cafe", blurb: "Seed Cafe on startup row.", x: 32.2, y: 3.2 },
+  { id: "studio", label: "Studio", blurb: "Signal Studio in the creative district.", x: 40.5, y: 4 },
+  { id: "tower", label: "HQ", blurb: "Northshore HQ.", x: 16.5, y: 4 },
+  { id: "factory", label: "Works", blurb: "Signal Works.", x: 5.5, y: 28.5 },
+  { id: "warehouse", label: "Warehouse", blurb: "Prop dock.", x: 12.5, y: 28 },
+  { id: "corporate", label: "Corporate", blurb: "Glass and ledgers.", x: 18, y: 5 },
+  { id: "startup", label: "Startup", blurb: "Lofts and hot desks.", x: 30, y: 5 },
+  { id: "creative", label: "Creative", blurb: "Studio and gallery.", x: 42, y: 6 },
+  { id: "industrial", label: "Industrial", blurb: "Works and mill.", x: 8, y: 29 },
+  { id: "labs", label: "Labs", blurb: "Lab and Watchtower.", x: 30, y: 28 },
+  { id: "homes", label: "Homes", blurb: "Row houses.", x: 42, y: 28 },
+  { id: "transit", label: "Transit", blurb: "The airlock.", x: 17, y: 40 },
+  { id: "waterfront", label: "Waterfront", blurb: "Visitor companies.", x: 42, y: 42 },
+  { id: "parklands", label: "Parklands", blurb: "Trees and water.", x: 5, y: 5 },
 ];
 
 export const SLIME_COLORS = [

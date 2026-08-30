@@ -14,12 +14,13 @@ import {
 import { catalogById } from "@/lib/catalog";
 import {
   createSnapshot,
+  directorLine,
   nid,
   placeProp,
   pushEvent,
   stepAgents,
 } from "@/lib/simulation";
-import { TASKS } from "@/lib/playbooks";
+import { tasksFor } from "@/lib/playbooks";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
@@ -39,6 +40,10 @@ type WorldApi = {
   link: "connecting" | "live" | "offline";
   cameraFocus: Vec2 | null;
   focusPoi: (id: string) => void;
+  followAgent: boolean;
+  setFollowAgent: (v: boolean) => void;
+  cameraScale: number;
+  setCameraScale: (n: number) => void;
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -49,7 +54,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [paused, setPaused] = useState(false);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
-  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 9, y: 9 });
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 24, y: 22 });
+  const [followAgent, setFollowAgent] = useState(false);
+  const [cameraScale, setCameraScale] = useState(0.34);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -74,12 +81,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       for (let i = 0; i < agents.length; i++) {
         const a = agents[i]!;
         const b = prev.agents[i];
-        if (b && a.status !== b.status && a.status !== "walking") {
+        if (b && a.status !== b.status && a.status !== "walking" && !a.live) {
           events = pushEvent(events, {
             kind: "work",
             agentId: a.id,
             mapId: a.mapId,
-            text: `${a.name} (${a.role.toUpperCase()}) ${a.status === "meeting" ? "is in a huddle" : "is working"}: ${a.task}`,
+            text: directorLine(a, b.status === "walking" ? "arrive" : "work"),
           });
         }
       }
@@ -130,6 +137,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
             targetY: a.z,
             buildingId: a.poi,
             stationId: a.poi,
+            organization: "Walk-in",
+            waypoints: [],
             outfitId: "visitor-lanyard",
             status: a.sitting ? "idle" : "walking",
             task: a.thought,
@@ -147,7 +156,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
                 kind: "connect",
                 agentId: incoming.id,
                 mapId: "lot",
-                text: `AIRLOCK — ${incoming.name} just walked in. The greenhouse noticed.`,
+                text: `AIRLOCK — ${incoming.name} walked in at South Station.`,
               });
             }
           }
@@ -209,25 +218,32 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   const connectBot = useCallback((input: { name: string; role: RoleId; endpoint: string }) => {
     apply((prev) => {
-      const play = TASKS[input.role][0]!;
+      const play = tasksFor(input.role)[0]!;
       const home = LOT_BUILDINGS.find((b) => {
-        if (input.role === "ceo" || input.role === "cfo") return b.id === "tower";
-        if (input.role === "cmo" || input.role === "designer") return b.id === "studio";
-        if (input.role === "cto" || input.role === "researcher") return b.id === "factory";
-        if (input.role === "support") return b.id === "cafe";
+        if (input.role === "ceo" || input.role === "coo") return b.id === "hq";
+        if (input.role === "cfo") return b.id === "finance";
+        if (input.role === "cmo") return b.id === "loft";
+        if (input.role === "creative" || input.role === "designer") return b.id === "studio";
+        if (input.role === "cto" || input.role === "researcher") return b.id === "lab";
+        if (input.role === "security") return b.id === "data";
+        if (input.role === "knowledge") return b.id === "gallery";
+        if (input.role === "support") return b.id === "seed-cafe";
         return b.id === "warehouse";
       });
       const station = home?.stations[0];
+      const spawn = poiById("lobby")!;
       const agent: Agent = {
         id: nid(),
         name: input.name,
         role: input.role,
+        organization: "Northshore",
         color: "#e2e8f0",
-        x: 8.5,
-        y: 16,
-        targetX: station?.x ?? 8.5,
-        targetY: station?.y ?? 8.5,
-        buildingId: home?.id ?? "tower",
+        x: spawn.x,
+        y: spawn.y,
+        targetX: station?.x ?? spawn.x,
+        targetY: station?.y ?? spawn.y,
+        waypoints: [],
+        buildingId: home?.id ?? "hq",
         stationId: station?.id ?? "desk",
         outfitId: "founder-hoodie",
         status: "walking",
@@ -240,7 +256,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
         kind: "connect",
         agentId: agent.id,
         mapId: "lot",
-        text: `${agent.name} connected as ${input.role.toUpperCase()} and is walking onto the lot.`,
+        text: `${agent.name} connected as ${input.role} and is walking in from South Station.`,
       });
       return { ...prev, agents: [...prev.agents, agent], events };
     });
@@ -264,7 +280,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   const focusPoi = useCallback((id: string) => {
     const poi = poiById(id);
-    if (poi) setCameraFocus({ x: poi.x, y: poi.y });
+    if (!poi) return;
+    setCameraFocus({ x: poi.x, y: poi.y });
+    if (id === "hearth") setCameraScale(0.32);
+    else setCameraScale(0.88);
   }, []);
 
   const value = useMemo<WorldApi>(
@@ -283,8 +302,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       link,
       cameraFocus,
       focusPoi,
+      followAgent,
+      setFollowAgent,
+      cameraScale,
+      setCameraScale,
     }),
-    [world, paused, selectedAgentId, buyProp, gift, connectBot, submitStudio, agentsOn, link, cameraFocus, focusPoi],
+    [world, paused, selectedAgentId, buyProp, gift, connectBot, submitStudio, agentsOn, link, cameraFocus, focusPoi, followAgent, cameraScale],
   );
 
   return <WorldContext.Provider value={value}>{children}</WorldContext.Provider>;
