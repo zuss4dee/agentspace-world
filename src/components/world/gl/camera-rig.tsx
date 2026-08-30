@@ -114,21 +114,25 @@ export function ExplorerCamera() {
       enableDamping
       dampingFactor={0.18}
       enablePan
-      enableRotate={Boolean(interiorId)}
+      enableRotate
       enableZoom
-      panSpeed={1.6}
-      rotateSpeed={0.55}
+      panSpeed={2.1}
+      rotateSpeed={0.7}
       zoomSpeed={1.15}
       minDistance={MIN_VIEW_DIST}
       maxDistance={MAX_VIEW_DIST}
-      maxPolarAngle={interiorId ? Math.PI / 2.05 : Math.PI / 3}
-      minPolarAngle={interiorId ? 0.12 : Math.PI / 3}
+      maxPolarAngle={interiorId ? Math.PI / 2.05 : 1.15}
+      minPolarAngle={interiorId ? 0.18 : 0.42}
       screenSpacePanning
       zoomToCursor
       mouseButtons={{
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: interiorId ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN,
+        RIGHT: THREE.MOUSE.ROTATE,
+      }}
+      touches={{
+        ONE: THREE.TOUCH.PAN,
+        TWO: THREE.TOUCH.DOLLY_ROTATE,
       }}
       onStart={() => {
         applyDist.current = false;

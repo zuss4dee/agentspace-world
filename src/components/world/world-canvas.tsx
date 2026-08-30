@@ -125,7 +125,7 @@ export function WorldCanvas() {
           : { position: [12, 18, 12], fov: 42, near: 0.3, far: 80 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
-      className="size-full touch-none"
+      className="size-full touch-none cursor-grab active:cursor-grabbing"
     >
       <Scene />
     </Canvas>
