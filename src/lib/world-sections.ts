@@ -1,4 +1,4 @@
-import { TILE, wx, wz } from "./coords";
+import { MIN_VIEW_DIST, MAX_VIEW_DIST, TILE, wx, wz } from "./coords";
 
 export type WorldSectionId = "starter" | "tech" | "creative" | "business" | "public";
 
@@ -64,9 +64,9 @@ export function sectionAt(x: number, y: number) {
   );
 }
 
-/** Camera stays over the open city. A little pad, not the empty continent. */
-export function cameraPanLimits() {
-  const inset = 3 * TILE;
+export function cameraPanLimits(viewDist = MIN_VIEW_DIST) {
+  const t = Math.min(1, Math.max(0, (viewDist - MIN_VIEW_DIST) / (MAX_VIEW_DIST - MIN_VIEW_DIST)));
+  const inset = (2 + t * 12) * TILE;
   return {
     minX: wx(SECTION_ONE.x) + inset,
     maxX: wx(SECTION_ONE.x + SECTION_ONE.w) - inset,

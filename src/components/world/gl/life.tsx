@@ -137,7 +137,7 @@ export function TrafficLayer() {
   return (
     <group ref={group}>
       {CARS.map((car, i) => (
-        <mesh key={i} castShadow>
+        <mesh key={i} castShadow raycast={() => undefined}>
           <boxGeometry args={[0.48, 0.18, 0.24]} />
           <meshStandardMaterial color={car.color} metalness={0.35} roughness={0.4} />
         </mesh>
@@ -165,7 +165,7 @@ export function Lamps() {
   }, [lamps, dummy]);
   if (!lamps.length) return null;
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, lamps.length]}>
+    <instancedMesh ref={mesh} args={[undefined, undefined, lamps.length]} raycast={() => undefined}>
       <sphereGeometry args={[0.07, 6, 6]} />
       <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.75} />
     </instancedMesh>

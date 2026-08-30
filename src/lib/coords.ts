@@ -19,13 +19,13 @@ export function buildingHeight(h: number) {
   return Math.max(1.2, h / 16);
 }
 
-export const MAX_VIEW_DIST = 32;
-export const MIN_VIEW_DIST = 4.2;
+export const MAX_VIEW_DIST = 17;
+export const MIN_VIEW_DIST = 5.2;
 
 export function distFromScale(scale: number) {
   if (scale <= 0.42) return MAX_VIEW_DIST;
-  if (scale <= 0.55) return 24;
-  if (scale <= 1) return 16;
-  if (scale <= 1.45) return 9.5;
+  if (scale <= 0.55) return 14;
+  if (scale <= 1) return 11;
+  if (scale <= 1.45) return 8;
   return MIN_VIEW_DIST;
 }

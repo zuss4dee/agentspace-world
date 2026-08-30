@@ -13,7 +13,7 @@ import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/compon
 import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
-import { fromWorld } from "@/lib/coords";
+import { TILE, fromWorld } from "@/lib/coords";
 import { plotAt } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
@@ -83,12 +83,21 @@ function ExteriorScene() {
   return (
     <>
       <color attach="background" args={["#8eb8d6"]} />
-      <fog attach="fog" args={["#9fc4d6", 22, 58]} />
+      <fog attach="fog" args={["#9fc4d6", 16, 38]} />
       <hemisphereLight args={["#fff1dc", "#3f5a44", 0.78]} />
       <LightFollow />
       <ambientLight intensity={0.22} />
       <ExplorerCamera />
-      <group onClick={onMiss} onDoubleClick={onDouble}>
+      <mesh
+        rotation-x={-Math.PI / 2}
+        position={[0, 0.01, 0]}
+        onClick={onMiss}
+        onDoubleClick={onDouble}
+      >
+        <planeGeometry args={[GRID * TILE, GRID * TILE]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      <group>
         <TerrainMesh />
       </group>
       <WaterPlane />
@@ -122,7 +131,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [12, 18, 12], fov: 42, near: 0.3, far: 80 }
+          : { position: [9, 12, 9], fov: 42, near: 0.3, far: 64 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"

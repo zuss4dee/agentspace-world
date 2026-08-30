@@ -76,10 +76,10 @@ export function ExplorerCamera() {
     if (keys.has("a") || keys.has("arrowleft")) c.target.addScaledVector(right, -pan);
 
     c.target.y = interiorId ? 1.15 : 0.2;
-    c.update();
 
     if (!interiorId) {
-      const lim = cameraPanLimits();
+      const d = camera.position.distanceTo(c.target);
+      const lim = cameraPanLimits(d);
       c.target.x = THREE.MathUtils.clamp(c.target.x, lim.minX, lim.maxX);
       c.target.z = THREE.MathUtils.clamp(c.target.z, lim.minZ, lim.maxZ);
     }
@@ -105,6 +105,8 @@ export function ExplorerCamera() {
         camera.position.copy(c.target).add(dir);
       }
     }
+
+    c.update();
   });
 
   return (
@@ -121,10 +123,10 @@ export function ExplorerCamera() {
       zoomSpeed={1.15}
       minDistance={MIN_VIEW_DIST}
       maxDistance={MAX_VIEW_DIST}
-      maxPolarAngle={interiorId ? Math.PI / 2.05 : 1.15}
-      minPolarAngle={interiorId ? 0.18 : 0.42}
+      maxPolarAngle={interiorId ? Math.PI / 2.05 : 1.02}
+      minPolarAngle={interiorId ? 0.18 : 0.62}
       screenSpacePanning
-      zoomToCursor
+      zoomToCursor={false}
       mouseButtons={{
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.DOLLY,
