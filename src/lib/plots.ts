@@ -140,27 +140,114 @@ function makeCityPlots(): Plot[] {
       if (built) continue;
       if (green / Math.max(1, cells) < 0.28) continue;
       const d = districtAt(box.x + box.w / 2, box.y + box.h / 2) ?? DISTRICTS[0]!;
-      const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
-      const zone = zoneFor(d.id);
-      const price = Math.max(ZONE_PRICE[zone], Math.round((ZONE_PRICE[zone] * (box.w * box.h)) / 36));
-      plots.push({
-        id: `land-${d.id}-${n}`,
-        x: box.x,
-        y: box.y,
-        w: box.w,
-        h: box.h,
-        kind: "sale",
-        districtId: d.id,
-        price,
-        zone,
-        groupLabel: n === 1 ? d.label : `${d.label} · Field ${n}`,
-      });
-      for (let y = box.y; y < box.y + box.h; y++) {
-        for (let x = box.x; x < box.x + box.w; x++) used[y]![x] = true;
+      const area = box.w * box.h;
+      const roll = hash2(box.x * 2.17, box.y * 3.41 + box.w);
+      const asPark =
+        d.id !== "campus" &&
+        (d.id === "parklands" ||
+          d.id === "meadow" ||
+          d.id === "southpark" ||
+          d.id === "eastmarsh" ||
+          (d.theme === "public" && area >= 36 && roll > 0.38));
+      if (asPark) {
+        stampLot(plots, used, lotN, box, "park");
+        continue;
       }
+      const keepWhole =
+        d.id === "campus" || (area >= 64 && Math.min(box.w, box.h) >= 8 && roll > 0.84);
+      if (keepWhole) {
+        stampLot(plots, used, lotN, box, "sale");
+        continue;
+      }
+      const parts: { x: number; y: number; w: number; h: number }[] = [];
+      carveRects(box, 0, parts);
+      for (const part of parts) stampLot(plots, used, lotN, part, "sale");
     }
   }
   return plots;
+}
+
+type GreenBox = { x: number; y: number; w: number; h: number };
+
+function stampLot(
+  plots: Plot[],
+  used: boolean[][],
+  lotN: Record<string, number>,
+  box: GreenBox,
+  kind: PlotKind,
+) {
+  const d = districtAt(box.x + box.w / 2, box.y + box.h / 2) ?? DISTRICTS[0]!;
+  const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
+  const zone = zoneFor(d.id);
+  const price = Math.max(ZONE_PRICE[zone], Math.round((ZONE_PRICE[zone] * (box.w * box.h)) / 36));
+  plots.push({
+    id: kind === "park" ? `park-${d.id}-${n}` : `land-${d.id}-${n}`,
+    x: box.x,
+    y: box.y,
+    w: box.w,
+    h: box.h,
+    kind,
+    districtId: d.id,
+    price: kind === "park" ? 0 : price,
+    zone,
+    groupLabel:
+      kind === "park"
+        ? `${d.label} park`
+        : n === 1
+          ? d.label
+          : `${d.label} · Lot ${n}`,
+  });
+  for (let y = box.y; y < box.y + box.h; y++) {
+    for (let x = box.x; x < box.x + box.w; x++) {
+      if (x >= 0 && y >= 0 && x < GRID && y < GRID) used[y]![x] = true;
+    }
+  }
+}
+
+/** Split a road-bounded green AABB into mixed rectangles — not a grid of similar squares. */
+function carveRects(box: GreenBox, depth: number, out: GreenBox[]) {
+  const area = box.w * box.h;
+  const roll = hash2(box.x * 1.91 + depth * 4.3, box.y * 2.73 + box.w * 0.31);
+  const minEdge = 3;
+  const short = Math.min(box.w, box.h);
+  const long0 = Math.max(box.w, box.h);
+  const skinny = short <= 4 && long0 >= short + 3;
+  const stop =
+    box.w < minEdge ||
+    box.h < minEdge ||
+    depth >= 3 ||
+    skinny ||
+    (depth >= 1 && roll > 0.34) ||
+    (area <= 18 && depth >= 1) ||
+    (short < 6 && long0 < 7 && depth >= 1);
+  if (stop) {
+    if (box.w >= minEdge && box.h >= minEdge) out.push(box);
+    return;
+  }
+  const splitX = box.w > box.h + 1 || (box.w >= box.h && roll > 0.4);
+  const long = splitX ? box.w : box.h;
+  if (long < minEdge * 2) {
+    out.push(box);
+    return;
+  }
+  const cuts = [
+    3,
+    3,
+    4,
+    5,
+    Math.max(minEdge, Math.floor(long * 0.28)),
+    Math.max(minEdge, Math.floor(long * 0.38)),
+    Math.max(minEdge, Math.floor(long * 0.65)),
+  ].filter((c) => c >= minEdge && long - c >= minEdge);
+  let cut = cuts[Math.floor(hash2(box.x + depth * 8.1, box.y * 5.3) * cuts.length)] ?? minEdge;
+  cut = Math.max(minEdge, Math.min(long - minEdge, cut));
+  if (splitX) {
+    carveRects({ x: box.x, y: box.y, w: cut, h: box.h }, depth + 1, out);
+    carveRects({ x: box.x + cut, y: box.y, w: box.w - cut, h: box.h }, depth + 1, out);
+  } else {
+    carveRects({ x: box.x, y: box.y, w: box.w, h: cut }, depth + 1, out);
+    carveRects({ x: box.x, y: box.y + cut, w: box.w, h: box.h - cut }, depth + 1, out);
+  }
 }
 
 export const CITY_PLOTS = makeCityPlots();
@@ -569,6 +656,58 @@ export function nudgeOffBuilding(
     if (!hits(c.x, c.y)) return c;
   }
   return null;
+}
+
+export function pointInRect(x: number, y: number, r: { x: number; y: number; w: number; h: number }) {
+  return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+}
+
+export function plotNoise(id: string, salt = 0) {
+  let n = salt * 19.13;
+  for (let i = 0; i < id.length; i++) n += id.charCodeAt(i) * (i + 1) * 0.173;
+  return hash2(n, n * 1.37 + salt * 4.9);
+}
+
+/** Sparse–lush yard density from plot id. 0.12 (few) … 1 (lush). */
+export function lotTreeDensity(id: string) {
+  const r = plotNoise(id, 3);
+  if (r < 0.18) return 0.14;
+  if (r < 0.42) return 0.32;
+  if (r < 0.68) return 0.58;
+  if (r < 0.86) return 0.82;
+  return 1;
+}
+
+/** Trees around a claimed footprint — edges/yard, never inside the volume. */
+export function yardTreeSpots(plotId: string, fp: { x: number; y: number; w: number; h: number }) {
+  const dens = lotTreeDensity(plotId);
+  const perim = 2 * (fp.w + fp.h);
+  const count = Math.max(2, Math.round(2 + dens * perim * 0.7));
+  const spots: { x: number; y: number; pine: boolean }[] = [];
+  const inset = 0.68;
+  for (let i = 0; i < count; i++) {
+    const u = (i + plotNoise(plotId, i + 11)) / count;
+    let d = (u % 1) * perim;
+    let x: number;
+    let y: number;
+    if (d < fp.w) {
+      x = fp.x + d;
+      y = fp.y - inset;
+    } else if (d < fp.w + fp.h) {
+      x = fp.x + fp.w + inset;
+      y = fp.y + (d - fp.w);
+    } else if (d < fp.w * 2 + fp.h) {
+      x = fp.x + fp.w - (d - fp.w - fp.h);
+      y = fp.y + fp.h + inset;
+    } else {
+      x = fp.x - inset;
+      y = fp.y + fp.h - (d - fp.w * 2 - fp.h);
+    }
+    x += (plotNoise(plotId, i + 40) - 0.5) * 0.4;
+    y += (plotNoise(plotId, i + 80) - 0.5) * 0.4;
+    spots.push({ x, y, pine: plotNoise(plotId, i + 120) > 0.62 });
+  }
+  return spots;
 }
 
 export function districtForPlot(p: Plot) {

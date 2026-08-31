@@ -7,13 +7,21 @@ import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
 import { extraLamps, extraTraffic } from "@/lib/city-gen";
 import { TILE, h, wx, wz } from "@/lib/coords";
-import { footprintBlocks, nudgeOffBuilding } from "@/lib/plots";
+import {
+  LAND_USES,
+  buildingFootprint,
+  expandedRect,
+  footprintBlocks,
+  getPlot,
+  nudgeOffBuilding,
+  pointInRect,
+  yardTreeSpots,
+} from "@/lib/plots";
 import { SCENERY, TRAFFIC } from "@/lib/scenery";
 import { useWorld } from "@/components/world/world-store";
 
 export function TreeField() {
   const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
-  const all = useMemo(() => core.map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") })), [core]);
   const trunks = useRef<THREE.InstancedMesh>(null);
   const canopies = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
@@ -28,6 +36,18 @@ export function TreeField() {
     buildingPlace,
   } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
+  const hideLots = useMemo(() => {
+    const rects: { x: number; y: number; w: number; h: number }[] = [];
+    const preview = getPlot(selectedPlotId);
+    if (preview?.kind === "sale" && !claimed.has(preview.id)) {
+      rects.push(expandedRect(preview, plotExpand));
+    }
+    for (const id of claimedPlotIds) {
+      const p = getPlot(id);
+      if (p) rects.push(expandedRect(p, claimedExtras[id] ?? 0));
+    }
+    return rects;
+  }, [claimedPlotIds, claimedExtras, selectedPlotId, plotExpand, claimed]);
   const blockers = useMemo(
     () =>
       footprintBlocks(
@@ -51,6 +71,21 @@ export function TreeField() {
       claimed,
     ],
   );
+  const all = useMemo(() => {
+    const scenery = core
+      .filter((t) => !hideLots.some((r) => pointInRect(t.x, t.y, r)))
+      .map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") }));
+    const yards: { x: number; y: number; pine: boolean }[] = [];
+    for (const id of claimedPlotIds) {
+      const p = getPlot(id);
+      if (!p) continue;
+      const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES[0]!;
+      const fp = buildingFootprint(p, use, claimedExtras[id] ?? 0, claimedPlaces[id]);
+      if (!fp) continue;
+      for (const spot of yardTreeSpots(id, fp)) yards.push(spot);
+    }
+    return [...scenery, ...yards];
+  }, [core, hideLots, claimedPlotIds, claimedUses, claimedExtras, claimedPlaces]);
 
   useLayoutEffect(() => {
     const t = trunks.current;
@@ -58,8 +93,11 @@ export function TreeField() {
     if (!t || !c) return;
     all.forEach((tree, i) => {
       const moved = nudgeOffBuilding(tree.x, tree.y, blockers);
+      const ix = moved ? Math.floor(moved.x) : -1;
+      const iy = moved ? Math.floor(moved.y) : -1;
+      const tile = ix >= 0 && iy >= 0 && ix < GRID && iy < GRID ? TERRAIN[iy]![ix] : null;
       const s = 0.65 + ((tree.x * 7 + tree.y) % 5) * 0.07;
-      if (!moved) {
+      if (!moved || tile === "road" || tile === "water") {
         dummy.scale.set(0, 0, 0);
         dummy.position.set(0, 0, 0);
         dummy.updateMatrix();
@@ -97,14 +135,24 @@ export function TreeField() {
 
 export function BushField() {
   const bushes = useMemo(() => SCENERY.filter((s) => s.kind === "bush" || s.kind === "hedge" || s.kind === "planter"), []);
+  const { selectedPlotId, claimedPlotIds, plotExpand } = useWorld();
+  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
+  const hide = useMemo(() => {
+    const p = getPlot(selectedPlotId);
+    if (p?.kind === "sale" && !claimed.has(p.id)) return expandedRect(p, plotExpand);
+    return null;
+  }, [selectedPlotId, claimed, plotExpand]);
   return (
     <group>
-      {bushes.map((s) => (
-        <mesh key={s.id} position={[wx(s.x), h(0.22), wz(s.y)]} castShadow>
-          <sphereGeometry args={[s.kind === "hedge" ? h(0.32) : h(0.22), 6, 5]} />
-          <meshStandardMaterial color="#3d7a3a" roughness={0.9} />
-        </mesh>
-      ))}
+      {bushes.map((s) => {
+        if (hide && pointInRect(s.x, s.y, hide)) return null;
+        return (
+          <mesh key={s.id} position={[wx(s.x), h(0.22), wz(s.y)]} castShadow>
+            <sphereGeometry args={[s.kind === "hedge" ? h(0.32) : h(0.22), 6, 5]} />
+            <meshStandardMaterial color="#3d7a3a" roughness={0.9} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
