@@ -9,6 +9,7 @@ import {
   LAND_USES,
   PLACE_ANCHORS,
   buildingSize,
+  footprintFillsLot,
   districtForPlot,
   expandPrice,
   expandedRect,
@@ -74,6 +75,7 @@ export function PlotSheet({
   const pos = use && size ? fitPlace(plot, use, extra, place) : place;
   const activeAnchor = size ? matchingAnchor(pos, grown.w, grown.h, size.w, size.h) : null;
   const bldgSqft = size ? tilesToSqFt(size.w, size.h) : 0;
+  const fillsLot = size ? footprintFillsLot(grown.w, grown.h, size.w, size.h) : false;
 
   return (
     <div className="ns-plot-sheet" data-zone={plot.zone}>
@@ -161,13 +163,13 @@ export function PlotSheet({
                         onClick={() => onPreviewUse(u.id)}
                       >
                         <strong>{u.name}</strong>
-                        <span>{formatSqFt(tilesToSqFt(u.minW, u.minH))}</span>
+                        <span>{formatSqFt(bldgSqft)}</span>
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
-              {size && use ? (
+              {size && use && !fillsLot ? (
                 <div className="ns-place">
                   <p>Place</p>
                   <div className="ns-place-body">

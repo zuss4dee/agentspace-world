@@ -455,10 +455,15 @@ export function matchingAnchor(place: LotPlace, landW: number, landH: number, bw
   return null;
 }
 
+/** Footprint always fills the lot. `minW`/`minH` only gate which types fit. */
 export function buildingSize(p: Plot, use: LandUse, extra = 0) {
   const r = expandedRect(p, extra);
   if (r.w < use.minW || r.h < use.minH) return null;
-  return { w: Math.min(r.w, use.minW), h: Math.min(r.h, use.minH) };
+  return { w: r.w, h: r.h };
+}
+
+export function footprintFillsLot(landW: number, landH: number, bw: number, bh: number) {
+  return bw >= landW && bh >= landH;
 }
 
 export function fitPlace(p: Plot, use: LandUse, extra: number, place: LotPlace): LotPlace {
@@ -472,7 +477,9 @@ export function buildingFootprint(p: Plot, use: LandUse, extra = 0, place?: LotP
   const r = expandedRect(p, extra);
   const size = buildingSize(p, use, extra);
   if (!size) return null;
-  const pos = clampLotPlace(r.w, r.h, size.w, size.h, place ?? centerPlace(r.w, r.h, size.w, size.h));
+  const pos = footprintFillsLot(r.w, r.h, size.w, size.h)
+    ? { ox: 0, oy: 0 }
+    : clampLotPlace(r.w, r.h, size.w, size.h, place ?? centerPlace(r.w, r.h, size.w, size.h));
   return {
     x: r.x + pos.ox,
     y: r.y + pos.oy,

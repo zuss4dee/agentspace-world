@@ -210,6 +210,7 @@ export function BuildingGhost() {
   const fp = buildingFootprint(plot, use, extra, buildingPlace);
   const landSq = tilesToSqFt(land.w, land.h);
   const bldgSq = fp ? tilesToSqFt(fp.w, fp.h) : 0;
+  const fillsLot = Boolean(fp && fp.w >= land.w && fp.h >= land.h);
   const y0 = h(0.22);
   const x0 = wx(land.x);
   const z0 = wz(land.y);
@@ -226,48 +227,52 @@ export function BuildingGhost() {
   return (
     <group>
       <Line points={fence} color="#111111" lineWidth={2.4} />
-      {Array.from({ length: land.w * land.h }, (_, i) => {
-        const col = i % land.w;
-        const row = Math.floor(i / land.w);
-        const under =
-          fp && col >= fp.ox && col < fp.ox + fp.w && row >= fp.oy && row < fp.oy + fp.h;
-        if (under) return null;
-        return (
-          <mesh
-            key={i}
-            position={[wx(land.x + col + 0.5), h(0.09), wz(land.y + row + 0.5)]}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!fp) return;
-              setBuildingPlace(placeAtCell(land.w, land.h, fp.w, fp.h, col, row));
-            }}
-          >
-            <boxGeometry args={[TILE * 0.92, h(0.04), TILE * 0.92]} />
-            <meshStandardMaterial color="#3d7a42" roughness={0.85} />
-          </mesh>
-        );
-      })}
-      {fp ? (
-        <>
-          {Array.from({ length: fp.w * fp.h }, (_, i) => {
-            const col = i % fp.w;
-            const row = Math.floor(i / fp.w);
+      {!fillsLot
+        ? Array.from({ length: land.w * land.h }, (_, i) => {
+            const col = i % land.w;
+            const row = Math.floor(i / land.w);
+            const under =
+              fp && col >= fp.ox && col < fp.ox + fp.w && row >= fp.oy && row < fp.oy + fp.h;
+            if (under) return null;
             return (
               <mesh
-                key={`b-${i}`}
-                position={[wx(fp.x + col + 0.5), h(0.12), wz(fp.y + row + 0.5)]}
+                key={i}
+                position={[wx(land.x + col + 0.5), h(0.09), wz(land.y + row + 0.5)]}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!fp) return;
+                  setBuildingPlace(placeAtCell(land.w, land.h, fp.w, fp.h, col, row));
+                }}
               >
-                <boxGeometry args={[TILE * 0.9, h(0.08), TILE * 0.9]} />
-                <meshStandardMaterial color="#111111" roughness={0.45} />
+                <boxGeometry args={[TILE * 0.92, h(0.04), TILE * 0.92]} />
+                <meshStandardMaterial color="#3d7a42" roughness={0.85} />
               </mesh>
             );
-          })}
+          })
+        : null}
+      {fp ? (
+        <>
+          {!fillsLot
+            ? Array.from({ length: fp.w * fp.h }, (_, i) => {
+                const col = i % fp.w;
+                const row = Math.floor(i / fp.w);
+                return (
+                  <mesh
+                    key={`b-${i}`}
+                    position={[wx(fp.x + col + 0.5), h(0.12), wz(fp.y + row + 0.5)]}
+                  >
+                    <boxGeometry args={[TILE * 0.9, h(0.08), TILE * 0.9]} />
+                    <meshStandardMaterial color="#111111" roughness={0.45} />
+                  </mesh>
+                );
+              })
+            : null}
           <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.78, h(fp.height), fp.h * TILE * 0.78]} />
+            <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
             <meshStandardMaterial color="#ffffff" roughness={0.32} />
           </mesh>
           <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.78 + h(0.05), h(fp.height) + h(0.05), fp.h * TILE * 0.78 + h(0.05)]} />
+            <boxGeometry args={[fp.w * TILE + h(0.05), h(fp.height) + h(0.05), fp.h * TILE + h(0.05)]} />
             <meshStandardMaterial color="#111111" wireframe />
           </mesh>
           {!topView ? (
@@ -330,7 +335,7 @@ export function ClaimedMarks() {
             />
             {fp ? (
               <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.16), wz(fp.y + fp.h / 2)]}>
-                <boxGeometry args={[fp.w * TILE * 0.78, h(fp.height), fp.h * TILE * 0.78]} />
+                <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
                 <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
               </mesh>
             ) : null}
