@@ -1120,6 +1120,28 @@
   color: #555;
   line-height: 1.35;
 }
+.ns-portion-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 148px;
+  overflow: auto;
+}
+.ns-plot-warn {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.4;
+}
+.ns-adjoin-btn {
+  width: 100%;
+}
+.ns-game-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
 .ns-place {
   display: flex;
   flex-direction: column;

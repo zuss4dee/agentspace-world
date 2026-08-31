@@ -31,7 +31,12 @@ import {
   LAND_USES,
   buildingSize,
   centerPlace,
+  claimIdFor,
+  plotRect,
+  remainingRects,
+  workingLand,
   type LotPlace,
+  type TileRect,
 } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
@@ -43,11 +48,13 @@ type WorldApi = {
   selectedAgentId: string | null;
   selectedBuildingId: string | null;
   selectedPlotId: string | null;
+  selectedPlotIds: string[];
+  landSlice: TileRect | null;
   selectedDistrictId: string | null;
   setPaused: (v: boolean) => void;
   selectAgent: (id: string | null) => void;
   selectBuilding: (id: string | null) => void;
-  selectPlot: (id: string | null) => void;
+  selectPlot: (id: string | null, opts?: { additive?: boolean }) => void;
   selectDistrict: (id: string | null) => void;
   focusBuilding: (id: string) => void;
   buyProp: (catalogId: string) => { ok: true; creatorPayout: number } | { ok: false; reason: string };
@@ -85,7 +92,15 @@ type WorldApi = {
   claimedExtras: Record<string, number>;
   claimedPlaces: Record<string, LotPlace>;
   claimedUses: Record<string, string>;
-  claimPlot: (id: string, extra?: number, place?: LotPlace, useId?: string) => boolean;
+  claimPlot: (id: string, extra?: number, place?: LotPlace, useId?: string, slice?: TileRect | null) => boolean;
+  claimPlots: (
+    ids: string[],
+    extra?: number,
+    place?: LotPlace,
+    useId?: string,
+    slice?: TileRect | null,
+  ) => { ok: boolean; count: number; reason?: string };
+  setLandSlice: (s: TileRect | null) => void;
   previewUseId: string;
   setPreviewUseId: (id: string) => void;
   plotExpand: number;
@@ -107,6 +122,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
   const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
+  const [selectedPlotIds, setSelectedPlotIds] = useState<string[]>([]);
+  const [landSlice, setLandSlice] = useState<TileRect | null>(null);
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
   const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 28.5, y: 8 });
@@ -309,6 +326,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     if (id) {
       setSelectedBuildingId(null);
       setSelectedPlotId(null);
+      setSelectedPlotIds([]);
+      setLandSlice(null);
     }
   }, []);
 
@@ -319,35 +338,75 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setFollowAgent(false);
       const p = PLOTS.find((item) => item.buildingId === id);
       setSelectedPlotId(p?.id ?? null);
+      setSelectedPlotIds(p ? [p.id] : []);
+      setLandSlice(p ? plotRect(p) : null);
     } else {
       setSelectedPlotId(null);
+      setSelectedPlotIds([]);
+      setLandSlice(null);
     }
   }, []);
 
-  const selectPlot = useCallback((id: string | null) => {
+  const focusPlotPreview = useCallback((id: string) => {
+    const p = getPlot(id);
+    setSelectedAgentId(null);
+    setFollowAgent(false);
+    setSelectedBuildingId(p?.buildingId ?? null);
+    setPlotExpand(0);
+    if (!p) {
+      setBuildingPlace({ ox: 0, oy: 0 });
+      setLandSlice(null);
+      return;
+    }
+    setSelectedDistrictId(p.districtId);
+    const left = remainingRects(p, claimedPlotIds);
+    const start = left.sort((a, b) => b.w * b.h - a.w * a.h)[0] ?? plotRect(p);
+    setLandSlice(start);
+    setPreviewUseId((cur) => {
+      const land = workingLand(p, start);
+      const uses = usesForPlot(land, 0);
+      const nextUse = uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk");
+      const use = LAND_USES.find((u) => u.id === nextUse) ?? LAND_USES[0]!;
+      const size = buildingSize(land, use, 0);
+      setBuildingPlace(size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
+      return nextUse;
+    });
+  }, [claimedPlotIds]);
+
+  const selectPlot = useCallback((id: string | null, opts?: { additive?: boolean }) => {
+    if (opts?.additive && id) {
+      const p = getPlot(id);
+      if (!p || p.kind !== "sale") return;
+      setSelectedPlotIds((prev) => {
+        if (prev.includes(id)) {
+          const next = prev.filter((x) => x !== id);
+          const focus = next[next.length - 1] ?? null;
+          setSelectedPlotId(focus);
+          if (focus) focusPlotPreview(focus);
+          else {
+            setSelectedBuildingId(null);
+            setLandSlice(null);
+            setBuildingPlace({ ox: 0, oy: 0 });
+          }
+          return next;
+        }
+        setSelectedPlotId(id);
+        focusPlotPreview(id);
+        return [...prev, id];
+      });
+      return;
+    }
+    setSelectedPlotIds(id ? [id] : []);
     setSelectedPlotId(id);
     setPlotExpand(0);
     if (!id) {
       setSelectedBuildingId(null);
       setBuildingPlace({ ox: 0, oy: 0 });
+      setLandSlice(null);
       return;
     }
-    const p = getPlot(id);
-    setSelectedAgentId(null);
-    setFollowAgent(false);
-    setSelectedBuildingId(p?.buildingId ?? null);
-    if (p) {
-      setSelectedDistrictId(p.districtId);
-      setPreviewUseId((cur) => {
-        const uses = usesForPlot(p, 0);
-        const nextUse = uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk");
-        const use = LAND_USES.find((u) => u.id === nextUse) ?? LAND_USES[0]!;
-        const size = buildingSize(p, use, 0);
-        setBuildingPlace(size ? centerPlace(p.w, p.h, size.w, size.h) : { ox: 0, oy: 0 });
-        return nextUse;
-      });
-    }
-  }, []);
+    focusPlotPreview(id);
+  }, [focusPlotPreview]);
 
   const selectDistrict = useCallback((id: string | null) => {
     setSelectedDistrictId(id);
@@ -379,6 +438,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setTopView(false);
     setSelectedBuildingId(id);
     setSelectedPlotId(null);
+    setSelectedPlotIds([]);
+    setLandSlice(null);
     setSelectedAgentId(null);
     setFollowAgent(false);
     setMapOverview(false);
@@ -393,24 +454,76 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraTick((t) => t + 1);
   }, []);
 
-  const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string) => {
-    const p = getPlot(id);
-    if (!p || p.kind !== "sale") return false;
-    const occupied = coverageOfClaims(claimedPlotIds, claimedExtras, id);
-    if (expandBlocked(p, extra, occupied)) return false;
-    let ok = false;
-    setClaimedPlotIds((prev) => {
-      if (prev.includes(id) || prev.length >= MAX_CLAIMS) return prev;
-      ok = true;
-      return [...prev, id];
-    });
-    if (ok) {
-      setClaimedExtras((prev) => ({ ...prev, [id]: extra }));
-      if (place) setClaimedPlaces((prev) => ({ ...prev, [id]: place }));
-      if (useId) setClaimedUses((prev) => ({ ...prev, [id]: useId }));
+  const claimPlots = useCallback((
+    ids: string[],
+    extra = 0,
+    place?: LotPlace,
+    useId?: string,
+    slice?: TileRect | null,
+  ) => {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) return { ok: false, count: 0, reason: "closed" };
+    let occupied = coverageOfClaims(claimedPlotIds, claimedExtras);
+    const pending: { id: string; extra: number; place?: LotPlace; useId?: string }[] = [];
+    for (const id of unique) {
+      const base = getPlot(id);
+      if (!base || base.kind !== "sale") return { ok: false, count: 0, reason: "closed" };
+      const useSlice = id === selectedPlotId ? (slice ?? landSlice) : plotRect(base);
+      const land = workingLand(base, useSlice);
+      const claimId = claimIdFor(base, plotRect(land));
+      if (claimedPlotIds.includes(claimId) || pending.some((row) => row.id === claimId)) {
+        return { ok: false, count: 0, reason: "closed" };
+      }
+      if (expandBlocked(land, id === selectedPlotId ? extra : 0, occupied)) {
+        return { ok: false, count: 0, reason: "overlap" };
+      }
+      occupied = new Set(occupied);
+      occupied.add(claimId);
+      pending.push({
+        id: claimId,
+        extra: id === selectedPlotId ? extra : 0,
+        place: id === selectedPlotId ? place : undefined,
+        useId: id === selectedPlotId ? useId : undefined,
+      });
     }
-    return ok;
-  }, [claimedPlotIds, claimedExtras]);
+    if (claimedPlotIds.length + pending.length > MAX_CLAIMS) {
+      return { ok: false, count: 0, reason: "cap" };
+    }
+    setClaimedPlotIds((prev) => {
+      const next = [...prev];
+      for (const row of pending) {
+        if (!next.includes(row.id) && next.length < MAX_CLAIMS) next.push(row.id);
+      }
+      return next;
+    });
+    setClaimedExtras((prev) => {
+      const next = { ...prev };
+      for (const row of pending) next[row.id] = row.extra;
+      return next;
+    });
+    setClaimedPlaces((prev) => {
+      const next = { ...prev };
+      for (const row of pending) {
+        if (row.place) next[row.id] = row.place;
+      }
+      return next;
+    });
+    setClaimedUses((prev) => {
+      const next = { ...prev };
+      for (const row of pending) {
+        if (row.useId) next[row.id] = row.useId;
+      }
+      return next;
+    });
+    setSelectedPlotIds([]);
+    setSelectedPlotId(null);
+    setLandSlice(null);
+    return { ok: true, count: pending.length };
+  }, [claimedPlotIds, claimedExtras, selectedPlotId, landSlice]);
+
+  const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string, slice?: TileRect | null) => {
+    return claimPlots([id], extra, place, useId, slice ?? landSlice).ok;
+  }, [claimPlots, landSlice]);
 
   const placeBeaconBid = useCallback((cents: number) => {
     setBeaconBidCents(cents);
@@ -494,6 +607,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       selectedAgentId,
       selectedBuildingId,
       selectedPlotId,
+      selectedPlotIds,
       selectedDistrictId,
       setPaused,
       selectAgent,
@@ -531,12 +645,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       claimedPlaces,
       claimedUses,
       claimPlot,
+      claimPlots,
       previewUseId,
       setPreviewUseId,
       plotExpand,
       setPlotExpand,
       buildingPlace,
       setBuildingPlace,
+      landSlice,
+      setLandSlice,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,
@@ -548,6 +665,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       selectedAgentId,
       selectedBuildingId,
       selectedPlotId,
+      selectedPlotIds,
       selectedDistrictId,
       selectAgent,
       selectBuilding,
@@ -580,9 +698,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       claimedPlaces,
       claimedUses,
       claimPlot,
+      claimPlots,
       previewUseId,
       plotExpand,
       buildingPlace,
+      landSlice,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,

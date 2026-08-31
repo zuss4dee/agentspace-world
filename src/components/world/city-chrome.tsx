@@ -14,7 +14,7 @@ import {
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { buildingSize, centerPlace, coverageOfClaims, expandPrice, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
+import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, formatSqFt, getPlot, isLotMultiModifier, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, plotRect, resizeSlice, SALE_STOCK, usesForPlot, workingLand, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -22,19 +22,22 @@ export function CityChrome() {
   const {
     world,
     selectedPlotId,
+    selectedPlotIds,
     selectPlot,
     claimedPlotIds,
     claimedExtras,
     claimPlot,
+    claimPlots,
     plotExpand,
     setPlotExpand,
     buildingPlace,
     setBuildingPlace,
     previewUseId,
     setPreviewUseId,
+    landSlice,
+    setLandSlice,
     focusCoord,
     setCameraScale,
-    cameraScale,
     zoomBy,
     enterBuilding,
     beaconBidCents,
@@ -52,7 +55,6 @@ export function CityChrome() {
   const [keysOpen, setKeysOpen] = useState(false);
   const [walkingIn, setWalkingIn] = useState(false);
   const [band, setBand] = useState<"all" | PlotZone>("all");
-  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const occupied = useMemo(
     () => coverageOfClaims(claimedPlotIds, claimedExtras),
     [claimedPlotIds, claimedExtras],
@@ -61,14 +63,34 @@ export function CityChrome() {
   const openLots = useMemo(() => openSaleCount(claimedPlotIds), [claimedPlotIds]);
   const activity = useMemo(() => shopActivity(), []);
   const picked = getPlot(selectedPlotId);
-  const maxExtra = picked && picked.kind === "sale" && !claimed.has(picked.id)
-    ? maxExpandFor(
-        picked,
-        coverageOfClaims(claimedPlotIds, claimedExtras, picked.id),
-        LAND_USES.find((u) => u.id === previewUseId),
-        buildingPlace,
-      )
-    : 0;
+  const pickedClaimed = Boolean(picked && claimedCoversPlot(picked.id, claimedPlotIds));
+  const land = picked ? workingLand(picked, landSlice ?? plotRect(picked)) : undefined;
+  const selectedLands = selectedPlotIds
+    .map((id) => {
+      const p = getPlot(id);
+      if (!p) return null;
+      if (id === selectedPlotId && landSlice) return workingLand(p, landSlice);
+      return p;
+    })
+    .filter((p): p is NonNullable<typeof p> => Boolean(p));
+  const selectedSqFt = selectedLands.reduce((n, p) => n + plotArea(p).sqft, 0);
+  const selectedPrice = selectedLands.reduce((n, p) => n + p.price, 0);
+  const maxExtra =
+    land && land.kind === "sale" && !pickedClaimed
+      ? maxExpandFor(
+          land,
+          coverageOfClaims(claimedPlotIds, claimedExtras, picked?.id),
+          LAND_USES.find((u) => u.id === previewUseId),
+          buildingPlace,
+        )
+      : 0;
+  const issue =
+    land && land.kind === "sale" && !pickedClaimed
+      ? claimIssueFor(selectedLands.length ? selectedLands : [land], claimedPlotIds, claimedExtras)
+      : null;
+  const adjoining = land
+    ? bestAdjoiningSale(land, [...claimedPlotIds, ...selectedPlotIds])
+    : undefined;
 
   const active = world.agents.filter((a) => a.mapId === "lot").length;
 
@@ -177,7 +199,8 @@ export function CityChrome() {
           </div>
           <p className="ns-avail-hint">
             {openLots.toLocaleString()} lots open · {SALE_STOCK.toLocaleString()} in the south field at opening. White
-            pads are empty. You can claim up to {MAX_CLAIMS} this session.
+            pads are empty. You can claim up to {MAX_CLAIMS} this session. Shift-click (or Ctrl-click) to select
+            multiple lots.
           </p>
           <button
             type="button"
@@ -212,9 +235,9 @@ export function CityChrome() {
                   key={p.id}
                   type="button"
                   className="ns-avail-row"
-                  data-on={selectedPlotId === p.id ? "1" : "0"}
-                  onClick={() => {
-                    selectPlot(p.id);
+                  data-on={selectedPlotIds.includes(p.id) || selectedPlotId === p.id ? "1" : "0"}
+                  onClick={(e) => {
+                    selectPlot(p.id, { additive: isLotMultiModifier(e) });
                     focusCoord(p.x + p.w / 2, p.y + p.h / 2, 0.95);
                   }}
                 >
@@ -321,43 +344,94 @@ export function CityChrome() {
         </aside>
       ) : null}
 
-      {picked ? (
+      {picked && land ? (
         <PlotSheet
           plot={picked}
-          claimed={claimed.has(picked.id)}
+          land={land}
+          claimed={pickedClaimed}
+          selectedCount={Math.max(1, selectedLands.length)}
+          selectedSqFt={selectedSqFt || plotArea(land).sqft}
+          selectedPrice={selectedPrice || land.price}
           agents={world.agents}
           previewUseId={previewUseId}
           extra={Math.min(plotExpand, maxExtra)}
           maxExtra={maxExtra}
           place={buildingPlace}
+          landSlice={landSlice ?? plotRect(picked)}
+          maxLandGrow={Boolean(
+            landSlice && landSlice.w >= picked.w && landSlice.h >= picked.h,
+          )}
+          claimIssue={issue}
+          remainingClaims={Math.max(0, MAX_CLAIMS - claimedPlotIds.length)}
+          adjoining={adjoining}
           onPreviewUse={(id) => {
             setPreviewUseId(id);
-            if (!picked) return;
             const use = LAND_USES.find((u) => u.id === id);
             if (!use) return;
             setPlotExpand(0);
-            const size = buildingSize(picked, use, 0);
-            setBuildingPlace(size ? centerPlace(picked.w, picked.h, size.w, size.h) : { ox: 0, oy: 0 });
+            const size = buildingSize(land, use, 0);
+            setBuildingPlace(size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
           }}
           onExtra={(n) => {
             setPlotExpand(n);
-            if (!picked) return;
-            const uses = usesForPlot(picked, n);
+            const uses = usesForPlot(land, n);
             const nextId = uses.some((u) => u.id === previewUseId) ? previewUseId : (uses[0]?.id ?? "kiosk");
             if (nextId !== previewUseId) setPreviewUseId(nextId);
           }}
           onPlace={setBuildingPlace}
+          onLandSlice={(s) => {
+            setLandSlice(s);
+            setPlotExpand(0);
+            const next = workingLand(picked, s);
+            const uses = usesForPlot(next, 0);
+            const nextId = uses.some((u) => u.id === previewUseId) ? previewUseId : (uses[0]?.id ?? "kiosk");
+            const use = LAND_USES.find((u) => u.id === nextId) ?? LAND_USES[0]!;
+            const size = buildingSize(next, use, 0);
+            setBuildingPlace(size ? centerPlace(next.w, next.h, size.w, size.h) : { ox: 0, oy: 0 });
+            if (nextId !== previewUseId) setPreviewUseId(nextId);
+          }}
+          onResizeLand={(delta) => {
+            const cur = landSlice ?? plotRect(picked);
+            const nextSlice = resizeSlice(picked, cur, delta);
+            setLandSlice(nextSlice);
+            const next = workingLand(picked, nextSlice);
+            const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
+            const size = buildingSize(next, use, plotExpand);
+            setBuildingPlace(size ? centerPlace(next.w, next.h, size.w, size.h) : { ox: 0, oy: 0 });
+          }}
+          onAddAdjoining={() => {
+            if (!adjoining) return;
+            if (pickedClaimed) {
+              const extra = Math.min(plotExpand, maxExtra);
+              const ok = claimPlot(adjoining.id, 0);
+              if (ok)
+                toast.success(
+                  `Adjoining lot claimed · ${formatUsd(adjoining.price)}. ${claimedPlotIds.length + 1}/${MAX_CLAIMS} this session.`,
+                );
+              else if (claimedPlotIds.length >= MAX_CLAIMS)
+                toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
+              else toast.error("That adjoining pad hits owned land or the lot cap.");
+              void extra;
+              return;
+            }
+            selectPlot(adjoining.id, { additive: true });
+            focusCoord(adjoining.x + adjoining.w / 2, adjoining.y + adjoining.h / 2, 0.95);
+            toast.message(`Added ${adjoining.groupLabel}. Shift-click more lots, then Claim.`);
+          }}
           onClose={() => selectPlot(null)}
           onBuy={() => {
             const extra = Math.min(plotExpand, maxExtra);
-            const ok = claimPlot(picked.id, extra, buildingPlace, previewUseId);
-            const price = expandPrice(picked, extra);
-            if (ok)
+            const ids = selectedPlotIds.length ? selectedPlotIds : [picked.id];
+            const result = claimPlots(ids, extra, buildingPlace, previewUseId, landSlice);
+            const price = selectedPrice || expandPrice(land, extra);
+            if (result.ok)
               toast.success(
-                `Plot secured · ${formatUsd(price)}${extra ? ` · +${extra} expand` : ""}. ${claimedPlotIds.length + 1}/${MAX_CLAIMS} this session.`,
+                `${result.count > 1 ? `${result.count} plots` : "Plot"} secured · ${formatUsd(price)}. ${claimedPlotIds.length + result.count}/${MAX_CLAIMS} this session.`,
               );
-            else if (claimedPlotIds.length >= MAX_CLAIMS)
+            else if (result.reason === "cap")
               toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
+            else if (result.reason === "overlap")
+              toast.error("That claim hits a road, a neighbour, or owned land.");
             else toast.error("That claim hits a road, a neighbour, or the lot cap.");
           }}
           onEnter={enterBuilding}

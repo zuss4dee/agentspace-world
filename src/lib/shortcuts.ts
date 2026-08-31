@@ -8,6 +8,7 @@ export const CAMERA_SHORTCUTS: ShortcutRow[] = [
   { keys: "Drag", does: "Pan along the streets" },
   { keys: "Shift + drag", does: "Turn the camera to any angle" },
   { keys: "Shift + arrows", does: "Turn the camera without dragging" },
+  { keys: "Shift-click", does: "Select multiple lots (Ctrl-click also works)" },
   { keys: "Scroll", does: "Zoom in and out" },
   { keys: "W A S D", does: "Walk the camera over the map" },
   { keys: "Double-click", does: "Fly to that patch of land" },

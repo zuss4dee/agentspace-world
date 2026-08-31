@@ -8,15 +8,22 @@ import {
   CITY_PLOTS,
   LAND_COUNT,
   LAND_USES,
+  basePlotId,
   buildingFootprint,
+  claimedCoversPlot,
   coverageOfClaims,
   expandedRect,
   getPlot,
+  isLotMultiModifier,
   landBounds,
   latticePlot,
   maxExpandFor,
   measureTiles,
   placeAtCell,
+  plotRect,
+  remainingRects,
+  workingLand,
+  type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import { FacadeOffice } from "@/components/world/gl/buildings";
@@ -29,7 +36,7 @@ const C = {
   taken: new THREE.Color("#c8c8c8"),
 };
 
-function usePalette(useId: string) {
+function officePalette(useId: string) {
   switch (useId) {
     case "hq":
     case "office":
@@ -53,7 +60,7 @@ export function PlotsLayer() {
   const edges = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const color = useMemo(() => new THREE.Color(), []);
-  const { selectedPlotId, selectPlot, claimedPlotIds } = useWorld();
+  const { selectedPlotId, selectedPlotIds, selectPlot, claimedPlotIds } = useWorld();
   const list = CITY_PLOTS;
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
 
@@ -64,9 +71,9 @@ export function PlotsLayer() {
     list.forEach((p, i) => {
       const cx = wx(p.x + p.w / 2);
       const cz = wz(p.y + p.h / 2);
-      const taken = claimed.has(p.id);
+      const taken = claimedCoversPlot(p.id, claimed) || remainingRects(p, claimed).length === 0;
       const forSale = p.kind === "sale" && !taken;
-      const selected = selectedPlotId === p.id;
+      const selected = selectedPlotIds.includes(p.id) || selectedPlotId === p.id || selectedPlotIds.some((id) => basePlotId(id) === p.id);
       const hidePad = selected && forSale;
 
       dummy.position.set(cx, forSale ? h(0.07) : h(0.035), cz);
@@ -90,7 +97,7 @@ export function PlotsLayer() {
     edge.instanceMatrix.needsUpdate = true;
     if (pad.instanceColor) pad.instanceColor.needsUpdate = true;
     if (edge.instanceColor) edge.instanceColor.needsUpdate = true;
-  }, [dummy, color, list, selectedPlotId, claimed]);
+  }, [dummy, color, list, selectedPlotId, selectedPlotIds, claimed]);
 
   const onClick = (e: ThreeEvent<MouseEvent>) => {
     if (e.delta > 4) return;
@@ -98,7 +105,7 @@ export function PlotsLayer() {
     const id = e.instanceId;
     if (id == null) return;
     const p = list[id];
-    if (p) selectPlot(p.id);
+    if (p) selectPlot(p.id, { additive: isLotMultiModifier(e) });
   };
 
   return (
@@ -140,7 +147,7 @@ export function LatticeField() {
     e.stopPropagation();
     const id = e.instanceId;
     if (id == null) return;
-    selectPlot(`l-${id}`);
+    selectPlot(`l-${id}`, { additive: isLotMultiModifier(e) });
   };
 
   const cx = wx((land.x0 + land.x1) / 2);
@@ -166,7 +173,7 @@ export function SaleStakes() {
   const poles = useRef<THREE.InstancedMesh>(null);
   const flags = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const { claimedPlotIds, selectedPlotId } = useWorld();
+  const { claimedPlotIds, selectedPlotId, selectedPlotIds } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const sales = useMemo(() => CITY_PLOTS.filter((p) => p.kind === "sale"), []);
 
@@ -175,7 +182,11 @@ export function SaleStakes() {
     const flag = flags.current;
     if (!pole || !flag) return;
     sales.forEach((p, i) => {
-      const hide = claimed.has(p.id) || selectedPlotId === p.id;
+      const hide =
+        claimed.has(p.id) ||
+        claimedCoversPlot(p.id, claimed) ||
+        selectedPlotId === p.id ||
+        selectedPlotIds.includes(p.id);
       const x = wx(p.x + p.w / 2) + p.w * TILE * 0.32;
       const z = wz(p.y + p.h / 2) + p.h * TILE * 0.32;
       dummy.position.set(x, h(0.55), z);
@@ -188,7 +199,7 @@ export function SaleStakes() {
     });
     pole.instanceMatrix.needsUpdate = true;
     flag.instanceMatrix.needsUpdate = true;
-  }, [dummy, claimed, sales, selectedPlotId]);
+  }, [dummy, claimed, sales, selectedPlotId, selectedPlotIds]);
 
   if (sales.length === 0) return null;
 
@@ -209,27 +220,34 @@ export function SaleStakes() {
 export function BuildingGhost() {
   const {
     selectedPlotId,
+    selectedPlotIds,
     previewUseId,
     claimedPlotIds,
     claimedExtras,
     plotExpand,
     buildingPlace,
+    landSlice,
     setBuildingPlace,
     topView,
   } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const plot = getPlot(selectedPlotId);
-  if (!plot || plot.kind !== "sale" || claimed.has(plot.id)) return null;
+  if (!plot || plot.kind !== "sale" || claimedCoversPlot(plot.id, claimed)) return null;
+  const landPlot = workingLand(plot, landSlice ?? plotRect(plot));
   const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
   const extra = Math.min(
     plotExpand,
-    maxExpandFor(plot, coverageOfClaims(claimedPlotIds, claimedExtras, plot.id), use, buildingPlace),
+    maxExpandFor(landPlot, coverageOfClaims(claimedPlotIds, claimedExtras, plot.id), use, buildingPlace),
   );
-  const land = expandedRect(plot, extra);
-  const fp = buildingFootprint(plot, use, extra, buildingPlace);
+  const land = expandedRect(landPlot, extra);
+  const fp = buildingFootprint(landPlot, use, extra, buildingPlace);
   const landM = measureTiles(land.w, land.h);
   const bldgM = fp ? measureTiles(fp.w, fp.h) : null;
   const fillsLot = Boolean(fp && fp.w >= land.w && fp.h >= land.h);
+  const others = selectedPlotIds
+    .filter((id) => id !== plot.id)
+    .map((id) => getPlot(id))
+    .filter((p): p is Plot => p != null && p.kind === "sale" && !claimedCoversPlot(p.id, claimed));
   const y0 = h(0.22);
   const x0 = wx(land.x);
   const z0 = wz(land.y);
@@ -245,6 +263,26 @@ export function BuildingGhost() {
 
   return (
     <group>
+      {others.map((p) => {
+        const xA = wx(p.x);
+        const zA = wz(p.y);
+        const xB = wx(p.x + p.w);
+        const zB = wz(p.y + p.h);
+        return (
+          <Line
+            key={p.id}
+            points={[
+              [xA, y0, zA],
+              [xB, y0, zA],
+              [xB, y0, zB],
+              [xA, y0, zB],
+              [xA, y0, zA],
+            ]}
+            color="#111111"
+            lineWidth={2}
+          />
+        );
+      })}
       <Line points={fence} color="#111111" lineWidth={2.4} />
       {!fillsLot
         ? Array.from({ length: land.w * land.h }, (_, i) => {
@@ -279,7 +317,7 @@ export function BuildingGhost() {
               height={h(fp.height)}
               opacity={0.9}
               useId={use.id}
-              {...usePalette(use.id)}
+              {...officePalette(use.id)}
             />
           </group>
           {!topView ? (
@@ -399,7 +437,7 @@ export function ClaimedMarks() {
                     d={fp.h * TILE * 0.94}
                     height={h(fp.height)}
                     useId={use.id}
-                    {...usePalette(use.id)}
+                    {...officePalette(use.id)}
                   />
                 </group>
               </>

@@ -6,6 +6,7 @@ export { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, measureTiles, tilesToSqFt 
 
 export type PlotKind = "sale" | "owned" | "park" | "civic";
 export type PlotZone = "ultimate" | "downtown" | "midtown" | "uptown" | "outskirts";
+export type TileRect = { x: number; y: number; w: number; h: number };
 
 export type Plot = {
   id: string;
@@ -31,6 +32,10 @@ const ZONE_PRICE: Record<PlotZone, number> = {
 
 /** Lots one spectator can hold in a session. */
 export const MAX_CLAIMS = 10;
+/** Smallest claimable land slice (tiles). Matches irregular-lot carve min edge. */
+export const MIN_LOT_EDGE = 3;
+/** Campus-scale pads can be bought as a portion instead of the whole field. */
+export const PORTION_AREA = 36;
 
 /** Opening inventory. */
 export const SALE_STOCK = 100_000;
@@ -311,11 +316,64 @@ export function latticePlot(i: number): Plot {
   };
 }
 
-export function getPlot(id: string | null | undefined): Plot | undefined {
-  if (!id) return undefined;
+/** Claim ids for a sub-rect look like `land-campus-1~10:12:4:4`. */
+export function parseSliceId(id: string): { baseId: string; slice?: TileRect } {
+  const at = id.lastIndexOf("~");
+  if (at <= 0) return { baseId: id };
+  const parts = id.slice(at + 1).split(":").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n))) return { baseId: id };
+  const [x, y, w, h] = parts as [number, number, number, number];
+  return { baseId: id.slice(0, at), slice: { x, y, w, h } };
+}
+
+export function basePlotId(id: string) {
+  return parseSliceId(id).baseId;
+}
+
+export function makeSliceId(baseId: string, slice: TileRect) {
+  return `${baseId}~${slice.x}:${slice.y}:${slice.w}:${slice.h}`;
+}
+
+export function rectsEqual(a: TileRect, b: TileRect) {
+  return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+}
+
+export function slicePrice(base: Plot, slice: TileRect) {
+  const all = Math.max(1, base.w * base.h);
+  const part = Math.max(1, slice.w * slice.h);
+  return Math.max(1, Math.round((base.price * part) / all));
+}
+
+export function withLand(base: Plot, slice: TileRect, id = base.id): Plot {
+  return {
+    ...base,
+    id,
+    x: slice.x,
+    y: slice.y,
+    w: slice.w,
+    h: slice.h,
+    price: rectsEqual(slice, base) ? base.price : slicePrice(base, slice),
+    groupLabel: rectsEqual(slice, base) ? base.groupLabel : `${base.groupLabel} · ${slice.w}×${slice.h}`,
+  };
+}
+
+export function plotRect(p: TileRect): TileRect {
+  return { x: p.x, y: p.y, w: p.w, h: p.h };
+}
+
+function getBasePlot(id: string): Plot | undefined {
   const i = latticeIndex(id);
   if (i >= 0) return latticePlot(i);
   return CITY_PLOTS.find((p) => p.id === id);
+}
+
+export function getPlot(id: string | null | undefined): Plot | undefined {
+  if (!id) return undefined;
+  const parsed = parseSliceId(id);
+  const base = getBasePlot(parsed.baseId);
+  if (!base) return undefined;
+  if (!parsed.slice) return base;
+  return withLand(base, parsed.slice, id);
 }
 
 export function plotAt(x: number, y: number) {
@@ -331,9 +389,48 @@ export function plotAt(x: number, y: number) {
   return undefined;
 }
 
+export function claimedCoversPlot(plotId: string, claimed: Iterable<string>) {
+  for (const id of claimed) {
+    if (id === plotId) return true;
+    const parsed = parseSliceId(id);
+    if (parsed.baseId === plotId && !parsed.slice) return true;
+  }
+  return false;
+}
+
+export function subtractRect(a: TileRect, b: TileRect): TileRect[] {
+  if (!rectsOverlap(a, b)) return [a];
+  const yTop = Math.max(a.y, b.y);
+  const yBot = Math.min(a.y + a.h, b.y + b.h);
+  const xL = Math.max(a.x, b.x);
+  const xR = Math.min(a.x + a.w, b.x + b.w);
+  const out: TileRect[] = [];
+  if (a.y < yTop) out.push({ x: a.x, y: a.y, w: a.w, h: yTop - a.y });
+  if (yBot < a.y + a.h) out.push({ x: a.x, y: yBot, w: a.w, h: a.y + a.h - yBot });
+  if (yBot > yTop && a.x < xL) out.push({ x: a.x, y: yTop, w: xL - a.x, h: yBot - yTop });
+  if (yBot > yTop && xR < a.x + a.w) out.push({ x: xR, y: yTop, w: a.x + a.w - xR, h: yBot - yTop });
+  return out.filter((r) => r.w > 0 && r.h > 0);
+}
+
+export function remainingRects(p: Plot, claimed: Iterable<string>): TileRect[] {
+  if (claimedCoversPlot(p.id, claimed)) return [];
+  let rects: TileRect[] = [plotRect(p)];
+  for (const id of claimed) {
+    const parsed = parseSliceId(id);
+    if (parsed.baseId !== p.id && id !== p.id) continue;
+    const hole = parsed.slice ?? getPlot(id);
+    if (!hole) continue;
+    rects = rects.flatMap((r) => subtractRect(r, hole));
+  }
+  return rects;
+}
+
+export function listingOpen(p: Plot, claimed: Iterable<string>) {
+  return p.kind === "sale" && remainingRects(p, claimed).length > 0;
+}
+
 export function plotsForSale(claimed: Iterable<string> = []) {
-  const skip = new Set(claimed);
-  return CITY_PLOTS.filter((p) => p.kind === "sale" && !skip.has(p.id));
+  return CITY_PLOTS.filter((p) => listingOpen(p, claimed));
 }
 
 export function openSaleCount(claimed: Iterable<string> = []) {
@@ -356,14 +453,14 @@ export function listSalePlots(
   if (occupied) for (const id of occupied) skip.add(id);
   const out: Plot[] = [];
   for (const p of CITY_PLOTS) {
-    if (p.kind !== "sale" || skip.has(p.id)) continue;
+    if (!listingOpen(p, skip)) continue;
     if (zone !== "all" && p.zone !== zone) continue;
     out.push(p);
     if (out.length >= limit) return out;
   }
   for (let i = 0; i < LAND_COUNT && out.length < limit; i++) {
     const p = latticePlot(i);
-    if (skip.has(p.id)) continue;
+    if (!listingOpen(p, skip)) continue;
     if (zone !== "all" && p.zone !== zone) continue;
     out.push(p);
   }
@@ -411,6 +508,175 @@ export function expandedRect(p: Plot, _extra = 0) {
 
 export function expandPrice(p: Plot, _extra = 0) {
   return p.price;
+}
+
+export function isLotMultiModifier(e: {
+  shiftKey?: boolean;
+  ctrlKey?: boolean;
+  metaKey?: boolean;
+  nativeEvent?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean };
+}) {
+  const n = e.nativeEvent ?? e;
+  return Boolean(n.shiftKey || n.ctrlKey || n.metaKey);
+}
+
+export function canSlicePlot(p: Plot) {
+  return p.kind === "sale" && p.w * p.h >= PORTION_AREA && Math.min(p.w, p.h) >= 6;
+}
+
+export function clampSlice(plot: Plot, slice: TileRect): TileRect {
+  const w = Math.max(MIN_LOT_EDGE, Math.min(slice.w, plot.w));
+  const h = Math.max(MIN_LOT_EDGE, Math.min(slice.h, plot.h));
+  const x = Math.max(plot.x, Math.min(plot.x + plot.w - w, slice.x));
+  const y = Math.max(plot.y, Math.min(plot.y + plot.h - h, slice.y));
+  return { x, y, w, h };
+}
+
+export function resizeSlice(plot: Plot, slice: TileRect, delta: number): TileRect {
+  let { x, y, w, h } = clampSlice(plot, slice);
+  if (delta > 0) {
+    if (x + w < plot.x + plot.w) w += 1;
+    else if (y + h < plot.y + plot.h) h += 1;
+    else if (x > plot.x) {
+      x -= 1;
+      w += 1;
+    } else if (y > plot.y) {
+      y -= 1;
+      h += 1;
+    }
+  } else if (delta < 0) {
+    if (w > h && w > MIN_LOT_EDGE) w -= 1;
+    else if (h > MIN_LOT_EDGE) h -= 1;
+    else if (w > MIN_LOT_EDGE) w -= 1;
+  }
+  return clampSlice(plot, { x, y, w, h });
+}
+
+export function portionChoices(p: Plot): { id: string; label: string; slice: TileRect }[] {
+  const full = plotRect(p);
+  const out: { id: string; label: string; slice: TileRect }[] = [{ id: "full", label: "Full pad", slice: full }];
+  if (!canSlicePlot(p)) return out;
+  const splitX = p.w >= p.h;
+  if (splitX) {
+    const w1 = Math.max(MIN_LOT_EDGE, Math.floor(p.w / 2));
+    const w2 = p.w - w1;
+    if (w2 >= MIN_LOT_EDGE) {
+      out.push({ id: "half-a", label: "West half", slice: { x: p.x, y: p.y, w: w1, h: p.h } });
+      out.push({ id: "half-b", label: "East half", slice: { x: p.x + w1, y: p.y, w: w2, h: p.h } });
+    }
+  } else {
+    const h1 = Math.max(MIN_LOT_EDGE, Math.floor(p.h / 2));
+    const h2 = p.h - h1;
+    if (h2 >= MIN_LOT_EDGE) {
+      out.push({ id: "half-a", label: "North half", slice: { x: p.x, y: p.y, w: p.w, h: h1 } });
+      out.push({ id: "half-b", label: "South half", slice: { x: p.x, y: p.y + h1, w: p.w, h: h2 } });
+    }
+  }
+  const qw = Math.max(MIN_LOT_EDGE, Math.floor(p.w / 2));
+  const qh = Math.max(MIN_LOT_EDGE, Math.floor(p.h / 2));
+  if (p.w >= MIN_LOT_EDGE * 2 && p.h >= MIN_LOT_EDGE * 2) {
+    out.push({ id: "q-nw", label: "NW quarter", slice: { x: p.x, y: p.y, w: qw, h: qh } });
+    out.push({ id: "q-ne", label: "NE quarter", slice: { x: p.x + p.w - qw, y: p.y, w: qw, h: qh } });
+    out.push({ id: "q-sw", label: "SW quarter", slice: { x: p.x, y: p.y + p.h - qh, w: qw, h: qh } });
+    out.push({ id: "q-se", label: "SE quarter", slice: { x: p.x + p.w - qw, y: p.y + p.h - qh, w: qw, h: qh } });
+  }
+  return out;
+}
+
+export function claimIdFor(base: Plot, slice: TileRect) {
+  if (rectsEqual(slice, base)) return base.id;
+  return makeSliceId(basePlotId(base.id), slice);
+}
+
+export function workingLand(base: Plot, slice: TileRect | null | undefined): Plot {
+  const land = slice ? clampSlice(base, slice) : plotRect(base);
+  const id = claimIdFor(base, land);
+  return withLand(base, land, id);
+}
+
+/** Length of the shared fence between two AABBs. 0 if they only touch a corner or sit apart. */
+export function sharedEdgeLength(a: TileRect, b: TileRect) {
+  const v = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+  const hSpan = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+  const side = a.x + a.w === b.x || b.x + b.w === a.x;
+  const cap = a.y + a.h === b.y || b.y + b.h === a.y;
+  if (side && v > 0) return v;
+  if (cap && hSpan > 0) return hSpan;
+  return 0;
+}
+
+export function adjoiningSalePlots(plot: Plot, skip: Iterable<string> = []): Plot[] {
+  const blockedIds = new Set<string>();
+  for (const id of skip) {
+    blockedIds.add(id);
+    blockedIds.add(basePlotId(id));
+  }
+  blockedIds.add(plot.id);
+  blockedIds.add(basePlotId(plot.id));
+  const hits: { p: Plot; edge: number }[] = [];
+  const consider = (cand: Plot) => {
+    if (cand.kind !== "sale") return;
+    if (blockedIds.has(cand.id) || blockedIds.has(basePlotId(cand.id))) return;
+    const edge = sharedEdgeLength(plot, cand);
+    if (edge <= 0) return;
+    hits.push({ p: cand, edge });
+    blockedIds.add(cand.id);
+  };
+  for (const cand of CITY_PLOTS) consider(cand);
+  const li = latticeIndex(basePlotId(plot.id));
+  if (li >= 0) {
+    const col = li % LAND_COLS;
+    const row = Math.floor(li / LAND_COLS);
+    for (const [dc, dr] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ] as const) {
+      const c = col + dc;
+      const r = row + dr;
+      if (c < 0 || r < 0 || c >= LAND_COLS || r >= LAND_ROWS) continue;
+      consider(latticePlot(r * LAND_COLS + c));
+    }
+  } else {
+    const samples = [
+      { x: plot.x - 0.5, y: plot.y + plot.h / 2 },
+      { x: plot.x + plot.w + 0.5, y: plot.y + plot.h / 2 },
+      { x: plot.x + plot.w / 2, y: plot.y - 0.5 },
+      { x: plot.x + plot.w / 2, y: plot.y + plot.h + 0.5 },
+    ];
+    for (const s of samples) {
+      const n = plotAt(s.x, s.y);
+      if (n) consider(n);
+    }
+  }
+  hits.sort((a, b) => b.edge - a.edge || b.p.w * b.p.h - a.p.w * a.p.h);
+  return hits.map((row) => row.p);
+}
+
+export function bestAdjoiningSale(plot: Plot, skip: Iterable<string> = []) {
+  return adjoiningSalePlots(plot, skip)[0];
+}
+
+export type ClaimIssue = "cap" | "overlap" | "closed" | null;
+
+export function claimIssueFor(
+  lands: Plot[],
+  claimedIds: string[],
+  extras: Record<string, number> = {},
+): ClaimIssue {
+  if (lands.length === 0) return "closed";
+  if (claimedIds.length + lands.length > MAX_CLAIMS) return "cap";
+  const occupied = coverageOfClaims(claimedIds, extras);
+  for (const land of lands) {
+    if (land.kind !== "sale") return "closed";
+    const parent = getBasePlot(basePlotId(land.id));
+    if (claimedIds.includes(land.id)) return "closed";
+    if (parent && claimedCoversPlot(parent.id, claimedIds) && rectsEqual(land, parent)) return "closed";
+    if (expandBlocked(land, extras[land.id] ?? 0, occupied)) return "overlap";
+    occupied.add(land.id);
+  }
+  return null;
 }
 
 function rectsOverlap(
@@ -467,14 +733,19 @@ export function expandBlocked(p: Plot, extra: number, occupied: Set<string>) {
     if (p.buildingId === b.id) continue;
     return true;
   }
+  for (const id of occupied) {
+    if (id === p.id) continue;
+    const other = getPlot(id);
+    if (other && rectsOverlap(r, other)) return true;
+  }
   for (const other of CITY_PLOTS) {
-    if (other.id === p.id) continue;
+    if (other.id === p.id || other.id === basePlotId(p.id)) continue;
     if (!rectsOverlap(r, other)) continue;
-    if (other.kind === "owned" || occupied.has(other.id)) return true;
+    if (other.kind === "owned" || occupied.has(other.id) || claimedCoversPlot(other.id, occupied)) return true;
   }
   for (const id of idsUnderRect(r)) {
-    if (id === p.id) continue;
-    if (occupied.has(id)) return true;
+    if (id === p.id || id === basePlotId(p.id)) continue;
+    if (occupied.has(id) || claimedCoversPlot(id, occupied)) return true;
   }
   return false;
 }
@@ -724,7 +995,7 @@ export function yardTreeSpots(plotId: string, fp: { x: number; y: number; w: num
   const inset = 0.68;
   for (let i = 0; i < count; i++) {
     const u = (i + plotNoise(plotId, i + 11)) / count;
-    let d = (u % 1) * perim;
+    const d = (u % 1) * perim;
     let x: number;
     let y: number;
     if (d < fp.w) {

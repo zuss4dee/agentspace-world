@@ -34,23 +34,29 @@ export function TreeField() {
     claimedPlaces,
     claimedUses,
     selectedPlotId,
+    selectedPlotIds,
     previewUseId,
     plotExpand,
     buildingPlace,
+    landSlice,
   } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const hideLots = useMemo(() => {
     const rects: { x: number; y: number; w: number; h: number }[] = [];
-    const preview = getPlot(selectedPlotId);
-    if (preview?.kind === "sale" && !claimed.has(preview.id)) {
-      rects.push(expandedRect(preview, plotExpand));
+    const ids = selectedPlotIds.length ? selectedPlotIds : selectedPlotId ? [selectedPlotId] : [];
+    for (const id of ids) {
+      const preview = getPlot(id);
+      if (preview?.kind === "sale" && !claimed.has(preview.id)) {
+        const land = id === selectedPlotId && landSlice ? { ...preview, ...landSlice } : preview;
+        rects.push(expandedRect(land, id === selectedPlotId ? plotExpand : 0));
+      }
     }
     for (const id of claimedPlotIds) {
       const p = getPlot(id);
       if (p) rects.push(expandedRect(p, claimedExtras[id] ?? 0));
     }
     return rects;
-  }, [claimedPlotIds, claimedExtras, selectedPlotId, plotExpand, claimed]);
+  }, [claimedPlotIds, claimedExtras, selectedPlotId, selectedPlotIds, plotExpand, landSlice, claimed]);
   const blockers = useMemo(
     () =>
       footprintBlocks(
@@ -59,7 +65,12 @@ export function TreeField() {
         claimedPlaces,
         claimedUses,
         selectedPlotId && !claimed.has(selectedPlotId)
-          ? { id: selectedPlotId, extra: plotExpand, useId: previewUseId, place: buildingPlace }
+          ? {
+              id: selectedPlotId,
+              extra: plotExpand,
+              useId: previewUseId,
+              place: buildingPlace,
+            }
           : null,
       ),
     [
@@ -169,17 +180,24 @@ export function TreeField() {
 
 export function BushField() {
   const bushes = useMemo(() => SCENERY.filter((s) => s.kind === "bush" || s.kind === "hedge"), []);
-  const { selectedPlotId, claimedPlotIds, plotExpand } = useWorld();
+  const { selectedPlotId, selectedPlotIds, claimedPlotIds, plotExpand, landSlice } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const hide = useMemo(() => {
-    const p = getPlot(selectedPlotId);
-    if (p?.kind === "sale" && !claimed.has(p.id)) return expandedRect(p, plotExpand);
-    return null;
-  }, [selectedPlotId, claimed, plotExpand]);
+    const rects: { x: number; y: number; w: number; h: number }[] = [];
+    const ids = selectedPlotIds.length ? selectedPlotIds : selectedPlotId ? [selectedPlotId] : [];
+    for (const id of ids) {
+      const p = getPlot(id);
+      if (p?.kind === "sale" && !claimed.has(p.id)) {
+        const land = id === selectedPlotId && landSlice ? { ...p, ...landSlice } : p;
+        rects.push(expandedRect(land, id === selectedPlotId ? plotExpand : 0));
+      }
+    }
+    return rects;
+  }, [selectedPlotId, selectedPlotIds, claimed, plotExpand, landSlice]);
   return (
     <group>
       {bushes.map((s) => {
-        if (hide && pointInRect(s.x, s.y, hide)) return null;
+        if (hide.some((r) => pointInRect(s.x, s.y, r))) return null;
         return (
           <mesh key={s.id} position={[wx(s.x), h(0.22), wz(s.y)]} castShadow>
             <sphereGeometry args={[s.kind === "hedge" ? h(0.32) : h(0.22), 6, 5]} />

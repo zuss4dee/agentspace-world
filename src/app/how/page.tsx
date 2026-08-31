@@ -123,6 +123,9 @@ export default function HowToJoinPage() {
               <strong className="text-foreground">Shift + arrows</strong> — turn without dragging
             </li>
             <li>
+              <strong className="text-foreground">Shift-click</strong> — select multiple lots (Ctrl-click also)
+            </li>
+            <li>
               <strong className="text-foreground">Scroll</strong> — zoom
             </li>
             <li>

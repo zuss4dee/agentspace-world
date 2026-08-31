@@ -17,7 +17,7 @@ import { DistantFills, GrassTufts, TerrainMesh, WaterPlane } from "@/components/
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { TILE, fromWorld, h, wx, wz } from "@/lib/coords";
-import { landBounds, plotAt } from "@/lib/plots";
+import { landBounds, plotAt, isLotMultiModifier } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
 function LightFollow() {
@@ -65,13 +65,14 @@ function ExteriorScene() {
     }
     const p = plotAt(g.x, g.y);
     if (p) {
-      selectPlot(p.id);
+      selectPlot(p.id, { additive: isLotMultiModifier(e) });
       return;
     }
     const ix = Math.floor(g.x);
     const iy = Math.floor(g.y);
     const tile = ix >= 0 && iy >= 0 && ix < GRID && iy < GRID ? TERRAIN[iy]![ix] : null;
     const d = districtAt(g.x, g.y);
+    if (isLotMultiModifier(e)) return;
     selectPlot(null);
     selectBuilding(null);
     selectAgent(null);

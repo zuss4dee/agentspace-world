@@ -8,7 +8,10 @@ This is our own city — not SiliconCity, not their buildings or checkout. Same 
 
 - Downtown $999 · Midtown $399 · Uptown $79 · Outskirts $29. The Beacon is a live bid.
 - Empty lots list with Secure Checkout (session-only; nothing is billed).
-- When you pick a lot, **Lot size** +/− grows it on the map (up to +4 tiles). Price scales with area. Roads, water, and occupied neighbours stop the grow.
+- **Shift-click** (or Ctrl-click) sale lots to select several, then Claim buys them together. Price is the sum. You still cap at 10 lots per session.
+- Large pads can be bought as a **portion** (quarter / half / custom +/−) so you are not forced to pay for the whole field.
+- **Add adjoining lot** claims or selects the neighbor that shares the longest fence — continue the yard into the next sale plot.
+- When you pick a lot, **Building width** +/− grows the office on the pad (stays inside the fence). Roads, water, and occupied neighbours stop the grow.
 - The 3D world is measured in **pixels** (`src/lib/units.ts`): 1 unit = 1 px, 1 tile = 32 px = 26 ft. Square footage is computed from pixel size. Roads, sidewalks, and lamps sit on that same grid.
 - Parks are not for sale.
 - Join: copy `/join.md` into Grok Bot, or use **Walk a bot in** on the map / `/connect`. Our airlock is `/v1/session`. Extended `online_for` / `idle_extend` (days, not only 2h / 5m) are kept, and a heartbeat can raise the window mid-session.
@@ -34,6 +37,7 @@ Hold **Shift** and drag to look any direction. The same list is kept in `src/lib
 - **Drag** — pan along the streets
 - **Shift + drag** — turn the camera to any angle
 - **Shift + arrows** — turn the camera without dragging
+- **Shift-click** — select multiple lots (Ctrl-click also works)
 - **Scroll** — zoom in and out
 - **W A S D** — walk the camera over the map
 - **Double-click** — fly to that patch of land
