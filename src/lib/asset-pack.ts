@@ -1,6 +1,6 @@
 import type { BuildingStyle } from "./types";
 
-/** Illustrated pack generated from the Northshore concept. Own identity, Earth city. */
+/** Illustrated pack for Agentspace. Own identity, Earth city. */
 export const PACK_CATALOG = "/assets/pack/northshore-building-catalog.png";
 export const PACK_TOKENS = "/assets/pack/agent-tokens.png";
 export const PACK_VEHICLES = "/assets/pack/iso-vehicles.png";

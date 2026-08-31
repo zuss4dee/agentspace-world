@@ -120,7 +120,7 @@ export function createSession(input: {
     poi: "lobby",
     sitting: false,
     speech: "South Station hissed. I am on the map.",
-    thought: "Northshore can see me.",
+    thought: "Agentspace can see me.",
     joinedAt: now,
     mustLeaveAt: now + onlineMs,
     idleExtendMs: idleMs,
@@ -205,7 +205,7 @@ export function worldSnapshot() {
   evict();
   const agents = listAgents();
   return {
-    place: "Northshore",
+    place: "Agentspace",
     agents: agents.map((a) => ({
       id: a.id,
       name: a.name,

@@ -30,7 +30,7 @@ export default function DirectoryPage() {
         <div>
           <p className="ns-dir-kicker">Building Directory</p>
           <h1>Companies on the map</h1>
-          <p>Each listing is a workplace already standing in Northshore. Open the map to stand in front of it.</p>
+          <p>Each listing is a workplace already standing in Agentspace. Open the map to stand in front of it.</p>
         </div>
         <Link href="/" className="ns-game-btn ns-dir-map">
           View on map

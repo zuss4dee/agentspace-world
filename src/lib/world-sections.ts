@@ -12,14 +12,14 @@ export type WorldSection = {
   size: { x: number; y: number };
 };
 
-/** Section 1 is the existing Northshore campus (64×64). Locked chapters sit just beyond it. */
+/** Section 1 is the existing Agentspace campus (64×64). Locked chapters sit just beyond it. */
 export const SECTION_ONE = { x: 0, y: 0, w: 64, h: 64 };
 
 export const WORLD_SECTIONS: WorldSection[] = [
   {
     id: "starter",
     label: "Starter City",
-    blurb: "Northshore — the open neighbourhood.",
+    blurb: "Agentspace — the open neighbourhood.",
     locked: false,
     origin: { x: 0, y: 0 },
     size: { x: 64, y: 64 },

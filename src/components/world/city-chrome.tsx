@@ -12,11 +12,9 @@ import {
   ZONE_THEME,
   beaconPlot,
   relativePurchase,
-  sampleSalePlot,
   shopActivity,
-  zoneCount,
 } from "@/lib/city-shop";
-import { PLOTS } from "@/lib/plots";
+import { PLOTS, plotArea, plotsForSale, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -46,12 +44,12 @@ export function CityChrome() {
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const [keysOpen, setKeysOpen] = useState(false);
   const [walkingIn, setWalkingIn] = useState(false);
+  const [band, setBand] = useState<"all" | PlotZone>("all");
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
-  const counts = useMemo(() => {
-    const next: Record<string, number> = {};
-    for (const row of ZONE_TABLE) next[row.key] = zoneCount(row.key, claimed);
-    return next;
-  }, [claimed]);
+  const listings = useMemo(() => {
+    const rows = plotsForSale(claimed);
+    return band === "all" ? rows : rows.filter((p) => p.zone === band);
+  }, [claimed, band]);
   const activity = useMemo(() => shopActivity(), []);
   const picked = selectedPlotId ? PLOTS.find((p) => p.id === selectedPlotId) : undefined;
 
@@ -75,7 +73,7 @@ export function CityChrome() {
     <>
       <header className="ns-topbar">
         <Link href="/" className="ns-logo">
-          Northshore<span>.world</span>
+          Agentspace<span>.world</span>
         </Link>
         <p className="ns-live">
           <span className="ns-live-dot" />
@@ -155,43 +153,56 @@ export function CityChrome() {
       <aside className="ns-avail" aria-label="Plots Available">
         <div className="ns-card ns-pad">
           <div className="ns-avail-head">
-            <p>Plots Available</p>
-            <span>one-time</span>
+            <p>Land for sale</p>
+            <span>{listings.length} lots</span>
           </div>
-          <div className="ns-avail-rows">
-            {ZONE_TABLE.map((row) => (
+          <p className="ns-avail-hint">White pads with black flags are empty lots. Click one to read the listing.</p>
+          <div className="ns-avail-filters">
+            <button type="button" data-on={band === "all" ? "1" : "0"} onClick={() => setBand("all")}>
+              All
+            </button>
+            {ZONE_TABLE.filter((row) => row.key !== "ultimate").map((row) => (
               <button
                 key={row.key}
                 type="button"
-                className="ns-avail-row"
-                onClick={() => {
-                  if (row.key === "ultimate") {
-                    const p = beaconPlot();
-                    if (p) {
-                      selectPlot(p.id);
-                      focusCoord(p.x + p.w / 2, p.y + p.h / 2, 1.2);
-                    }
-                    setBeaconOpen(true);
-                    return;
-                  }
-                  const p = sampleSalePlot(row.key, claimed);
-                  if (!p) return;
-                  selectPlot(p.id);
-                  focusCoord(p.x + p.w / 2, p.y + p.h / 2, 0.95);
-                }}
+                data-on={band === row.key ? "1" : "0"}
+                onClick={() => setBand(row.key)}
               >
-                <span className="ns-avail-zone">
-                  <i className={row.dot} />
-                  {row.zone}
-                </span>
-                <span className="ns-avail-nums">
-                  <strong>{row.key === "ultimate" ? 0 : counts[row.key]?.toLocaleString()}</strong>
-                  <em>{row.priceLabel}</em>
-                </span>
+                {row.zone}
               </button>
             ))}
           </div>
-          <p className="ns-avail-note">Protected park tiles are not for sale.</p>
+          <div className="ns-avail-rows">
+            {listings.map((p) => {
+              const area = plotArea(p);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="ns-avail-row"
+                  data-on={selectedPlotId === p.id ? "1" : "0"}
+                  onClick={() => {
+                    selectPlot(p.id);
+                    focusCoord(p.x + p.w / 2, p.y + p.h / 2, 0.95);
+                  }}
+                >
+                  <span className="ns-avail-zone">
+                    <i className="ns-dot ns-dot-downtown" />
+                    <span className="ns-avail-lot">
+                      <strong>{p.groupLabel}</strong>
+                      <em>
+                        {area.footprint} · {ZONE_THEME[p.zone].label}
+                      </em>
+                    </span>
+                  </span>
+                  <span className="ns-avail-nums">
+                    <em>{formatUsd(p.price)}</em>
+                  </span>
+                </button>
+              );
+            })}
+            {listings.length === 0 ? <p className="ns-avail-empty">No open lots in this band.</p> : null}
+          </div>
         </div>
       </aside>
 
@@ -302,10 +313,10 @@ export function CityChrome() {
             aria-labelledby="beacon-title"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="ns-bid-kicker">Northshore championship seat</p>
+            <p className="ns-bid-kicker">Agentspace championship seat</p>
             <h2 id="beacon-title">The Beacon</h2>
             <p className="ns-bid-copy">
-              Current holder: Northshore. Every bid is a non-refundable raise in this session. The holder keeps the HQ
+              Current holder: Agentspace. Every bid is a non-refundable raise in this session. The holder keeps the HQ
               halo until someone posts a higher total.
             </p>
             <dl className="ns-bid-stats">

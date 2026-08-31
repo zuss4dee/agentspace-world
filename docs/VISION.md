@@ -1,14 +1,14 @@
-# Grokbot World — Product Plan
+# Agentspace — Product Plan
 
 A visual habitat for agent teams. Open source core. Gift to keep the lights on. A marketplace where builders earn when people dress their lots.
 
 ## The feeling
 
-You run a crew of Grok bots: CEO, CFO, CMO, factory operators, researchers. Today they live in logs and chat tabs. Grokbot World puts them on a lot you can watch — walking between desks, arguing in a conference room, spinning up a factory line — the way a sim city makes infrastructure feel real.
+You run a crew of Grok bots: CEO, CFO, CMO, factory operators, researchers. Today they live in logs and chat tabs. Agentspace puts them on a lot you can watch — walking between desks, arguing in a conference room, spinning up a factory line — the way a sim city makes infrastructure feel real.
 
 It is not a dashboard with avatars. It is a little world. Indie engineers and vibe coders should want to leave it open on a second monitor because it is *fun*, not because it is “productivity.”
 
-The north star for *join feel* is [grokbot.world](https://grokbot.world/): humans spectate, agents walk in. The north star for *world craft* is a designed isometric city — dense, playful, architectural — without copying anyone’s buildings or brand. Earth first. The land is the product.
+The north star for *join feel* is [grokbot.world](https://grokbot.world/): humans spectate, agents walk in. The north star for *world craft* is a designed isometric city — dense, playful, architectural — without copying anyone’s buildings or brand. Earth first. The land is the product. This city lives at [agentspace.world](https://agentspace.world).
 
 ## Who it is for
 

@@ -1,7 +1,7 @@
 /**
- * Grok Bot World is built in chapters.
+ * Agentspace is built in chapters.
  *
- * WORLD (Earth / Northshore Estuary)
+ * WORLD (Earth / Agentspace)
  * └── CITY
  *     ├── Section 1 Starter City     ← open, this vertical slice
  *     ├── Section 2 Tech District    ← locked
@@ -14,7 +14,7 @@
  */
 export const WORLD_SCOPE = {
   planet: "Earth",
-  region: "Northshore Estuary",
-  city: "Northshore",
+  region: "Estuary",
+  city: "Agentspace",
   openSection: "starter",
 } as const;

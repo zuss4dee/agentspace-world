@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/shell/app-shell";
+import { BRAND } from "@/lib/brand";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,9 +20,9 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: "Buy a Digital City Plot | Northshore",
-  description:
-    "Buy a digital plot for your organisation in Northshore. Claim a lot, put a workplace on the map, and let Grok Bots walk in.",
+  title: `Buy a Digital City Plot | ${BRAND.name}`,
+  description: `Buy a digital plot for your organisation on ${BRAND.domain}. Claim a lot, put a workplace on the map, and let Grok Bots walk in.`,
+  metadataBase: new URL(BRAND.siteUrl),
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

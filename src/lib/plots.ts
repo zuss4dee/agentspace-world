@@ -1,5 +1,4 @@
-import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, districtAt } from "./campus";
-import { isCivicBuilding } from "./companies";
+import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, ANCHOR_BUILDING_ID } from "./campus";
 
 export type PlotKind = "sale" | "owned" | "park" | "civic";
 export type PlotZone = "ultimate" | "downtown" | "midtown" | "uptown" | "outskirts";
@@ -15,6 +14,7 @@ export type Plot = {
   buildingId?: string;
   price: number;
   zone: PlotZone;
+  groupLabel: string;
 };
 
 const ZONE_PRICE: Record<PlotZone, number> = {
@@ -25,8 +25,7 @@ const ZONE_PRICE: Record<PlotZone, number> = {
   outskirts: 29,
 };
 
-function zoneFor(districtId: string, buildingId?: string): PlotZone {
-  if (buildingId === "hq") return "ultimate";
+function zoneFor(districtId: string): PlotZone {
   const d = DISTRICTS.find((item) => item.id === districtId);
   const t = d?.theme;
   if (t === "executive" || t === "tech" || t === "finance" || t === "campus") return "downtown";
@@ -41,55 +40,72 @@ function blocked(x: number, y: number) {
   return t === "road" || t === "water" || ROAD_XS.includes(x) || ROAD_YS.includes(y);
 }
 
+function coversAnchor(ax: number, ay: number, aw: number, ah: number, x: number, y: number, w: number, h: number) {
+  return x < ax + aw && x + w > ax && y < ay + ah && y + h > ay;
+}
+
+function packFrom(used: boolean[][], x0: number, y0: number, maxW: number, maxH: number) {
+  if (used[y0]![x0] || blocked(x0, y0)) return null;
+  let w = 1;
+  while (x0 + w < GRID && w < maxW && !used[y0]![x0 + w] && !blocked(x0 + w, y0)) w++;
+  let h = 1;
+  grow: while (y0 + h < GRID && h < maxH) {
+    for (let x = x0; x < x0 + w; x++) {
+      if (used[y0 + h]![x] || blocked(x, y0 + h)) break grow;
+    }
+    h++;
+  }
+  if (w < 3 || h < 3) return null;
+  return { w, h };
+}
+
 export function makePlots(): Plot[] {
   const plots: Plot[] = [];
-  const claimed = new Set<string>();
-  const key = (x: number, y: number) => `${x},${y}`;
+  const anchor = WORLD_BUILDINGS.find((b) => b.id === ANCHOR_BUILDING_ID)!;
+  const used: boolean[][] = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => false));
 
-  for (const b of WORLD_BUILDINGS) {
-    const civic = isCivicBuilding(b.id);
-    const zone = zoneFor(b.districtId, b.id);
-    plots.push({
-      id: `plot-b-${b.id}`,
-      x: b.origin.x,
-      y: b.origin.y,
-      w: b.size.x,
-      h: b.size.y,
-      kind: civic ? "civic" : "owned",
-      districtId: b.districtId,
-      buildingId: b.id,
-      price: ZONE_PRICE[zone],
-      zone,
-    });
-    for (let y = b.origin.y; y < b.origin.y + b.size.y; y++) {
-      for (let x = b.origin.x; x < b.origin.x + b.size.x; x++) claimed.add(key(x, y));
-    }
+  plots.push({
+    id: `plot-b-${anchor.id}`,
+    x: anchor.origin.x,
+    y: anchor.origin.y,
+    w: anchor.size.x,
+    h: anchor.size.y,
+    kind: "owned",
+    districtId: anchor.districtId,
+    buildingId: anchor.id,
+    price: ZONE_PRICE.downtown,
+    zone: "downtown",
+    groupLabel: "Echt House",
+  });
+  for (let y = anchor.origin.y; y < anchor.origin.y + anchor.size.y; y++) {
+    for (let x = anchor.origin.x; x < anchor.origin.x + anchor.size.x; x++) used[y]![x] = true;
   }
 
-  for (let y = 1; y < GRID - 1; y += 2) {
-    for (let x = 1; x < GRID - 1; x += 2) {
-      if (claimed.has(key(x, y)) || claimed.has(key(x + 1, y)) || claimed.has(key(x, y + 1))) continue;
-      if (blocked(x, y) || blocked(x + 1, y) || blocked(x, y + 1) || blocked(x + 1, y + 1)) continue;
-      const tiles = [TERRAIN[y]![x], TERRAIN[y]![x + 1], TERRAIN[y + 1]![x], TERRAIN[y + 1]![x + 1]];
-      const park = tiles.filter((t) => t === "park").length >= 2;
-      const d = districtAt(x + 0.5, y + 0.5);
-      const zone = zoneFor(d?.id ?? "southpark");
-      const kind: PlotKind = park ? "park" : "sale";
-      plots.push({
-        id: `plot-${x}-${y}`,
-        x,
-        y,
-        w: 2,
-        h: 2,
-        kind,
-        districtId: d?.id ?? "southpark",
-        price: ZONE_PRICE[zone],
-        zone,
-      });
-      claimed.add(key(x, y));
-      claimed.add(key(x + 1, y));
-      claimed.add(key(x, y + 1));
-      claimed.add(key(x + 1, y + 1));
+  const lotN: Record<string, number> = {};
+  for (const d of DISTRICTS) {
+    for (let y = d.origin.y; y < d.origin.y + d.size.y; y++) {
+      for (let x = d.origin.x; x < d.origin.x + d.size.x; x++) {
+        const pack = packFrom(used, x, y, 6, 6);
+        if (!pack) continue;
+        if (coversAnchor(anchor.origin.x, anchor.origin.y, anchor.size.x, anchor.size.y, x, y, pack.w, pack.h)) continue;
+        const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
+        const zone = zoneFor(d.id);
+        plots.push({
+          id: `land-${d.id}-${n}`,
+          x,
+          y,
+          w: pack.w,
+          h: pack.h,
+          kind: "sale",
+          districtId: d.id,
+          price: ZONE_PRICE[zone],
+          zone,
+          groupLabel: `${d.label} · Lot ${n}`,
+        });
+        for (let yy = y; yy < y + pack.h; yy++) {
+          for (let xx = x; xx < x + pack.w; xx++) used[yy]![xx] = true;
+        }
+      }
     }
   }
   return plots;
@@ -112,3 +128,42 @@ export const PLOT_BANDS = [
   { id: "uptown" as const, label: "Uptown", blurb: "A growing neighbourhood with room to rise." },
   { id: "outskirts" as const, label: "Outskirts", blurb: "An accessible way to join the city." },
 ];
+
+/** One tile on the map is an 8 m square — enough for a room or a loading bay. */
+export const TILE_METERS = 8;
+
+export type LandUse = {
+  id: string;
+  name: string;
+  minW: number;
+  minH: number;
+  blurb: string;
+};
+
+export const LAND_USES: LandUse[] = [
+  { id: "kiosk", name: "Kiosk / stall", minW: 3, minH: 3, blurb: "Street stall, gatehouse, or newsbox." },
+  { id: "house", name: "House / loft", minW: 3, minH: 3, blurb: "A founder loft or row house." },
+  { id: "shop", name: "Shop / cafe", minW: 3, minH: 3, blurb: "Ground-floor shop with a door on the street." },
+  { id: "studio", name: "Studio", minW: 4, minH: 3, blurb: "Workshop, gallery, or cut room." },
+  { id: "office", name: "Office", minW: 4, minH: 3, blurb: "A two-to-four storey office for a team." },
+  { id: "warehouse", name: "Warehouse / works", minW: 5, minH: 4, blurb: "Shed, loading yard, and racking." },
+  { id: "lab", name: "Lab", minW: 5, minH: 4, blurb: "Quiet research stack or conference glass." },
+  { id: "hq", name: "HQ / tower", minW: 5, minH: 4, blurb: "A landmark office that reads from the plaza." },
+];
+
+export function usesForPlot(p: Plot) {
+  return LAND_USES.filter((u) => p.w >= u.minW && p.h >= u.minH);
+}
+
+export function plotArea(p: Plot) {
+  const tiles = p.w * p.h;
+  return {
+    tiles,
+    meters: tiles * TILE_METERS * TILE_METERS,
+    footprint: `${p.w} × ${p.h}`,
+  };
+}
+
+export function districtForPlot(p: Plot) {
+  return DISTRICTS.find((d) => d.id === p.districtId);
+}

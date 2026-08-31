@@ -1,9 +1,9 @@
-import { WORLD_BUILDINGS, buildingAt } from "./campus";
+import { LOT_BUILDINGS, buildingAt } from "./campus";
 import type { Building } from "./types";
 
-/** Procedural sprawl is retired. Section 1 is hand-authored. */
+/** Procedural sprawl is retired. Section 1 is hand-authored. Only Echt House stands until tenants raise offices. */
 export const CITY_LOTS: Building[] = [];
-export const ALL_BUILDINGS: Building[] = WORLD_BUILDINGS;
+export const ALL_BUILDINGS: Building[] = LOT_BUILDINGS;
 export const OUTER_TREES: { x: number; y: number; pine: boolean }[] = [];
 
 export function buildingAnywhere(x: number, y: number) {

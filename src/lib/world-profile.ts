@@ -12,8 +12,8 @@ export type WorldProfile = {
 };
 
 export const ACTIVE_WORLD: WorldProfile = {
-  id: "northshore",
-  name: "Northshore",
+  id: "agentspace",
+  name: "Agentspace",
   inspiredBy: "a northern English estuary city — canal, mill, and shore",
   region: "Earth",
   lat: 53.4808,

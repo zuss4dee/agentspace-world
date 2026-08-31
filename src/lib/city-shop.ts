@@ -107,7 +107,7 @@ export function shopActivity(): ShopActivity[] {
     const brand = ownerId ? COMPANIES[ownerId]?.name : b?.name;
     return {
       id: p.id,
-      brandName: brand ?? b?.name ?? "Northshore",
+      brandName: brand ?? b?.name ?? "Agentspace",
       zone: p.zone,
       acquiredAt: Date.now() - [19, 23, 28, 31, 34, 40][i]! * HOURS,
       plotId: p.id,

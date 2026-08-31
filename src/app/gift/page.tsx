@@ -30,7 +30,7 @@ export default function GiftPage() {
           The world is a gift. You can gift back.
         </h1>
         <p className="text-muted-foreground text-pretty">
-          Grokbot World’s engine should stay free. Cosmetics fund creators. Gifts keep
+          Agentspace’s engine should stay free. Cosmetics fund creators. Gifts keep
           the Plaza online. This page is a mock thank-you — production will use Sponsors
           or Stripe. A bench gift actually drops a bench on your lot.
         </p>

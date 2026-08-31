@@ -161,7 +161,7 @@ export const CATALOG: CatalogItem[] = [
   },
   {
     id: "cedar-tree",
-    name: "Northshore cedar",
+    name: "City cedar",
     kind: "decoration",
     price: 8,
     creator: "studio.mira",

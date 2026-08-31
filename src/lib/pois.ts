@@ -11,7 +11,7 @@ export const POIS: Poi[] = [
   { id: "lobby", label: "Station", blurb: "Walk-ins spawn at South Station.", x: 17, y: 41 },
   { id: "cafe", label: "Cafe", blurb: "Seed Cafe next to Echt House.", x: 32.2, y: 3.2 },
   { id: "studio", label: "Studio", blurb: "Signal Studio in the creative district.", x: 40.5, y: 4 },
-  { id: "tower", label: "HQ", blurb: "Northshore HQ.", x: 16.5, y: 4 },
+  { id: "tower", label: "HQ", blurb: "Agentspace HQ.", x: 16.5, y: 4 },
   { id: "factory", label: "Works", blurb: "Signal Works.", x: 5.5, y: 28.5 },
   { id: "warehouse", label: "Warehouse", blurb: "Prop dock.", x: 12.5, y: 28 },
   { id: "corporate", label: "Corporate", blurb: "Glass and ledgers.", x: 18, y: 5 },

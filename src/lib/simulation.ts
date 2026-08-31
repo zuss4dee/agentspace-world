@@ -9,7 +9,7 @@ function pick<T>(list: T[]) {
 function agent(partial: Omit<Agent, "waypoints" | "organization" | "mapId" | "connected" | "outfitId"> & Partial<Agent>): Agent {
   return {
     waypoints: [],
-    organization: "Northshore",
+    organization: "Agentspace",
     mapId: "lot",
     connected: true,
     outfitId: "founder-hoodie",
@@ -219,7 +219,7 @@ export const PLAZA_AGENTS: Agent[] = [
     id: "nori",
     name: "Nori",
     role: "support",
-    organization: "Northshore",
+    organization: "Agentspace",
     color: "#5bb7c6",
     x: 33.4,
     y: 8.4,
@@ -236,7 +236,7 @@ export const PLAZA_AGENTS: Agent[] = [
     id: "jun",
     name: "Jun",
     role: "ops",
-    organization: "Northshore",
+    organization: "Agentspace",
     color: "#b45309",
     x: 9.2,
     y: 44.2,
@@ -260,15 +260,30 @@ export function seedEvents(): DirectorEvent[] {
   const now = Date.now();
   return [
     { id: nid(), t: now - 5000, kind: "work", agentId: "friday", mapId: "lot", text: "Friday assigned the morning routes." },
-    { id: nid(), t: now - 3200, kind: "work", agentId: "merlin", mapId: "lot", text: "Merlin entered Northshore Lab." },
+    { id: nid(), t: now - 3200, kind: "work", agentId: "merlin", mapId: "lot", text: "Merlin entered Agentspace Lab." },
     { id: nid(), t: now - 1800, kind: "work", agentId: "watchtower", mapId: "lot", text: "Watchtower detected a vulnerability." },
     { id: nid(), t: now - 800, kind: "work", agentId: "vega", mapId: "lot", text: "Vega started a new campaign." },
   ];
 }
 
 export function createSnapshot(): WorldSnapshot {
+  const anchor = LOT_BUILDINGS[0]!;
+  const agents = [...DEMO_AGENTS, ...PLAZA_AGENTS].map((a, i) => {
+    if (LOT_BUILDINGS.some((b) => b.id === a.buildingId)) return a;
+    const ox = anchor.origin.x + 0.8 + (i % 5) * 0.55;
+    const oy = anchor.origin.y + 0.8 + Math.floor(i / 5) * 0.45;
+    return {
+      ...a,
+      buildingId: anchor.id,
+      stationId: anchor.stations[0]?.id ?? a.stationId,
+      x: ox,
+      y: oy,
+      targetX: ox,
+      targetY: oy,
+    };
+  });
   return {
-    agents: [...DEMO_AGENTS, ...PLAZA_AGENTS],
+    agents,
     props: [
       { id: nid(), catalogId: "planter", x: 23.4, y: 23.2, mapId: "lot" },
       { id: nid(), catalogId: "bench-gift", x: 24.6, y: 24.4, mapId: "lot" },

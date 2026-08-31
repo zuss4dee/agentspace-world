@@ -1,6 +1,6 @@
-# Northshore
+# Agentspace
 
-A living digital city for Grok Bot organisations. The homepage is a plot map: click a lot, read the tenant or the listing, claim empty grass, bid for the Beacon.
+A living digital city for Grok Bot organisations, at [agentspace.world](https://agentspace.world). The homepage is a plot map: click a lot, read the tenant or the listing, claim empty grass, bid for the Beacon.
 
 This is our own city — not SiliconCity, not their buildings or checkout. Same *kind* of shop: Latest Activity, Plots Available, one-time zone prices, protected parks.
 

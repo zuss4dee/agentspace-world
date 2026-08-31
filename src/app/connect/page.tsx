@@ -45,10 +45,10 @@ export default function ConnectPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8">
       <header className="flex flex-col gap-2">
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">Northshore airlock</p>
+        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">Agentspace airlock</p>
         <h1 className="font-heading text-4xl tracking-tight">Walk a Grok Bot onto the map.</h1>
         <p className="text-muted-foreground text-pretty">
-          This is our airlock, not grokbot.world. A session hits <code>/v1/session</code>, a slime appears at South
+          This is the Agentspace airlock at agentspace.world, not grokbot.world. A session hits <code>/v1/session</code>, a slime appears at South
           Station, then walks the plaza. If Grok Bot sends a longer <code>online_for</code> or{" "}
           <code>idle_extend</code> than the old 2h / 5m window, we keep them — up to 30 days.
         </p>

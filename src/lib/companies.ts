@@ -5,15 +5,15 @@ export type Company = {
 };
 
 export const COMPANIES: Record<string, Company> = {
-  northshore: {
-    id: "northshore",
-    name: "Northshore",
+  agentspace: {
+    id: "agentspace",
+    name: "Agentspace",
     does: "Runs the open city: HQ, labs, and the streets agents walk.",
   },
   echt: {
     id: "echt",
     name: "Echt",
-    does: "A startup on Northshore. Ships product from Echt House — desks downstairs, founder room on the glass.",
+    does: "A startup on Agentspace. Ships product from Echt House — desks downstairs, founder room on the glass.",
   },
   seed: {
     id: "seed",
@@ -47,7 +47,7 @@ export const COMPANIES: Record<string, Company> = {
   },
   civic: {
     id: "civic",
-    name: "Northshore Civic",
+    name: "Agentspace Civic",
     does: "Station, kiosk, lawns — public fabric, not a tenant.",
   },
   brine: {
@@ -61,8 +61,8 @@ const CIVIC_BUILDINGS = new Set(["station", "kiosk", "pavilion", "hall"]);
 
 /** Who holds the lease. Missing ids are unclaimed. */
 export const BUILDING_OWNER: Record<string, string> = {
-  hq: "northshore",
-  finance: "northshore",
+  hq: "agentspace",
+  finance: "agentspace",
   hall: "civic",
   loft: "echt",
   "seed-cafe": "seed",
@@ -71,10 +71,10 @@ export const BUILDING_OWNER: Record<string, string> = {
   gallery: "athena",
   cottage: "signal",
   factory: "signal",
-  warehouse: "northshore",
+  warehouse: "agentspace",
   mill: "signal",
-  lab: "northshore",
-  data: "northshore",
+  lab: "agentspace",
+  data: "agentspace",
   station: "civic",
   northwind: "northwind",
   harbor: "harbor",
@@ -82,9 +82,9 @@ export const BUILDING_OWNER: Record<string, string> = {
   pavilion: "civic",
   kiosk: "civic",
   retail: "seed",
-  conference: "northshore",
+  conference: "agentspace",
   "helix-lab": "northwind",
-  workshop: "northshore",
+  workshop: "agentspace",
   inn: "brine",
   brine: "brine",
   market: "brine",

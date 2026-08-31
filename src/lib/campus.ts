@@ -16,7 +16,7 @@ export const DISTRICTS: District[] = [
   { id: "civic", label: "Civic", blurb: "The crossroads of the campus.", origin: { x: 13, y: 13 }, size: { x: 11, y: 11 }, theme: "public" },
   { id: "campus", label: "Campus green", blurb: "Paths and empty plots to grow into.", origin: { x: 25, y: 13 }, size: { x: 11, y: 11 }, theme: "campus" },
   { id: "industrial", label: "Industrial", blurb: "Works, docks, and loading yards.", origin: { x: 0, y: 25 }, size: { x: 23, y: 11 }, theme: "operations" },
-  { id: "labs", label: "Labs", blurb: "Northshore Lab and Watchtower.", origin: { x: 25, y: 25 }, size: { x: 11, y: 11 }, theme: "research" },
+  { id: "labs", label: "Labs", blurb: "Agentspace Lab and Watchtower.", origin: { x: 25, y: 25 }, size: { x: 11, y: 11 }, theme: "research" },
   { id: "homes", label: "Homes", blurb: "Row houses and porches.", origin: { x: 37, y: 25 }, size: { x: 11, y: 11 }, theme: "residential" },
   { id: "ridge", label: "Ridge", blurb: "Apartments and room to build.", origin: { x: 49, y: 25 }, size: { x: 15, y: 11 }, theme: "residential" },
   { id: "yards", label: "Yards", blurb: "Workshops south of the mill.", origin: { x: 0, y: 37 }, size: { x: 12, y: 11 }, theme: "operations" },
@@ -53,7 +53,7 @@ function footprint(
 }
 
 export const WORLD_BUILDINGS: Building[] = [
-  footprint("hq", "Northshore HQ", {
+  footprint("hq", "Agentspace HQ", {
     kind: "office",
     style: "hq",
     districtId: "corporate",
@@ -238,7 +238,7 @@ export const WORLD_BUILDINGS: Building[] = [
     accent: "#d6b37a",
     desks: [["press", "Press", 2, 1.4]],
   }),
-  footprint("lab", "Northshore Lab", {
+  footprint("lab", "Agentspace Lab", {
     kind: "lab",
     style: "lab",
     districtId: "labs",
@@ -509,7 +509,7 @@ export const WORLD_BUILDINGS: Building[] = [
     accent: "#64748b",
     desks: [["study", "Study", 1.4, 1.4]],
   }),
-  footprint("inn", "Northshore Inn", {
+  footprint("inn", "Agentspace Inn", {
     kind: "hotel",
     style: "hotel",
     districtId: "docks",
@@ -556,7 +556,8 @@ export const WORLD_BUILDINGS: Building[] = [
   }),
 ];
 
-export const LOT_BUILDINGS = WORLD_BUILDINGS;
+export const ANCHOR_BUILDING_ID = "incubator";
+export const LOT_BUILDINGS = WORLD_BUILDINGS.filter((b) => b.id === ANCHOR_BUILDING_ID);
 
 export const PLAZA_COMPANIES = WORLD_BUILDINGS.filter((b) => b.districtId === "waterfront").map((b) => ({
   id: b.id,
