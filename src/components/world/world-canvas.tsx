@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { BeaconMarker } from "@/components/world/gl/beacon-marker";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
@@ -10,6 +11,8 @@ import { ExplorerCamera } from "@/components/world/gl/camera-rig";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
 import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/components/world/gl/life";
+import { StreetLife } from "@/components/world/gl/street-life";
+import { StreetsLayer } from "@/components/world/gl/streets";
 import { DistantFills, GrassTufts, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
@@ -27,14 +30,15 @@ function LightFollow() {
   useFrame(({ camera }) => {
     const l = ref.current;
     if (!l) return;
-    l.position.set(camera.position.x + h(28), camera.position.y + h(36), camera.position.z + h(16));
-    l.target.position.set(camera.position.x - h(6), 0, camera.position.z - h(6));
+    l.position.set(camera.position.x + h(22), camera.position.y + h(32), camera.position.z + h(14));
+    l.target.position.set(camera.position.x - h(8), 0, camera.position.z - h(8));
     l.target.updateMatrixWorld();
   });
   return (
     <directionalLight
       ref={ref}
-      intensity={1.35}
+      color="#fff1de"
+      intensity={1.55}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-camera-far={h(90)}
@@ -88,10 +92,11 @@ function ExteriorScene() {
   return (
     <>
       <color attach="background" args={["#d8ddd8"]} />
-      <fog attach="fog" args={["#e4e2da", h(88), h(280)]} />
-      <hemisphereLight args={["#f4eee4", "#4a5e44", 0.82]} />
+      <fog attach="fog" args={["#e4e2da", h(160), h(420)]} />
+      <hemisphereLight args={["#f3eee4", "#4a5e44", 0.7]} />
       <LightFollow />
-      <ambientLight intensity={0.22} />
+      <ambientLight intensity={0.16} />
+      <directionalLight position={[-h(18), h(12), -h(10)]} intensity={0.22} color="#efe6d4" />
       <ExplorerCamera />
       <mesh
         rotation-x={-Math.PI / 2}
@@ -106,12 +111,23 @@ function ExteriorScene() {
         <TerrainMesh />
       <GrassTufts />
       </group>
+      <StreetsLayer />
       <WaterPlane />
       <DistantFills />
       <LockedLand />
       <TreeField />
       <BushField />
+      <StreetLife />
       <Lamps />
+      <ContactShadows
+        frames={1}
+        position={[wx(24), h(0.02), wz(7)]}
+        opacity={0.28}
+        scale={TILE * 44}
+        blur={2.4}
+        far={h(10)}
+        color="#2c2820"
+      />
       <LatticeField />
       <PlotsLayer />
       <SaleStakes />

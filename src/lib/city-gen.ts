@@ -1,9 +1,9 @@
-import { LOT_BUILDINGS, buildingAt } from "./campus";
+import { WORLD_BUILDINGS, buildingAt } from "./campus";
 import type { Building } from "./types";
 
 /** Procedural sprawl is retired. First district keeps a small authored set; tenants raise the rest. */
 export const CITY_LOTS: Building[] = [];
-export const ALL_BUILDINGS: Building[] = LOT_BUILDINGS;
+export const ALL_BUILDINGS: Building[] = WORLD_BUILDINGS;
 export const OUTER_TREES: { x: number; y: number; pine: boolean }[] = [];
 
 export function buildingAnywhere(x: number, y: number) {

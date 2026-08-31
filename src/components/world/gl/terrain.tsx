@@ -67,16 +67,18 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
     return;
   }
   if (kind === "park") {
-    const cool = tuft > 0.55 ? 0.04 : 0;
-    out.setRGB(0.22 + n * 0.1 + n2 * 0.04, 0.48 + n * 0.12 + cool, 0.22 + n * 0.05);
+    const cool = tuft > 0.55 ? 0.05 : tuft < 0.22 ? -0.04 : 0;
+    const worn = n2 > 0.72 ? -0.06 : 0;
+    out.setRGB(0.2 + n * 0.12 + n2 * 0.04 + worn, 0.44 + n * 0.14 + cool, 0.18 + n * 0.06);
     return;
   }
   if (kind === "lot" || kind === "dirt") {
     out.setRGB(0.58 + n * 0.06, 0.48 + n * 0.04, 0.32);
     return;
   }
-  const patch = tuft > 0.72 ? -0.05 : tuft < 0.18 ? 0.05 : 0;
-  out.setRGB(0.28 + n * 0.12 + n2 * 0.05 + patch, 0.5 + n * 0.14 + n2 * 0.04, 0.22 + n * 0.06);
+  const patch = tuft > 0.72 ? -0.06 : tuft < 0.18 ? 0.06 : 0;
+  const path = n2 > 0.8 && tuft > 0.6 ? -0.08 : 0;
+  out.setRGB(0.26 + n * 0.14 + n2 * 0.05 + patch + path, 0.48 + n * 0.16 + n2 * 0.05 + path * 0.6, 0.2 + n * 0.07);
 }
 
 export function TerrainMesh() {
@@ -194,7 +196,7 @@ export function GrassTufts() {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const mesh = useRef<THREE.InstancedMesh>(null);
   const spots = useMemo(() => {
-    const out: { x: number; y: number; s: number }[] = [];
+    const out: { x: number; y: number; s: number; tone: number }[] = [];
     for (let i = 0; i < 720; i++) {
       const x = hash2(i * 1.17, 3.2) * GRID;
       const y = hash2(i * 0.91, 8.4) * GRID;
@@ -204,7 +206,7 @@ export function GrassTufts() {
       const t = TERRAIN[iy]![ix]!;
       if (t !== "grass" && t !== "park") continue;
       if (hitsSaleLot(x, y, 0.3)) continue;
-      out.push({ x, y, s: 0.55 + hash2(i, 4.4) * 0.7 });
+      out.push({ x, y, s: 0.55 + hash2(i, 4.4) * 0.7, tone: hash2(i, 9.1) });
     }
     return out;
   }, []);
@@ -212,13 +214,19 @@ export function GrassTufts() {
   useLayoutEffect(() => {
     const m = mesh.current;
     if (!m) return;
+    const c = new THREE.Color();
     spots.forEach((s, i) => {
       dummy.position.set(wx(s.x), h(0.08) * s.s, wz(s.y));
       dummy.scale.set(s.s, s.s, s.s);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
+      if (s.tone > 0.66) c.set("#2d6234");
+      else if (s.tone > 0.33) c.set("#3d7a3a");
+      else c.set("#5a8a3c");
+      m.setColorAt(i, c);
     });
     m.instanceMatrix.needsUpdate = true;
+    if (m.instanceColor) m.instanceColor.needsUpdate = true;
   }, [dummy, spots]);
 
   if (!spots.length) return null;

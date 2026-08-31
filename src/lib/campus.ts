@@ -179,10 +179,40 @@ export const WORLD_BUILDINGS: Building[] = [
     sign: "RIBBON",
     desks: [["till", "Till", 1.4, 1.5]],
   }),
+  footprint("studio", "Signal Studio", {
+    kind: "studio",
+    style: "studio",
+    districtId: "creative",
+    origin: { x: 38, y: 2 },
+    size: { x: 5, y: 4 },
+    height: 50,
+    roof: "#6b3d55",
+    wall: "#d4a0b5",
+    wallDark: "#9a6a7e",
+    accent: "#f472b6",
+    sign: "STUDIO",
+    desks: [
+      ["edit", "Edit bay", 1.5, 1.2],
+      ["mood", "Mood wall", 3.5, 2.4],
+    ],
+  }),
+  footprint("cottage", "Vanta Cottage", {
+    kind: "home",
+    style: "house",
+    districtId: "creative",
+    origin: { x: 38, y: 8 },
+    size: { x: 3, y: 3 },
+    height: 36,
+    roof: "#7a3030",
+    wall: "#e8d4c0",
+    wallDark: "#b08970",
+    accent: "#fb7185",
+    desks: [["easel", "Easel", 1.4, 1.4]],
+  }),
 ];
 
 export const ANCHOR_BUILDING_ID = "incubator";
-export const LOT_BUILDINGS = WORLD_BUILDINGS.filter((b) => b.id === ANCHOR_BUILDING_ID);
+export const LOT_BUILDINGS = WORLD_BUILDINGS;
 
 export const PLAZA_COMPANIES = WORLD_BUILDINGS.filter((b) => b.districtId === "waterfront").map((b) => ({
   id: b.id,

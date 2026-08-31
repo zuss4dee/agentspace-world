@@ -278,6 +278,7 @@ export function BuildingGhost() {
               d={fp.h * TILE * 0.94}
               height={h(fp.height)}
               opacity={0.9}
+              useId={use.id}
               {...usePalette(use.id)}
             />
           </group>
@@ -397,6 +398,7 @@ export function ClaimedMarks() {
                     w={fp.w * TILE * 0.94}
                     d={fp.h * TILE * 0.94}
                     height={h(fp.height)}
+                    useId={use.id}
                     {...usePalette(use.id)}
                   />
                 </group>

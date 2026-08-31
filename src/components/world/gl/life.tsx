@@ -24,7 +24,9 @@ import { useWorld } from "@/components/world/world-store";
 export function TreeField() {
   const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
   const trunks = useRef<THREE.InstancedMesh>(null);
-  const canopies = useRef<THREE.InstancedMesh>(null);
+  const oaks = useRef<THREE.InstancedMesh>(null);
+  const pines = useRef<THREE.InstancedMesh>(null);
+  const willows = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const {
     claimedPlotIds,
@@ -75,23 +77,36 @@ export function TreeField() {
   const all = useMemo(() => {
     const scenery = core
       .filter((t) => !hideLots.some((r) => pointInRect(t.x, t.y, r)))
-      .map((t) => ({ x: t.x, y: t.y, pine: t.assetId.includes("pine") }));
-    const yards: { x: number; y: number; pine: boolean }[] = [];
+      .map((t) => ({
+        x: t.x,
+        y: t.y,
+        kind: t.assetId.includes("pine") ? "pine" : t.assetId.includes("willow") ? "willow" : "oak",
+      }));
+    const yards: { x: number; y: number; kind: string }[] = [];
     for (const id of claimedPlotIds) {
       const p = getPlot(id);
       if (!p) continue;
       const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES[0]!;
       const fp = buildingFootprint(p, use, claimedExtras[id] ?? 0, claimedPlaces[id]);
       if (!fp) continue;
-      for (const spot of yardTreeSpots(id, fp)) yards.push(spot);
+      for (const spot of yardTreeSpots(id, fp)) {
+        yards.push({ x: spot.x, y: spot.y, kind: spot.pine ? "pine" : "oak" });
+      }
     }
     return [...scenery, ...yards];
   }, [core, hideLots, claimedPlotIds, claimedUses, claimedExtras, claimedPlaces]);
 
   useLayoutEffect(() => {
     const t = trunks.current;
-    const c = canopies.current;
-    if (!t || !c) return;
+    const oak = oaks.current;
+    const pine = pines.current;
+    const willow = willows.current;
+    if (!t || !oak || !pine || !willow) return;
+    const hide = () => {
+      dummy.scale.set(0, 0, 0);
+      dummy.position.set(0, 0, 0);
+      dummy.updateMatrix();
+    };
     all.forEach((tree, i) => {
       const moved = nudgeOffBuilding(tree.x, tree.y, blockers);
       const ix = moved ? Math.floor(moved.x) : -1;
@@ -99,43 +114,61 @@ export function TreeField() {
       const tile = ix >= 0 && iy >= 0 && ix < GRID && iy < GRID ? TERRAIN[iy]![ix] : null;
       const s = 0.65 + ((tree.x * 7 + tree.y) % 5) * 0.07;
       if (!moved || tile === "road" || tile === "water") {
-        dummy.scale.set(0, 0, 0);
-        dummy.position.set(0, 0, 0);
-        dummy.updateMatrix();
+        hide();
         t.setMatrixAt(i, dummy.matrix);
-        c.setMatrixAt(i, dummy.matrix);
+        oak.setMatrixAt(i, dummy.matrix);
+        pine.setMatrixAt(i, dummy.matrix);
+        willow.setMatrixAt(i, dummy.matrix);
         return;
       }
       dummy.position.set(wx(moved.x), h(0.42) * s, wz(moved.y));
       dummy.scale.set(s, s, s);
       dummy.updateMatrix();
       t.setMatrixAt(i, dummy.matrix);
-      dummy.position.set(wx(moved.x), h(1.12) * s, wz(moved.y));
-      dummy.scale.set(tree.pine ? s * 0.9 : s, tree.pine ? s * 1.15 : s, tree.pine ? s * 0.9 : s);
+      hide();
+      oak.setMatrixAt(i, dummy.matrix);
+      pine.setMatrixAt(i, dummy.matrix);
+      willow.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(wx(moved.x), (tree.kind === "pine" ? h(1.28) : h(1.08)) * s, wz(moved.y));
+      if (tree.kind === "pine") dummy.scale.set(s * 0.85, s * 1.35, s * 0.85);
+      else if (tree.kind === "willow") dummy.scale.set(s * 1.15, s * 0.72, s * 1.15);
+      else dummy.scale.set(s * 1.05, s * 0.92, s * 1.05);
       dummy.updateMatrix();
-      c.setMatrixAt(i, dummy.matrix);
+      if (tree.kind === "pine") pine.setMatrixAt(i, dummy.matrix);
+      else if (tree.kind === "willow") willow.setMatrixAt(i, dummy.matrix);
+      else oak.setMatrixAt(i, dummy.matrix);
     });
     t.instanceMatrix.needsUpdate = true;
-    c.instanceMatrix.needsUpdate = true;
+    oak.instanceMatrix.needsUpdate = true;
+    pine.instanceMatrix.needsUpdate = true;
+    willow.instanceMatrix.needsUpdate = true;
   }, [all, dummy, blockers]);
 
   if (!all.length) return null;
   return (
     <group>
       <instancedMesh ref={trunks} args={[undefined, undefined, all.length]} castShadow>
-        <cylinderGeometry args={[h(0.05), h(0.08), h(0.9), 5]} />
-        <meshStandardMaterial color="#5a3c28" />
+        <cylinderGeometry args={[h(0.045), h(0.09), h(0.95), 6]} />
+        <meshStandardMaterial color="#5a3c28" roughness={0.86} />
       </instancedMesh>
-      <instancedMesh ref={canopies} args={[undefined, undefined, all.length]} castShadow>
-        <sphereGeometry args={[h(0.52), 7, 5]} />
-        <meshStandardMaterial color="#2f6d38" roughness={0.86} />
+      <instancedMesh ref={oaks} args={[undefined, undefined, all.length]} castShadow>
+        <icosahedronGeometry args={[h(0.5), 1]} />
+        <meshStandardMaterial color="#2f6a34" roughness={0.9} />
+      </instancedMesh>
+      <instancedMesh ref={pines} args={[undefined, undefined, all.length]} castShadow>
+        <coneGeometry args={[h(0.38), h(1.15), 7]} />
+        <meshStandardMaterial color="#245c38" roughness={0.88} />
+      </instancedMesh>
+      <instancedMesh ref={willows} args={[undefined, undefined, all.length]} castShadow>
+        <sphereGeometry args={[h(0.52), 8, 6]} />
+        <meshStandardMaterial color="#4a7a40" roughness={0.92} />
       </instancedMesh>
     </group>
   );
 }
 
 export function BushField() {
-  const bushes = useMemo(() => SCENERY.filter((s) => s.kind === "bush" || s.kind === "hedge" || s.kind === "planter"), []);
+  const bushes = useMemo(() => SCENERY.filter((s) => s.kind === "bush" || s.kind === "hedge"), []);
   const { selectedPlotId, claimedPlotIds, plotExpand } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const hide = useMemo(() => {
@@ -150,7 +183,7 @@ export function BushField() {
         return (
           <mesh key={s.id} position={[wx(s.x), h(0.22), wz(s.y)]} castShadow>
             <sphereGeometry args={[s.kind === "hedge" ? h(0.32) : h(0.22), 6, 5]} />
-            <meshStandardMaterial color="#3d7a3a" roughness={0.9} />
+            <meshStandardMaterial color={s.kind === "hedge" ? "#2d5c32" : "#3d7a3a"} roughness={0.9} />
           </mesh>
         );
       })}

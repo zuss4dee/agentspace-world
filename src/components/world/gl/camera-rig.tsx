@@ -142,12 +142,12 @@ export function ExplorerCamera() {
       }
     };
     const onDown = (e: PointerEvent) => {
-      if (e.button !== 0 && e.pointerType !== "touch") return;
+      if (e.button !== 0 && e.button !== 2 && e.button !== 1 && e.pointerType !== "touch") return;
       dragging.current = true;
       last.current = { x: e.clientX, y: e.clientY };
       applyDist.current = false;
       if (followRef.current) setFollowAgent(false);
-      if (e.shiftKey) beginOrbit();
+      if (e.shiftKey || e.button === 2 || e.button === 1) beginOrbit();
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging.current) return;
@@ -364,12 +364,12 @@ export function ExplorerCamera() {
     const fog = scene.fog;
     if (fog instanceof THREE.Fog) {
       if (mapOverview || (topRef.current && !interiorId)) {
-        fog.near = h(110);
-        fog.far = h(340);
+        fog.near = h(150);
+        fog.far = h(420);
       } else {
         const d = camera.position.distanceTo(t);
-        fog.near = Math.max(h(72), d * 1.9);
-        fog.far = Math.max(h(180), Math.min(h(420), d * 5.2));
+        fog.near = Math.max(h(120), d * 2.8);
+        fog.far = Math.max(h(260), Math.min(h(520), d * 7.5));
       }
     }
 
