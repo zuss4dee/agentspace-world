@@ -183,7 +183,7 @@ export function TrafficLayer() {
         return;
       }
       child.visible = true;
-      child.position.set(wx(x), h(0.24), wz(y));
+      child.position.set(wx(x), h(0.16), wz(y));
       child.rotation.y = car.axis === "x" ? Math.PI / 2 : 0;
     });
   });
@@ -210,7 +210,7 @@ export function Lamps() {
     const m = mesh.current;
     if (!m) return;
     lamps.forEach((s, i) => {
-      dummy.position.set(wx(s.x), 1.35, wz(s.y));
+      dummy.position.set(wx(s.x), h(1.35), wz(s.y));
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
     });
@@ -219,7 +219,7 @@ export function Lamps() {
   if (!lamps.length) return null;
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, lamps.length]} raycast={() => undefined}>
-      <sphereGeometry args={[0.07, 6, 6]} />
+      <sphereGeometry args={[h(0.07), 6, 6]} />
       <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.75} />
     </instancedMesh>
   );

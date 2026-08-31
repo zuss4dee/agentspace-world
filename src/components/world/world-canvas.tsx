@@ -9,8 +9,7 @@ import { BuildingGhost, ClaimedMarks, LatticeField, PlotsLayer, SaleStakes } fro
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
-import { StreetsLayer } from "@/components/world/gl/streets";
-import { AgentsLayer, BushField, TrafficLayer, TreeField } from "@/components/world/gl/life";
+import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/components/world/gl/life";
 import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
@@ -111,9 +110,9 @@ function ExteriorScene() {
       <LockedLand />
       <TreeField />
       <BushField />
+      <Lamps />
       <LatticeField />
       <PlotsLayer />
-      <StreetsLayer />
       <SaleStakes />
       <ClaimedMarks />
       <BuildingGhost />
