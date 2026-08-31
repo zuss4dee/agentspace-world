@@ -30,6 +30,7 @@ export function CityChrome() {
     focusCoord,
     setCameraScale,
     cameraScale,
+    zoomBy,
     enterBuilding,
     beaconBidCents,
     placeBeaconBid,
@@ -195,10 +196,10 @@ export function CityChrome() {
       </aside>
 
       <div className="ns-zoom">
-        <button type="button" aria-label="Zoom in" onClick={() => setCameraScale(Math.min(2.2, cameraScale + 0.22))}>
+        <button type="button" aria-label="Zoom in" onClick={() => zoomBy(true)}>
           <Plus className="size-4" />
         </button>
-        <button type="button" aria-label="Zoom out" onClick={() => setCameraScale(Math.max(0.42, cameraScale - 0.22))}>
+        <button type="button" aria-label="Zoom out" onClick={() => zoomBy(false)}>
           <Minus className="size-4" />
         </button>
         <button

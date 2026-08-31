@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
-import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, wx, wz } from "@/lib/coords";
+import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
 import { cameraPanLimits } from "@/lib/world-sections";
 
 const keys = new Set<string>();
@@ -39,6 +39,7 @@ export function ExplorerCamera() {
     setMapOverview,
     topView,
     setTopView,
+    zoomPulse,
   } = useWorld();
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -57,6 +58,26 @@ export function ExplorerCamera() {
   const topRef = useRef(topView);
   topRef.current = topView;
   const wasTop = useRef(false);
+  const lastZoom = useRef(0);
+
+  const dolly = (factor: number) => {
+    applyDist.current = false;
+    const dist = camera.position.distanceTo(target.current);
+    const cap = overviewRef.current ? OVERVIEW_DIST : MAX_VIEW_DIST;
+    const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
+    if (overviewRef.current && next <= MAX_VIEW_DIST + 0.4) setMapOverview(false);
+    if (topRef.current && !orbiting.current) {
+      const height = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
+      camera.position.set(target.current.x, height, target.current.z);
+      return;
+    }
+    _dir.copy(camera.position).sub(target.current);
+    if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
+    _dir.normalize().multiplyScalar(next);
+    camera.position.copy(target.current).add(_dir);
+  };
+  const dollyRef = useRef(dolly);
+  dollyRef.current = dolly;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -154,21 +175,7 @@ export function ExplorerCamera() {
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      applyDist.current = false;
-      const dist = camera.position.distanceTo(target.current);
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const cap = overviewRef.current ? OVERVIEW_DIST : MAX_VIEW_DIST;
-      const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
-      if (overviewRef.current && next <= MAX_VIEW_DIST + 0.4) setMapOverview(false);
-      if (topRef.current && !orbiting.current) {
-        const height = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
-        camera.position.set(target.current.x, height, target.current.z);
-        return;
-      }
-      _dir.copy(camera.position).sub(target.current);
-      if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
-      _dir.normalize().multiplyScalar(next);
-      camera.position.copy(target.current).add(_dir);
+      dollyRef.current(e.deltaY > 0 ? ZOOM_OUT : ZOOM_IN);
     };
     const onContext = (e: Event) => e.preventDefault();
     el.addEventListener("pointerdown", onDown, true);
@@ -189,6 +196,11 @@ export function ExplorerCamera() {
 
   useFrame((_, dt) => {
     const t = target.current;
+    if (zoomPulse.id !== lastZoom.current) {
+      lastZoom.current = zoomPulse.id;
+      if (zoomPulse.id > 0) dolly(zoomPulse.inward ? ZOOM_IN : ZOOM_OUT);
+    }
+
     if (cameraTick !== lastTick.current) {
       lastTick.current = cameraTick;
       applyDist.current = true;

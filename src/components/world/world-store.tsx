@@ -58,6 +58,8 @@ type WorldApi = {
   setFollowAgent: (v: boolean) => void;
   cameraScale: number;
   setCameraScale: (n: number) => void;
+  zoomBy: (inward: boolean) => void;
+  zoomPulse: { id: number; inward: boolean };
   cameraTick: number;
   mapOverview: boolean;
   showCityOverview: () => void;
@@ -91,6 +93,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [followAgent, setFollowAgent] = useState(false);
   const [cameraScale, setCameraScaleState] = useState(0.72);
   const [cameraTick, setCameraTick] = useState(0);
+  const [zoomPulse, setZoomPulse] = useState({ id: 0, inward: true });
   const [interiorId, setInteriorId] = useState<string | null>(null);
   const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
   const [beaconBidCents, setBeaconBidCents] = useState(0);
@@ -318,6 +321,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraTick((t) => t + 1);
   }, []);
 
+  const zoomBy = useCallback((inward: boolean) => {
+    setZoomPulse((p) => ({ id: p.id + 1, inward }));
+  }, []);
+
   const focusBuilding = useCallback((id: string) => {
     const b = ALL_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
@@ -456,6 +463,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setFollowAgent,
       cameraScale,
       setCameraScale,
+      zoomBy,
+      zoomPulse,
       cameraTick,
       mapOverview,
       showCityOverview,
@@ -497,6 +506,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       followAgent,
       cameraScale,
       cameraTick,
+      zoomPulse,
+      zoomBy,
       mapOverview,
       showCityOverview,
       topView,
