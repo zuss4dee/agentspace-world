@@ -51,6 +51,19 @@ export function formatPx(n: number) {
   return `${Math.round(n).toLocaleString()} px`;
 }
 
+/** HUD / ghost / world share this: tiles × TILE_PX, sq ft from that pixel size. */
+export function measureTiles(wTiles: number, hTiles: number) {
+  const px = rectPx(wTiles, hTiles);
+  const sqft = tilesToSqFt(wTiles, hTiles);
+  return {
+    w: wTiles,
+    h: hTiles,
+    px,
+    sqft,
+    text: `${formatSqFt(sqft)} · ${formatPx(px.w)} × ${formatPx(px.h)}`,
+  };
+}
+
 /** Degrees → radians for camera / facing. */
 export function deg(d: number) {
   return (d * Math.PI) / 180;

@@ -14,7 +14,7 @@ import {
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { buildingSize, centerPlace, coverageOfClaims, expandPrice, expandedRect, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
+import { buildingSize, centerPlace, coverageOfClaims, expandPrice, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -62,7 +62,12 @@ export function CityChrome() {
   const activity = useMemo(() => shopActivity(), []);
   const picked = getPlot(selectedPlotId);
   const maxExtra = picked && picked.kind === "sale" && !claimed.has(picked.id)
-    ? maxExpandFor(picked, coverageOfClaims(claimedPlotIds, claimedExtras, picked.id))
+    ? maxExpandFor(
+        picked,
+        coverageOfClaims(claimedPlotIds, claimedExtras, picked.id),
+        LAND_USES.find((u) => u.id === previewUseId),
+        buildingPlace,
+      )
     : 0;
 
   const active = world.agents.filter((a) => a.mapId === "lot").length;
@@ -328,12 +333,11 @@ export function CityChrome() {
           onPreviewUse={(id) => {
             setPreviewUseId(id);
             if (!picked) return;
-            const extra = Math.min(plotExpand, maxExtra);
             const use = LAND_USES.find((u) => u.id === id);
             if (!use) return;
-            const size = buildingSize(picked, use, extra);
-            const r = expandedRect(picked, extra);
-            setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
+            setPlotExpand(0);
+            const size = buildingSize(picked, use, 0);
+            setBuildingPlace(size ? centerPlace(picked.w, picked.h, size.w, size.h) : { ox: 0, oy: 0 });
           }}
           onExtra={(n) => {
             setPlotExpand(n);
@@ -341,11 +345,6 @@ export function CityChrome() {
             const uses = usesForPlot(picked, n);
             const nextId = uses.some((u) => u.id === previewUseId) ? previewUseId : (uses[0]?.id ?? "kiosk");
             if (nextId !== previewUseId) setPreviewUseId(nextId);
-            const use = LAND_USES.find((u) => u.id === nextId);
-            if (!use) return;
-            const size = buildingSize(picked, use, n);
-            const r = expandedRect(picked, n);
-            setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
           }}
           onPlace={setBuildingPlace}
           onClose={() => selectPlot(null)}
@@ -359,7 +358,7 @@ export function CityChrome() {
               );
             else if (claimedPlotIds.length >= MAX_CLAIMS)
               toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
-            else toast.error("That expand hits a road, a neighbour you do not own, or the lot cap.");
+            else toast.error("That claim hits a road, a neighbour, or the lot cap.");
           }}
           onEnter={enterBuilding}
           onBid={() => setBeaconOpen(true)}

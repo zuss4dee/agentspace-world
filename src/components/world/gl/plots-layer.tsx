@@ -11,13 +11,12 @@ import {
   buildingFootprint,
   coverageOfClaims,
   expandedRect,
-  formatSqFt,
   getPlot,
   landBounds,
   latticePlot,
   maxExpandFor,
+  measureTiles,
   placeAtCell,
-  tilesToSqFt,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import { useWorld } from "@/components/world/world-store";
@@ -51,12 +50,12 @@ export function PlotsLayer() {
       const hidePad = selected && forSale;
 
       dummy.position.set(cx, forSale ? h(0.07) : h(0.035), cz);
-      dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.9, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.9);
+      dummy.scale.set(hidePad ? 0 : p.w * TILE, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE);
       dummy.updateMatrix();
       pad.setMatrixAt(i, dummy.matrix);
 
       dummy.position.set(cx, forSale ? h(0.04) : h(0.02), cz);
-      dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.98, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.98);
+      dummy.scale.set(hidePad ? 0 : p.w * TILE, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE);
       dummy.updateMatrix();
       edge.setMatrixAt(i, dummy.matrix);
 
@@ -201,15 +200,15 @@ export function BuildingGhost() {
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const plot = getPlot(selectedPlotId);
   if (!plot || plot.kind !== "sale" || claimed.has(plot.id)) return null;
+  const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
   const extra = Math.min(
     plotExpand,
-    maxExpandFor(plot, coverageOfClaims(claimedPlotIds, claimedExtras, plot.id)),
+    maxExpandFor(plot, coverageOfClaims(claimedPlotIds, claimedExtras, plot.id), use, buildingPlace),
   );
-  const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
   const land = expandedRect(plot, extra);
   const fp = buildingFootprint(plot, use, extra, buildingPlace);
-  const landSq = tilesToSqFt(land.w, land.h);
-  const bldgSq = fp ? tilesToSqFt(fp.w, fp.h) : 0;
+  const landM = measureTiles(land.w, land.h);
+  const bldgM = fp ? measureTiles(fp.w, fp.h) : null;
   const fillsLot = Boolean(fp && fp.w >= land.w && fp.h >= land.h);
   const y0 = h(0.22);
   const x0 = wx(land.x);
@@ -244,7 +243,7 @@ export function BuildingGhost() {
                   setBuildingPlace(placeAtCell(land.w, land.h, fp.w, fp.h, col, row));
                 }}
               >
-                <boxGeometry args={[TILE * 0.92, h(0.04), TILE * 0.92]} />
+                <boxGeometry args={[TILE, h(0.04), TILE]} />
                 <meshStandardMaterial color="#3d7a42" roughness={0.85} />
               </mesh>
             );
@@ -252,26 +251,12 @@ export function BuildingGhost() {
         : null}
       {fp ? (
         <>
-          {!fillsLot
-            ? Array.from({ length: fp.w * fp.h }, (_, i) => {
-                const col = i % fp.w;
-                const row = Math.floor(i / fp.w);
-                return (
-                  <mesh
-                    key={`b-${i}`}
-                    position={[wx(fp.x + col + 0.5), h(0.12), wz(fp.y + row + 0.5)]}
-                  >
-                    <boxGeometry args={[TILE * 0.9, h(0.08), TILE * 0.9]} />
-                    <meshStandardMaterial color="#111111" roughness={0.45} />
-                  </mesh>
-                );
-              })
-            : null}
-          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
+          <SitLandmark fp={fp} />
+          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
             <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.32} />
+            <meshStandardMaterial color="#ffffff" roughness={0.32} transparent opacity={0.92} />
           </mesh>
-          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
+          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
             <boxGeometry args={[fp.w * TILE + h(0.05), h(fp.height) + h(0.05), fp.h * TILE + h(0.05)]} />
             <meshStandardMaterial color="#111111" wireframe />
           </mesh>
@@ -284,7 +269,7 @@ export function BuildingGhost() {
                 occlude={false}
                 pointerEvents="none"
               >
-                <div className="ns-sale-pin ns-sale-pin-lot">Land you buy · {formatSqFt(landSq)}</div>
+                <div className="ns-sale-pin ns-sale-pin-lot">Land you buy · {landM.text}</div>
               </Html>
               <Html
                 position={[wx(fp.x + fp.w / 2), h(fp.height) + h(0.7), wz(fp.y + fp.h / 2)]}
@@ -294,13 +279,63 @@ export function BuildingGhost() {
                 pointerEvents="none"
               >
                 <div className="ns-sale-pin">
-                  {use.name} · {formatSqFt(bldgSq)}
+                  {use.name} · {bldgM?.text}
                 </div>
               </Html>
             </>
           ) : null}
         </>
       ) : null}
+    </group>
+  );
+}
+
+function SitLandmark({
+  fp,
+}: {
+  fp: { x: number; y: number; w: number; h: number };
+}) {
+  const cx = wx(fp.x + fp.w / 2);
+  const cz = wz(fp.y + fp.h / 2);
+  const padW = fp.w * TILE;
+  const padD = fp.h * TILE;
+  const corners: [number, number][] = [
+    [wx(fp.x) + h(0.08), wz(fp.y) + h(0.08)],
+    [wx(fp.x + fp.w) - h(0.08), wz(fp.y) + h(0.08)],
+    [wx(fp.x) + h(0.08), wz(fp.y + fp.h) - h(0.08)],
+    [wx(fp.x + fp.w) - h(0.08), wz(fp.y + fp.h) - h(0.08)],
+  ];
+  return (
+    <group>
+      <mesh position={[cx, h(0.11), cz]} receiveShadow>
+        <boxGeometry args={[padW, h(0.1), padD]} />
+        <meshStandardMaterial color="#c4b7a0" roughness={0.78} />
+      </mesh>
+      <Line
+        points={[
+          [wx(fp.x), h(0.2), wz(fp.y)],
+          [wx(fp.x + fp.w), h(0.2), wz(fp.y)],
+          [wx(fp.x + fp.w), h(0.2), wz(fp.y + fp.h)],
+          [wx(fp.x), h(0.2), wz(fp.y + fp.h)],
+          [wx(fp.x), h(0.2), wz(fp.y)],
+        ]}
+        color="#6b5344"
+        lineWidth={2.2}
+      />
+      {corners.map(([x, z], i) => (
+        <mesh key={i} position={[x, h(0.28), z]}>
+          <boxGeometry args={[h(0.14), h(0.28), h(0.14)]} />
+          <meshStandardMaterial color="#2a2118" roughness={0.5} />
+        </mesh>
+      ))}
+      <mesh position={[cx, h(0.2), cz]} rotation-x={-Math.PI / 2}>
+        <ringGeometry args={[h(0.16), h(0.28), 20]} />
+        <meshStandardMaterial color="#f4eee4" roughness={0.4} />
+      </mesh>
+      <mesh position={[cx, h(0.22), cz]}>
+        <cylinderGeometry args={[h(0.08), h(0.1), h(0.12), 8]} />
+        <meshStandardMaterial color="#111111" roughness={0.35} />
+      </mesh>
     </group>
   );
 }
@@ -334,10 +369,13 @@ export function ClaimedMarks() {
               lineWidth={1.6}
             />
             {fp ? (
-              <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.16), wz(fp.y + fp.h / 2)]}>
-                <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
-                <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
-              </mesh>
+              <>
+                <SitLandmark fp={fp} />
+                <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
+                  <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
+                  <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
+                </mesh>
+              </>
             ) : null}
           </group>
         );

@@ -1,8 +1,8 @@
 import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, ANCHOR_BUILDING_ID, districtAt } from "./campus";
 import { hash2 } from "./noise";
-import { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, rectPx, tilesToSqFt } from "./units";
+import { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, measureTiles, tilesToSqFt } from "./units";
 
-export { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, tilesToSqFt };
+export { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, measureTiles, tilesToSqFt };
 
 export type PlotKind = "sale" | "owned" | "park" | "civic";
 export type PlotZone = "ultimate" | "downtown" | "midtown" | "uptown" | "outskirts";
@@ -254,6 +254,21 @@ export const CITY_PLOTS = makeCityPlots();
 /** City lots only. The 100k field is addressed by index — do not materialize it. */
 export const PLOTS = CITY_PLOTS;
 
+const SALE_AABBS = CITY_PLOTS.filter((p) => p.kind === "sale").map((p) => ({
+  x: p.x,
+  y: p.y,
+  w: p.w,
+  h: p.h,
+}));
+
+/** True if a world sample sits on (or within `pad` tiles of) a sale-lot AABB. */
+export function hitsSaleLot(gx: number, gy: number, pad = 0) {
+  for (const p of SALE_AABBS) {
+    if (gx >= p.x - pad && gx < p.x + p.w + pad && gy >= p.y - pad && gy < p.y + p.h + pad) return true;
+  }
+  return false;
+}
+
 function latticeZone(row: number): PlotZone {
   if (row < 40) return "downtown";
   if (row < 120) return "midtown";
@@ -385,25 +400,17 @@ export const LAND_USES: LandUse[] = [
   { id: "hq", name: "HQ / tower", minW: 5, minH: 4, blurb: "A landmark office that reads from the plaza.", height: 6.4 },
 ];
 
-export function usesForPlot(p: Plot, extra = 0) {
-  const r = expandedRect(p, extra);
-  return LAND_USES.filter((u) => r.w >= u.minW && r.h >= u.minH);
+export function usesForPlot(p: Plot, _extra = 0) {
+  return LAND_USES.filter((u) => p.w >= u.minW && p.h >= u.minH);
 }
 
-export function expandedRect(p: Plot, extra: number) {
-  const e = Math.max(0, Math.min(MAX_EXPAND, Math.floor(extra)));
-  return {
-    x: p.x,
-    y: p.y,
-    w: Math.min(MAX_LOT_EDGE, p.w + e),
-    h: Math.min(MAX_LOT_EDGE, p.h + e),
-  };
+/** Land allocation — the green pad. Extra grows the building, not the lot. */
+export function expandedRect(p: Plot, _extra = 0) {
+  return { x: p.x, y: p.y, w: p.w, h: p.h };
 }
 
-export function expandPrice(p: Plot, extra: number) {
-  const r = expandedRect(p, extra);
-  const base = Math.max(1, p.w * p.h);
-  return Math.round(p.price * ((r.w * r.h) / base));
+export function expandPrice(p: Plot, _extra = 0) {
+  return p.price;
 }
 
 function rectsOverlap(
@@ -438,13 +445,11 @@ export function idsUnderRect(r: { x: number; y: number; w: number; h: number }) 
   return ids;
 }
 
-export function coverageOfClaims(ids: string[], extras: Record<string, number>, skipId?: string) {
+export function coverageOfClaims(ids: string[], _extras: Record<string, number>, skipId?: string) {
   const set = new Set<string>();
   for (const id of ids) {
     if (id === skipId) continue;
-    const p = getPlot(id);
-    if (!p) continue;
-    for (const covered of idsUnderRect(expandedRect(p, extras[id] ?? 0))) set.add(covered);
+    set.add(id);
   }
   return set;
 }
@@ -472,14 +477,6 @@ export function expandBlocked(p: Plot, extra: number, occupied: Set<string>) {
     if (occupied.has(id)) return true;
   }
   return false;
-}
-
-export function maxExpandFor(p: Plot, occupied: Set<string>) {
-  const growCap = Math.max(0, Math.min(MAX_EXPAND, MAX_LOT_EDGE - Math.min(p.w, p.h)));
-  for (let e = growCap; e >= 0; e--) {
-    if (!expandBlocked(p, e, occupied)) return e;
-  }
-  return 0;
 }
 
 export type LotPlace = { ox: number; oy: number };
@@ -542,27 +539,42 @@ export function matchingAnchor(place: LotPlace, landW: number, landH: number, bw
   return null;
 }
 
-/**
- * Max office tiles on a lot. Type minW×minH is both the starting pad and the cap
- * (kiosk 3×3, office 4×3, warehouse/HQ 5×4). Lot extra grows the grass, not the
- * building. Never returns the full plot.w × plot.h when the lot is larger than the type.
- */
-export function maxOfficeFootprint(landW: number, landH: number, use: LandUse) {
-  const short = Math.min(landW, landH);
-  const third = Math.max(1, Math.floor(short / 3));
-  let w = Math.min(landW, use.minW);
-  let h = Math.min(landH, use.minH);
-  if (use.minW <= third) w = Math.min(w, third);
-  if (use.minH <= third) h = Math.min(h, third);
-  if (w >= landW && landW > use.minW) w = use.minW;
-  if (h >= landH && landH > use.minH) h = use.minH;
-  return { w, h };
+export function footprintHitsRoad(x: number, y: number, w: number, h: number) {
+  for (let iy = y; iy < y + h; iy++) {
+    for (let ix = x; ix < x + w; ix++) {
+      if (ix >= 0 && iy >= 0 && ix < GRID && iy < GRID && blocked(ix, iy)) return true;
+    }
+  }
+  return false;
 }
 
-export function buildingSize(p: Plot, use: LandUse, extra = 0) {
-  const r = expandedRect(p, extra);
-  if (r.w < use.minW || r.h < use.minH) return null;
-  return maxOfficeFootprint(r.w, r.h, use);
+/**
+ * Type minW×minH is the default (centered). Extra adds tiles east/south from (ox,oy),
+ * never past the lot fence or onto road tiles.
+ */
+export function growSize(p: Plot, use: LandUse, extra: number, place: LotPlace) {
+  if (p.w < use.minW || p.h < use.minH) return null;
+  const bw = use.minW;
+  const bh = use.minH;
+  const pos = clampLotPlace(p.w, p.h, bw, bh, place);
+  let w = Math.min(bw + Math.max(0, Math.floor(extra)), p.w - pos.ox);
+  let h = Math.min(bh + Math.max(0, Math.floor(extra)), p.h - pos.oy);
+  while ((w > bw || h > bh) && footprintHitsRoad(p.x + pos.ox, p.y + pos.oy, w, h)) {
+    if (w > bw) w--;
+    else if (h > bh) h--;
+    else break;
+  }
+  return { w, h, ox: pos.ox, oy: pos.oy };
+}
+
+/** Default pad is type min; extra is width/depth inside the lot from current place. */
+export function maxOfficeFootprint(landW: number, landH: number, use: LandUse) {
+  return { w: Math.min(landW, use.minW), h: Math.min(landH, use.minH) };
+}
+
+export function buildingSize(p: Plot, use: LandUse, extra = 0, place?: LotPlace) {
+  const grown = growSize(p, use, extra, place ?? centerPlace(p.w, p.h, use.minW, use.minH));
+  return grown ? { w: grown.w, h: grown.h } : null;
 }
 
 export function footprintFillsLot(landW: number, landH: number, bw: number, bh: number) {
@@ -570,44 +582,53 @@ export function footprintFillsLot(landW: number, landH: number, bw: number, bh: 
 }
 
 export function fitPlace(p: Plot, use: LandUse, extra: number, place: LotPlace): LotPlace {
-  const r = expandedRect(p, extra);
-  const size = buildingSize(p, use, extra);
-  if (!size) return place;
-  return clampLotPlace(r.w, r.h, size.w, size.h, place);
+  const grown = growSize(p, use, extra, place);
+  if (!grown) return place;
+  return { ox: grown.ox, oy: grown.oy };
 }
 
 export function buildingFootprint(p: Plot, use: LandUse, extra = 0, place?: LotPlace) {
-  const r = expandedRect(p, extra);
-  const size = buildingSize(p, use, extra);
-  if (!size) return null;
-  const pos = footprintFillsLot(r.w, r.h, size.w, size.h)
-    ? { ox: 0, oy: 0 }
-    : clampLotPlace(r.w, r.h, size.w, size.h, place ?? centerPlace(r.w, r.h, size.w, size.h));
+  const grown = growSize(p, use, extra, place ?? centerPlace(p.w, p.h, use.minW, use.minH));
+  if (!grown) return null;
   return {
-    x: r.x + pos.ox,
-    y: r.y + pos.oy,
-    w: size.w,
-    h: size.h,
+    x: p.x + grown.ox,
+    y: p.y + grown.oy,
+    w: grown.w,
+    h: grown.h,
     height: use.height,
-    ox: pos.ox,
-    oy: pos.oy,
+    ox: grown.ox,
+    oy: grown.oy,
   };
 }
 
+export function maxExpandFor(p: Plot, _occupied: Set<string> = new Set(), use?: LandUse, place?: LotPlace) {
+  const u = use ?? LAND_USES.find((item) => item.id === "office") ?? LAND_USES[0]!;
+  if (p.w < u.minW || p.h < u.minH) return 0;
+  const pos = clampLotPlace(p.w, p.h, u.minW, u.minH, place ?? centerPlace(p.w, p.h, u.minW, u.minH));
+  const roomW = Math.max(0, p.w - pos.ox - u.minW);
+  const roomH = Math.max(0, p.h - pos.oy - u.minH);
+  let extra = Math.max(roomW, roomH);
+  while (extra > 0) {
+    const size = growSize(p, u, extra, pos);
+    if (size && !footprintHitsRoad(p.x + size.ox, p.y + size.oy, size.w, size.h)) return extra;
+    extra--;
+  }
+  return 0;
+}
+
 export function plotArea(p: Plot) {
-  const tiles = p.w * p.h;
-  const px = rectPx(p.w, p.h);
-  const sqft = tilesToSqFt(p.w, p.h);
+  const m = measureTiles(p.w, p.h);
   return {
-    tiles,
-    sqft,
-    px,
-    meters: tiles * TILE_METERS * TILE_METERS,
+    tiles: p.w * p.h,
+    sqft: m.sqft,
+    px: m.px,
+    meters: p.w * p.h * TILE_METERS * TILE_METERS,
     footprint: `${p.w} × ${p.h}`,
     frontFt: p.w * TILE_FEET,
     deepFt: p.h * TILE_FEET,
-    frontPx: px.w,
-    deepPx: px.h,
+    frontPx: m.px.w,
+    deepPx: m.px.h,
+    text: m.text,
   };
 }
 

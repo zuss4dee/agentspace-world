@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GRID, ROAD_XS, ROAD_YS, TERRAIN, groundZ } from "@/lib/campus";
 import { TILE, WORLD_SPAN, h, wx, wz } from "@/lib/coords";
 import { fbm } from "@/lib/noise";
+import { hitsSaleLot } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
 function laneDist(v: number, lanes: number[]) {
@@ -41,7 +42,8 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
   }
   const dx = laneDist(gx, ROAD_XS);
   const dy = laneDist(gy, ROAD_YS);
-  const onRoad = kind === "road" || dx < 0.5 || dy < 0.5;
+  const onLot = hitsSaleLot(gx, gy, 0.62);
+  const onRoad = !onLot && (kind === "road" || dx < 0.42 || dy < 0.42);
   if (onRoad) {
     // Cooler, slightly darker than grass — readable grid, not a highway.
     const along = Math.min(dx, dy);

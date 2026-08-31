@@ -4,7 +4,6 @@ import { Landmark, Minus, Plus, X } from "lucide-react";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { companyForBuilding, formatUsd, isCivicBuilding } from "@/lib/companies";
 import { ZONE_THEME } from "@/lib/city-shop";
-import { formatPx } from "@/lib/units";
 import {
   LAND_USES,
   PLACE_ANCHORS,
@@ -14,12 +13,11 @@ import {
   expandPrice,
   expandedRect,
   fitPlace,
-  formatSqFt,
   matchingAnchor,
+  measureTiles,
   placeAtCell,
   placeFromAnchor,
   plotArea,
-  tilesToSqFt,
   usesForPlot,
   type LotPlace,
   type Plot,
@@ -66,15 +64,15 @@ export function PlotSheet({
   const owned = Boolean(building) && !claimed && plot.kind === "owned";
   const listed = !park && !civic && plot.kind === "sale" && !claimed;
   const grown = expandedRect(plot, extra);
-  const area = plotArea({ ...plot, w: grown.w, h: grown.h });
+  const area = plotArea(plot);
   const district = districtForPlot(plot);
   const uses = usesForPlot(plot, extra);
   const price = listed ? expandPrice(plot, extra) : plot.price;
   const use = LAND_USES.find((u) => u.id === previewUseId) ?? uses[0];
-  const size = use ? buildingSize(plot, use, extra) : null;
+  const size = use ? buildingSize(plot, use, extra, place) : null;
   const pos = use && size ? fitPlace(plot, use, extra, place) : place;
   const activeAnchor = size ? matchingAnchor(pos, grown.w, grown.h, size.w, size.h) : null;
-  const bldgSqft = size ? tilesToSqFt(size.w, size.h) : 0;
+  const bldg = size ? measureTiles(size.w, size.h) : null;
   const fillsLot = size ? footprintFillsLot(grown.w, grown.h, size.w, size.h) : false;
 
   return (
@@ -120,42 +118,42 @@ export function PlotSheet({
             </button>
           </div>
           <p className="ns-plot-copy">
-            {formatSqFt(area.sqft)} · {formatPx(area.frontPx)} × {formatPx(area.deepPx)} ·{" "}
-            {district?.label ?? theme.label}
-            {size ? ` · ${use?.name} ${formatSqFt(bldgSqft)}` : ""}
+            {area.text} · {district?.label ?? theme.label}
+            {bldg ? ` · ${use?.name} ${bldg.text}` : ""}
           </p>
 
           {listed ? (
             <>
               <div className="ns-expand">
-                  <p>Lot size</p>
+                  <p>Building width</p>
                   <div className="ns-expand-row">
                     <button
                       type="button"
                       className="ns-icon-btn"
-                      aria-label="Smaller"
+                      aria-label="Narrower"
                       disabled={extra <= 0}
                       onClick={() => onExtra(Math.max(0, extra - 1))}
                     >
                       <Minus className="size-4" />
                     </button>
-                    <strong>{formatSqFt(area.sqft)}</strong>
+                    <strong>{bldg ? bldg.text : "—"}</strong>
                     <button
                       type="button"
                       className="ns-icon-btn"
-                      aria-label="Larger"
+                      aria-label="Wider"
                       disabled={extra >= maxExtra}
                       onClick={() => onExtra(Math.min(maxExtra, extra + 1))}
                     >
                       <Plus className="size-4" />
                     </button>
                   </div>
+                  <span>Stays on your pad. Cannot cross the fence or a road.</span>
                 </div>
               <div className="ns-plot-uses">
                 <p>Building</p>
                 <ul>
                   {uses.map((u) => {
-                    const s = buildingSize(plot, u, extra);
+                    const s = buildingSize(plot, u, extra, place);
                     return (
                     <li key={u.id}>
                       <button
@@ -165,7 +163,7 @@ export function PlotSheet({
                         onClick={() => onPreviewUse(u.id)}
                       >
                         <strong>{u.name}</strong>
-                        <span>{s ? formatSqFt(tilesToSqFt(s.w, s.h)) : "—"}</span>
+                        <span>{s ? measureTiles(s.w, s.h).text : "—"}</span>
                       </button>
                     </li>
                     );
@@ -174,7 +172,7 @@ export function PlotSheet({
               </div>
               {size && use && !fillsLot ? (
                 <div className="ns-place">
-                  <p>Place</p>
+                  <p>Sit on the lot</p>
                   <div className="ns-place-body">
                     <div className="ns-site-wrap">
                       <div

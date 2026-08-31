@@ -31,7 +31,6 @@ import {
   LAND_USES,
   buildingSize,
   centerPlace,
-  expandedRect,
   type LotPlace,
 } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
@@ -344,8 +343,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
         const nextUse = uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk");
         const use = LAND_USES.find((u) => u.id === nextUse) ?? LAND_USES[0]!;
         const size = buildingSize(p, use, 0);
-        const r = expandedRect(p, 0);
-        setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
+        setBuildingPlace(size ? centerPlace(p.w, p.h, size.w, size.h) : { ox: 0, oy: 0 });
         return nextUse;
       });
     }
