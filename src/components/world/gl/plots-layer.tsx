@@ -27,10 +27,11 @@ import {
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import { FacadeOffice } from "@/components/world/gl/buildings";
+import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
 import { useWorld } from "@/components/world/world-store";
 
 const C = {
-  sale: new THREE.Color("#3f7a44"),
+  sale: new THREE.Color("#4a6e3c"),
   saleEdge: new THREE.Color("#111111"),
   owned: new THREE.Color("#9a9a9a"),
   taken: new THREE.Color("#c8c8c8"),
@@ -116,7 +117,7 @@ export function PlotsLayer() {
       </instancedMesh>
       <instancedMesh ref={pads} args={[undefined, undefined, list.length]} onClick={onClick} receiveShadow>
         <boxGeometry args={[1, h(0.08), 1]} />
-        <meshStandardMaterial roughness={0.72} metalness={0.02} />
+        <meshStandardMaterial roughness={0.9} metalness={0} />
       </instancedMesh>
     </group>
   );
@@ -312,8 +313,8 @@ export function BuildingGhost() {
           <SitLandmark fp={fp} />
           <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
             <FacadeOffice
-              w={fp.w * TILE * 0.94}
-              d={fp.h * TILE * 0.94}
+              w={fp.w * TILE * LOT_FILL}
+              d={fp.h * TILE * LOT_DEPTH}
               height={h(fp.height)}
               opacity={0.9}
               useId={use.id}
@@ -433,8 +434,8 @@ export function ClaimedMarks() {
                 <SitLandmark fp={fp} />
                 <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
                   <FacadeOffice
-                    w={fp.w * TILE * 0.94}
-                    d={fp.h * TILE * 0.94}
+                    w={fp.w * TILE * LOT_FILL}
+                    d={fp.h * TILE * LOT_DEPTH}
                     height={h(fp.height)}
                     useId={use.id}
                     {...officePalette(use.id)}

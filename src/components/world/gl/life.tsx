@@ -27,6 +27,7 @@ export function TreeField() {
   const oaks = useRef<THREE.InstancedMesh>(null);
   const pines = useRef<THREE.InstancedMesh>(null);
   const willows = useRef<THREE.InstancedMesh>(null);
+  const crowns = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const {
     claimedPlotIds,
@@ -112,7 +113,8 @@ export function TreeField() {
     const oak = oaks.current;
     const pine = pines.current;
     const willow = willows.current;
-    if (!t || !oak || !pine || !willow) return;
+    const crown = crowns.current;
+    if (!t || !oak || !pine || !willow || !crown) return;
     const hide = () => {
       dummy.scale.set(0, 0, 0);
       dummy.position.set(0, 0, 0);
@@ -130,49 +132,76 @@ export function TreeField() {
         oak.setMatrixAt(i, dummy.matrix);
         pine.setMatrixAt(i, dummy.matrix);
         willow.setMatrixAt(i, dummy.matrix);
+        crown.setMatrixAt(i, dummy.matrix);
         return;
       }
-      dummy.position.set(wx(moved.x), h(0.42) * s, wz(moved.y));
-      dummy.scale.set(s, s, s);
+      dummy.position.set(wx(moved.x), h(0.38) * s, wz(moved.y));
+      dummy.scale.set(s * 0.85, s, s * 0.85);
       dummy.updateMatrix();
       t.setMatrixAt(i, dummy.matrix);
       hide();
       oak.setMatrixAt(i, dummy.matrix);
       pine.setMatrixAt(i, dummy.matrix);
       willow.setMatrixAt(i, dummy.matrix);
-      dummy.position.set(wx(moved.x), (tree.kind === "pine" ? h(1.28) : h(1.08)) * s, wz(moved.y));
-      if (tree.kind === "pine") dummy.scale.set(s * 0.85, s * 1.35, s * 0.85);
-      else if (tree.kind === "willow") dummy.scale.set(s * 1.15, s * 0.72, s * 1.15);
-      else dummy.scale.set(s * 1.05, s * 0.92, s * 1.05);
-      dummy.updateMatrix();
-      if (tree.kind === "pine") pine.setMatrixAt(i, dummy.matrix);
-      else if (tree.kind === "willow") willow.setMatrixAt(i, dummy.matrix);
-      else oak.setMatrixAt(i, dummy.matrix);
+      crown.setMatrixAt(i, dummy.matrix);
+      if (tree.kind === "pine") {
+        dummy.position.set(wx(moved.x), h(0.95) * s, wz(moved.y));
+        dummy.scale.set(s * 0.95, s * 1.05, s * 0.95);
+        dummy.updateMatrix();
+        pine.setMatrixAt(i, dummy.matrix);
+        dummy.position.set(wx(moved.x), h(1.38) * s, wz(moved.y));
+        dummy.scale.set(s * 0.58, s * 0.62, s * 0.58);
+        dummy.updateMatrix();
+        crown.setMatrixAt(i, dummy.matrix);
+      } else if (tree.kind === "willow") {
+        dummy.position.set(wx(moved.x), h(0.92) * s, wz(moved.y));
+        dummy.scale.set(s * 1.25, s * 0.85, s * 1.25);
+        dummy.updateMatrix();
+        willow.setMatrixAt(i, dummy.matrix);
+        dummy.position.set(wx(moved.x), h(0.52) * s, wz(moved.y));
+        dummy.scale.set(s * 1.02, s * 0.5, s * 1.02);
+        dummy.updateMatrix();
+        crown.setMatrixAt(i, dummy.matrix);
+      } else {
+        dummy.position.set(wx(moved.x) + h(0.08) * s, h(1.02) * s, wz(moved.y) - h(0.04) * s);
+        dummy.scale.set(s * 1.08, s * 0.88, s * 1.08);
+        dummy.updateMatrix();
+        oak.setMatrixAt(i, dummy.matrix);
+        dummy.position.set(wx(moved.x) - h(0.12) * s, h(0.86) * s, wz(moved.y) + h(0.1) * s);
+        dummy.scale.set(s * 0.76, s * 0.68, s * 0.76);
+        dummy.updateMatrix();
+        crown.setMatrixAt(i, dummy.matrix);
+      }
     });
     t.instanceMatrix.needsUpdate = true;
     oak.instanceMatrix.needsUpdate = true;
     pine.instanceMatrix.needsUpdate = true;
     willow.instanceMatrix.needsUpdate = true;
+    crown.instanceMatrix.needsUpdate = true;
   }, [all, dummy, blockers]);
 
   if (!all.length) return null;
   return (
     <group>
       <instancedMesh ref={trunks} args={[undefined, undefined, all.length]} castShadow>
-        <cylinderGeometry args={[h(0.045), h(0.09), h(0.95), 6]} />
-        <meshStandardMaterial color="#5a3c28" roughness={0.86} />
+        <cylinderGeometry args={[h(0.04), h(0.075), h(0.82), 7]} />
+        <meshStandardMaterial color="#4a3224" roughness={0.88} />
       </instancedMesh>
       <instancedMesh ref={oaks} args={[undefined, undefined, all.length]} castShadow>
-        <icosahedronGeometry args={[h(0.5), 1]} />
-        <meshStandardMaterial color="#2f6a34" roughness={0.9} />
+        <icosahedronGeometry args={[h(0.48), 1]} />
+        <meshStandardMaterial color="#2c6432" roughness={0.92} />
       </instancedMesh>
       <instancedMesh ref={pines} args={[undefined, undefined, all.length]} castShadow>
-        <coneGeometry args={[h(0.38), h(1.15), 7]} />
-        <meshStandardMaterial color="#245c38" roughness={0.88} />
+        <coneGeometry args={[h(0.32), h(1.05), 8]} />
+        <meshStandardMaterial color="#1f5232" roughness={0.9} />
       </instancedMesh>
       <instancedMesh ref={willows} args={[undefined, undefined, all.length]} castShadow>
-        <sphereGeometry args={[h(0.52), 8, 6]} />
-        <meshStandardMaterial color="#4a7a40" roughness={0.92} />
+        <sphereGeometry args={[h(0.5), 9, 7]} />
+        <meshStandardMaterial color="#3f6e38" roughness={0.93} />
+      </instancedMesh>
+      <instancedMesh ref={crowns} args={[undefined, undefined, all.length]} castShadow>
+        <icosahedronGeometry args={[h(0.4), 1]} />
+        <meshStandardMaterial color="#355e30" roughness={0.92} />
       </instancedMesh>
     </group>
   );
@@ -222,13 +251,13 @@ export function AgentsLayer() {
       const child = g.children[i];
       const a = list[i];
       if (!child || !a) continue;
-      child.position.set(wx(a.x), far ? h(0.2) : h(0.12), wz(a.y));
+      child.position.set(wx(a.x), far ? h(0.12) : h(0.08), wz(a.y));
     }
   });
   return (
     <group ref={group}>
       {agents.map((a) => (
-        <group key={a.id} position={[wx(a.x), h(0.12), wz(a.y)]}>
+        <group key={a.id} position={[wx(a.x), h(0.08), wz(a.y)]}>
           <mesh
             onClick={(e: ThreeEvent<MouseEvent>) => {
               e.stopPropagation();
@@ -237,15 +266,19 @@ export function AgentsLayer() {
               setCameraScale(1.75);
             }}
           >
-            <capsuleGeometry args={a.live ? [h(0.12), h(0.1), 4, 8] : far ? [h(0.07), h(0.04), 3, 6] : [h(0.085), h(0.07), 4, 8]} />
+            <capsuleGeometry args={a.live ? [h(0.055), h(0.06), 4, 8] : far ? [h(0.035), h(0.03), 3, 6] : [h(0.042), h(0.045), 4, 8]} />
             <meshStandardMaterial
               color={a.color}
               emissive={selectedAgentId === a.id ? "#ed712e" : a.live ? a.color : a.color}
-              emissiveIntensity={selectedAgentId === a.id ? 0.4 : a.live ? 0.22 : 0.06}
+              emissiveIntensity={selectedAgentId === a.id ? 0.4 : a.live ? 0.18 : 0.04}
             />
           </mesh>
+          <mesh position={[0, far ? h(0.1) : h(0.12), 0]} raycast={() => undefined}>
+            <sphereGeometry args={[far ? h(0.03) : h(0.038), 6, 6]} />
+            <meshStandardMaterial color={a.color} roughness={0.55} />
+          </mesh>
           {a.live && !topView ? (
-            <Html position={[0, h(0.55), 0]} center distanceFactor={12} occlude={false} pointerEvents="none">
+            <Html position={[0, h(0.32), 0]} center distanceFactor={14} occlude={false} pointerEvents="none">
               <div className="ns-nametag">
                 <strong>{a.name}</strong>
                 {a.speech ? <em>{a.speech}</em> : null}
@@ -297,26 +330,39 @@ export function TrafficLayer() {
 export function Lamps() {
   const lamps = useMemo(() => {
     const core = SCENERY.filter((s) => s.kind === "lamp").map((s) => ({ x: s.x, y: s.y }));
-    return [...core, ...extraLamps()];
+    return [...core, ...extraLamps()].filter((s) => s.x >= 6 && s.x <= 46 && s.y >= 0 && s.y <= 14);
   }, []);
-  const mesh = useRef<THREE.InstancedMesh>(null);
+  const postRef = useRef<THREE.InstancedMesh>(null);
+  const globeRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   useLayoutEffect(() => {
-    const m = mesh.current;
-    if (!m) return;
+    const p = postRef.current;
+    const g = globeRef.current;
+    if (!p || !g) return;
     lamps.forEach((s, i) => {
-      dummy.position.set(wx(s.x), h(1.35), wz(s.y));
+      dummy.position.set(wx(s.x), h(0.42), wz(s.y));
+      dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
-      m.setMatrixAt(i, dummy.matrix);
+      p.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(wx(s.x), h(0.88), wz(s.y));
+      dummy.updateMatrix();
+      g.setMatrixAt(i, dummy.matrix);
     });
-    m.instanceMatrix.needsUpdate = true;
+    p.instanceMatrix.needsUpdate = true;
+    g.instanceMatrix.needsUpdate = true;
   }, [lamps, dummy]);
   if (!lamps.length) return null;
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, lamps.length]} raycast={() => undefined}>
-      <sphereGeometry args={[h(0.07), 6, 6]} />
-      <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.75} />
-    </instancedMesh>
+    <group>
+      <instancedMesh ref={postRef} args={[undefined, undefined, lamps.length]} raycast={() => undefined}>
+        <cylinderGeometry args={[h(0.018), h(0.028), h(0.84), 6]} />
+        <meshStandardMaterial color="#2c2924" roughness={0.45} metalness={0.35} />
+      </instancedMesh>
+      <instancedMesh ref={globeRef} args={[undefined, undefined, lamps.length]} raycast={() => undefined}>
+        <sphereGeometry args={[h(0.045), 8, 8]} />
+        <meshStandardMaterial color="#ffe6a8" emissive="#ffd27a" emissiveIntensity={0.45} />
+      </instancedMesh>
+    </group>
   );
 }
 

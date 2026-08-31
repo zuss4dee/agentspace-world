@@ -20,6 +20,34 @@ import { TILE, fromWorld, h, wx, wz } from "@/lib/coords";
 import { landBounds, plotAt, isLotMultiModifier } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
+function DaylightEnv() {
+  const scene = useThree((s) => s.scene);
+  useLayoutEffect(() => {
+    const c = document.createElement("canvas");
+    c.width = 256;
+    c.height = 128;
+    const ctx = c.getContext("2d")!;
+    const g = ctx.createLinearGradient(0, 0, 0, 128);
+    g.addColorStop(0, "#c8c4bc");
+    g.addColorStop(0.42, "#e4dcc8");
+    g.addColorStop(0.58, "#c4b89a");
+    g.addColorStop(1, "#5a6a4e");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 256, 128);
+    const tex = new THREE.CanvasTexture(c);
+    tex.mapping = THREE.EquirectangularReflectionMapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    scene.environment = tex;
+    scene.environmentIntensity = 0.42;
+    return () => {
+      scene.environment = null;
+      tex.dispose();
+    };
+  }, [scene]);
+  return null;
+}
+
 function LightFollow() {
   const ref = useRef<THREE.DirectionalLight>(null);
   const scene = useThree((s) => s.scene);
@@ -38,14 +66,14 @@ function LightFollow() {
     <directionalLight
       ref={ref}
       color="#fff1de"
-      intensity={1.55}
+      intensity={1.72}
       castShadow
       shadow-mapSize={[2048, 2048]}
       shadow-camera-far={h(90)}
-      shadow-camera-left={-h(32)}
-      shadow-camera-right={h(32)}
-      shadow-camera-top={h(32)}
-      shadow-camera-bottom={-h(32)}
+      shadow-camera-left={-h(28)}
+      shadow-camera-right={h(28)}
+      shadow-camera-top={h(28)}
+      shadow-camera-bottom={-h(28)}
     />
   );
 }
@@ -92,12 +120,13 @@ function ExteriorScene() {
   const planeZ = wz(Math.max(GRID, land.y1) / 2);
   return (
     <>
-      <color attach="background" args={["#d8ddd8"]} />
-      <fog attach="fog" args={["#e4e2da", h(160), h(420)]} />
-      <hemisphereLight args={["#f3eee4", "#4a5e44", 0.7]} />
+      <color attach="background" args={["#d4d0c6"]} />
+      <fog attach="fog" args={["#ddd6c8", h(140), h(380)]} />
+      <hemisphereLight args={["#f2ebe0", "#4a5844", 0.62]} />
       <LightFollow />
-      <ambientLight intensity={0.16} />
-      <directionalLight position={[-h(18), h(12), -h(10)]} intensity={0.22} color="#efe6d4" />
+      <ambientLight intensity={0.12} />
+      <directionalLight position={[-h(18), h(12), -h(10)]} intensity={0.18} color="#efe6d4" />
+      <DaylightEnv />
       <ExplorerCamera />
       <mesh
         rotation-x={-Math.PI / 2}
@@ -123,11 +152,11 @@ function ExteriorScene() {
       <ContactShadows
         frames={1}
         position={[wx(24), h(0.02), wz(7)]}
-        opacity={0.28}
-        scale={TILE * 44}
-        blur={2.4}
-        far={h(10)}
-        color="#2c2820"
+        opacity={0.34}
+        scale={TILE * 40}
+        blur={2.1}
+        far={h(12)}
+        color="#2a241c"
       />
       <LatticeField />
       <PlotsLayer />

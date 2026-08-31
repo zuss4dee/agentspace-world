@@ -15,21 +15,25 @@ export type ArchFamily =
   | "industrial"
   | "hq";
 
+export type WindowKind = "punch" | "strip" | "curtain" | "storefront" | "none";
+
 export type ArchSpec = {
   family: ArchFamily;
   floors: number;
   setback: number;
   windowCols: number;
   windowRows: number;
-  roof: "flat" | "hip" | "shed" | "hip-civic";
+  windowKind: WindowKind;
+  roof: "flat" | "gable" | "shed" | "hip-civic";
   glass: string;
   mullion: string;
   plinth: string;
+  kitId: string;
 };
 
 export function familyForBuilding(b: { id: string; style: BuildingStyle; kind?: string }): ArchFamily {
-  if (b.id === "incubator") return "startup";
-  if (b.id === "pavilion" || b.id === "kiosk") return "civic";
+  if (b.id === "incubator" || b.id === "loft") return "startup";
+  if (b.id === "pavilion") return "civic";
   switch (b.style) {
     case "hq":
       return "hq";
@@ -88,39 +92,70 @@ export function familyForUse(useId: string): ArchFamily {
   }
 }
 
+const KIT_BY_FAMILY: Record<ArchFamily, string> = {
+  hq: "pack.northshore.building.hq.curtain-tower",
+  office: "pack.northshore.building.office.ledger-frame",
+  startup: "pack.northshore.building.startup.glass-wing",
+  townhouse: "pack.northshore.building.townhouse.gable-row",
+  apartment: "pack.northshore.building.apartment.balcony-stack",
+  warehouse: "pack.northshore.building.warehouse.loading-shed",
+  studio: "pack.northshore.building.studio.northlight",
+  research: "pack.northshore.building.research.lab-ribbon",
+  civic: "pack.northshore.building.civic.colonnade",
+  cafe: "pack.northshore.building.cafe.storefront",
+  retail: "pack.northshore.building.retail.shopfront",
+  industrial: "pack.northshore.building.industrial.sawtooth",
+};
+
 export function specFor(family: ArchFamily, w: number, d: number, height: number): ArchSpec {
   const span = Math.max(w, d);
-  const floors = Math.max(1, Math.min(8, Math.round(height / 28)));
-  const cols = Math.max(2, Math.min(7, Math.round(span / 18)));
+  const floors = Math.max(1, Math.min(8, Math.round(height / 26)));
+  const cols = Math.max(2, Math.min(8, Math.round(span / 14)));
   const glassBy: Record<ArchFamily, string> = {
-    hq: "#8aa0b8",
-    office: "#7d8f9c",
-    startup: "#c6e28a",
-    townhouse: "#d7c4a8",
-    apartment: "#9aaba8",
-    warehouse: "#6a7278",
-    studio: "#c9b8c4",
-    research: "#b7c9d4",
-    civic: "#cfc4ae",
-    cafe: "#d4c09a",
-    retail: "#d8c8c0",
-    industrial: "#8a8478",
+    hq: "#9eb4c8",
+    office: "#7a8b98",
+    startup: "#c5dc96",
+    townhouse: "#d2c0a4",
+    apartment: "#8ea09e",
+    warehouse: "#5e666c",
+    studio: "#c4b0bc",
+    research: "#b8cde0",
+    civic: "#cfc6b4",
+    cafe: "#d8c4a0",
+    retail: "#dcc8c0",
+    industrial: "#868074",
   };
+  const windowKind: WindowKind =
+    family === "hq" || family === "startup"
+      ? "curtain"
+      : family === "cafe" || family === "retail"
+        ? "storefront"
+        : family === "research"
+          ? "strip"
+          : family === "civic"
+            ? "none"
+            : "punch";
   const roof: ArchSpec["roof"] =
-    family === "townhouse" ? "hip" : family === "civic" ? "hip-civic" : family === "cafe" || family === "studio" ? "shed" : "flat";
+    family === "townhouse" ? "gable" : family === "civic" ? "hip-civic" : family === "cafe" || family === "studio" ? "shed" : "flat";
   return {
     family,
     floors,
-    setback: family === "hq" || family === "research" ? 0.06 : family === "warehouse" || family === "industrial" ? 0.02 : 0.04,
+    setback: family === "hq" || family === "research" ? 0.08 : family === "warehouse" || family === "industrial" ? 0.04 : 0.1,
     windowCols: cols,
-    windowRows: Math.max(1, floors - (family === "cafe" || family === "retail" ? 0 : 0)),
+    windowRows: Math.max(1, floors),
+    windowKind,
     roof,
     glass: glassBy[family],
-    mullion: family === "startup" || family === "hq" ? "#1c1916" : "#3a3f46",
-    plinth: family === "startup" || family === "hq" ? "#1a1814" : "#2c2a26",
+    mullion: family === "startup" || family === "hq" ? "#161410" : "#2e3338",
+    plinth: family === "startup" || family === "hq" ? "#1c1a16" : "#2a2824",
+    kitId: KIT_BY_FAMILY[family],
   };
 }
 
 export function buildingMass(b: Building) {
   return { family: familyForBuilding(b), wall: b.wall, roof: b.roof, accent: b.accent, wallDark: b.wallDark };
 }
+
+/** Lot composition: building sits inside landscape, then paving, then walk to sidewalk. */
+export const LOT_FILL = 0.64;
+export const LOT_DEPTH = 0.58;

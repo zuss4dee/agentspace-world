@@ -31,8 +31,8 @@ export function makeScenery(): Scenery[] {
       if (x >= CORE || y >= CORE) continue;
       const tile: TileKind = TERRAIN[y]![x]!;
       const h = hash2(x, y);
-      if ((tile === "park" || tile === "grass") && h > 0.62 && !buildingAt(WORLD_BUILDINGS, x + 0.4, y + 0.35)) {
-        if (tile === "grass" && h < 0.78) continue;
+      if ((tile === "park" || tile === "grass") && h > 0.72 && !buildingAt(WORLD_BUILDINGS, x + 0.4, y + 0.35)) {
+        if (tile === "grass" && h < 0.88) continue;
         const slug = TREE_SLUGS[Math.floor(hash2(x * 3.1, y * 1.7) * TREE_SLUGS.length)]!;
         push(items, { kind: "tree", slug, x: x + 0.25 + h * 0.5, y: y + 0.2 + hash2(y, x) * 0.45 });
       }
@@ -54,16 +54,18 @@ export function makeScenery(): Scenery[] {
   }
 
   for (const rx of ROAD_XS) {
-    for (let y = 2; y < GRID; y += 4) {
+    if (rx < 6 || rx > 46) continue;
+    for (let y = 2; y < 13; y += 8) {
       if (TERRAIN[y]![rx] !== "road") continue;
-      push(items, { kind: "lamp", slug: "street-lamp", x: rx + 0.72, y: y + 0.5 });
+      push(items, { kind: "lamp", slug: "street-lamp", x: rx + 0.68, y: y + 0.5 });
     }
   }
   for (const ry of ROAD_YS) {
-    for (let x = 4; x < GRID; x += 5) {
+    if (ry < 0 || ry > 13) continue;
+    for (let x = 10; x < 44; x += 10) {
       if (TERRAIN[ry]![x] !== "road") continue;
-      if (items.some((s) => s.kind === "lamp" && Math.hypot(s.x - x, s.y - (ry + 0.4)) < 1.2)) continue;
-      push(items, { kind: "lamp", slug: "street-lamp", x: x + 0.5, y: ry + 0.72 });
+      if (items.some((s) => s.kind === "lamp" && Math.hypot(s.x - x, s.y - (ry + 0.4)) < 2.4)) continue;
+      push(items, { kind: "lamp", slug: "street-lamp", x: x + 0.5, y: ry + 0.68 });
     }
   }
 

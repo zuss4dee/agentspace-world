@@ -72,7 +72,39 @@ export function makeRoofMap() {
   });
 }
 
-let cached: { brick: THREE.CanvasTexture; concrete: THREE.CanvasTexture; asphalt: THREE.CanvasTexture; roof: THREE.CanvasTexture } | null = null;
+export function makeMetalMap() {
+  return canvasTex(64, 96, (ctx, w, h) => {
+    ctx.fillStyle = "#6a7078";
+    ctx.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 8) {
+      ctx.fillStyle = x % 16 === 0 ? "#7a8088" : "#5e646c";
+      ctx.fillRect(x, 0, 6, h);
+      ctx.fillStyle = "rgba(20,20,22,0.25)";
+      ctx.fillRect(x + 6, 0, 1, h);
+    }
+  });
+}
+
+export function makeGrassMap() {
+  return canvasTex(96, 96, (ctx, w, h) => {
+    ctx.fillStyle = "#4e6a3c";
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 900; i++) {
+      const n = (i * 17) % 91;
+      ctx.fillStyle = n % 3 === 0 ? "#5a7a42" : n % 3 === 1 ? "#3f6234" : "#6a8448";
+      ctx.fillRect((i * 13) % w, (i * 29) % h, 1 + (n % 2), 2 + (n % 3));
+    }
+  });
+}
+
+let cached: {
+  brick: THREE.CanvasTexture;
+  concrete: THREE.CanvasTexture;
+  asphalt: THREE.CanvasTexture;
+  roof: THREE.CanvasTexture;
+  metal: THREE.CanvasTexture;
+  grass: THREE.CanvasTexture;
+} | null = null;
 
 export function useCityMaps() {
   return useMemo(() => {
@@ -82,6 +114,8 @@ export function useCityMaps() {
         concrete: makeConcreteMap(),
         asphalt: makeAsphaltMap(),
         roof: makeRoofMap(),
+        metal: makeMetalMap(),
+        grass: makeGrassMap(),
       };
     }
     return cached;

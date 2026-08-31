@@ -50,10 +50,10 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
   const dx = laneDist(gx, ROAD_XS);
   const dy = laneDist(gy, ROAD_YS);
   const onLot = hitsSaleLot(gx, gy, 0.62);
-  const onRoad = !onLot && (kind === "road" || dx < 0.42 || dy < 0.42);
+  const onRoad = !onLot && (kind === "road" || dx < 0.26 || dy < 0.26);
   if (onRoad) {
     const along = Math.min(dx, dy);
-    const edge = along > 0.34 && along < 0.46 ? 0.05 : 0;
+    const edge = along > 0.22 && along < 0.3 ? 0.05 : 0;
     const grit = n * 0.04 + n2 * 0.02;
     out.setRGB(0.4 + grit + edge, 0.38 + grit * 0.8 + edge * 0.7, 0.35 + grit * 0.6);
     return;
@@ -232,7 +232,7 @@ export function GrassTufts() {
   if (!spots.length) return null;
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, spots.length]} raycast={() => undefined}>
-      <coneGeometry args={[h(0.07), h(0.16), 4]} />
+      <coneGeometry args={[h(0.05), h(0.1), 4]} />
       <meshStandardMaterial color="#3d7a3a" roughness={0.92} />
     </instancedMesh>
   );
