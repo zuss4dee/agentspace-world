@@ -18,18 +18,21 @@ function canvasTex(w: number, h: number, draw: (ctx: CanvasRenderingContext2D, w
 }
 
 export function makeBrickMap() {
-  return canvasTex(128, 128, (ctx, w, h) => {
-    ctx.fillStyle = "#8c6a58";
+  return canvasTex(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = "#6e564c";
     ctx.fillRect(0, 0, w, h);
-    const bh = 10;
-    const bw = 22;
+    const bh = 8;
+    const bw = 18;
     for (let y = 0, row = 0; y < h; y += bh, row++) {
-      ctx.fillStyle = "#6e5346";
-      ctx.fillRect(0, y + bh - 2, w, 2);
+      ctx.fillStyle = "rgba(42,34,30,0.45)";
+      ctx.fillRect(0, y + bh - 1, w, 1);
       const ox = row % 2 ? bw / 2 : 0;
       for (let x = -bw; x < w + bw; x += bw) {
-        ctx.fillStyle = row % 3 === 0 ? "#a07a62" : "#94705a";
-        ctx.fillRect(x + ox + 1, y + 1, bw - 3, bh - 3);
+        const n = (x * 13 + y * 7 + row * 3) % 11;
+        ctx.fillStyle = n < 3 ? "#8a6a58" : n < 7 ? "#7a5e4e" : "#6a5246";
+        ctx.fillRect(x + ox + 1, y + 1, bw - 2, bh - 2);
+        ctx.fillStyle = "rgba(255,240,220,0.06)";
+        ctx.fillRect(x + ox + 2, y + 1, bw - 6, 1);
       }
     }
   });
@@ -49,11 +52,11 @@ export function makeConcreteMap() {
 
 export function makeAsphaltMap() {
   return canvasTex(96, 96, (ctx, w, h) => {
-    ctx.fillStyle = "#4a4742";
+    ctx.fillStyle = "#3e3c38";
     ctx.fillRect(0, 0, w, h);
     for (let i = 0; i < 420; i++) {
       const n = (i * 19) % 89;
-      ctx.fillStyle = `rgba(${70 + (n % 18)},${68 + (n % 12)},${62},0.18)`;
+      ctx.fillStyle = `rgba(${58 + (n % 14)},${56 + (n % 10)},${50},0.14)`;
       ctx.fillRect((i * 17) % w, (i * 23) % h, 1 + (n % 3), 1);
     }
   });
@@ -86,12 +89,12 @@ export function makeMetalMap() {
 }
 
 export function makeGrassMap() {
-  return canvasTex(96, 96, (ctx, w, h) => {
-    ctx.fillStyle = "#4e6a3c";
+  return canvasTex(128, 128, (ctx, w, h) => {
+    ctx.fillStyle = "#4a6438";
     ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 900; i++) {
+    for (let i = 0; i < 1400; i++) {
       const n = (i * 17) % 91;
-      ctx.fillStyle = n % 3 === 0 ? "#5a7a42" : n % 3 === 1 ? "#3f6234" : "#6a8448";
+      ctx.fillStyle = n % 4 === 0 ? "#5a7840" : n % 4 === 1 ? "#3c5c32" : n % 4 === 2 ? "#4e6c38" : "#628448";
       ctx.fillRect((i * 13) % w, (i * 29) % h, 1 + (n % 2), 2 + (n % 3));
     }
   });

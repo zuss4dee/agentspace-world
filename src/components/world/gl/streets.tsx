@@ -123,7 +123,7 @@ export function StreetsLayer() {
     const m = asphaltRef.current;
     if (!m) return;
     segs.forEach((s, i) => {
-      dummy.position.set(wx(s.cx), h(0.032), wz(s.cy));
+      dummy.position.set(wx(s.cx), h(0.026), wz(s.cy));
       dummy.rotation.set(0, s.alongX ? 0 : Math.PI / 2, 0);
       dummy.scale.set(s.len, 1, 1);
       dummy.updateMatrix();
@@ -175,25 +175,25 @@ export function StreetsLayer() {
   return (
     <group>
       <instancedMesh ref={asphaltRef} args={[undefined, undefined, segs.length]} receiveShadow>
-        <boxGeometry args={[TILE, h(0.045), ROAD_W]} />
-        <meshStandardMaterial color="#4a4842" map={maps.asphalt} roughness={0.96} metalness={0.02} />
+        <boxGeometry args={[TILE, h(0.032), ROAD_W]} />
+        <meshStandardMaterial color="#3c3a36" map={maps.asphalt} roughness={0.98} metalness={0} />
       </instancedMesh>
       {curbs.length ? (
         <instancedMesh ref={curbRef} args={[undefined, undefined, curbs.length]} receiveShadow>
           <boxGeometry args={[TILE, h(0.035), CURB_W]} />
-          <meshStandardMaterial color="#b8b0a4" roughness={0.88} metalness={0.02} />
+          <meshStandardMaterial color="#a8a298" roughness={0.9} metalness={0} />
         </instancedMesh>
       ) : null}
       {walks.length ? (
         <instancedMesh ref={walkRef} args={[undefined, undefined, walks.length]} receiveShadow>
           <boxGeometry args={[TILE, h(0.032), WALK_W]} />
-          <meshStandardMaterial color="#c2bcb0" map={maps.concrete} roughness={0.88} metalness={0.02} />
+          <meshStandardMaterial color="#b4aea4" map={maps.concrete} roughness={0.92} metalness={0} />
         </instancedMesh>
       ) : null}
       {stripes.length ? (
         <instancedMesh ref={stripeRef} args={[undefined, undefined, stripes.length]} raycast={() => undefined}>
-          <boxGeometry args={[TILE * 0.055, h(0.012), TILE * 0.2]} />
-          <meshStandardMaterial color="#cfc8ba" roughness={0.82} />
+          <boxGeometry args={[TILE * 0.032, h(0.008), TILE * 0.12]} />
+          <meshStandardMaterial color="#8a8478" roughness={0.9} transparent opacity={0.45} />
         </instancedMesh>
       ) : null}
     </group>

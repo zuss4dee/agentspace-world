@@ -102,18 +102,18 @@ export function specFor(family: ArchFamily, w: number, d: number, height: number
   const floors = Math.max(1, Math.min(8, Math.round(height / 26)));
   const cols = Math.max(2, Math.min(8, Math.round(span / 14)));
   const glassBy: Record<ArchFamily, string> = {
-    hq: "#9eb4c8",
-    office: "#7a8b98",
-    startup: "#c5dc96",
-    townhouse: "#d2c0a4",
-    apartment: "#8ea09e",
-    warehouse: "#5e666c",
-    studio: "#c4b0bc",
-    research: "#b8cde0",
-    civic: "#cfc6b4",
-    cafe: "#d8c4a0",
-    retail: "#dcc8c0",
-    industrial: "#868074",
+    hq: "#7f9aaf",
+    office: "#6a7d8a",
+    startup: "#8aa09a",
+    townhouse: "#8a9aa2",
+    apartment: "#7a8e90",
+    warehouse: "#5a6268",
+    studio: "#8a8490",
+    research: "#8aa8bc",
+    civic: "#9aa49a",
+    cafe: "#7a8a86",
+    retail: "#7a868c",
+    industrial: "#6a6e68",
   };
   const windowKind: WindowKind =
     family === "hq" || family === "startup"

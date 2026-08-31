@@ -39,7 +39,7 @@ function DaylightEnv() {
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.needsUpdate = true;
     scene.environment = tex;
-    scene.environmentIntensity = 0.42;
+    scene.environmentIntensity = 0.58;
     return () => {
       scene.environment = null;
       tex.dispose();

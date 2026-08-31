@@ -266,6 +266,12 @@ export function balconyKindOf(spec: BuildingSpec): BalconyKind {
   return "none";
 }
 
+export function foundationKindOf(spec: BuildingSpec): FoundationKind {
+  const v = variantOf(spec, "foundation", "plinth");
+  if (v === "plinth" || v === "pad-wide" || v === "loading-slab") return v;
+  return "plinth";
+}
+
 export function landscapeKindOf(spec: BuildingSpec): LandscapeKind {
   const v = variantOf(spec, "landscaping", "lawn");
   if (v === "none" || v === "lawn" || v === "plaza" || v === "hedge") return v;

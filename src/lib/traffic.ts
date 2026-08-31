@@ -10,10 +10,10 @@ export type RoadPath = {
   length: number;
 };
 
-/** Carriageway width in tiles — clearly wider than the sidewalk strip. */
-export const CARRIAGE_TILES = 0.76;
-export const WALK_TILES = 0.17;
-export const CURB_TILES = 0.026;
+/** Carriageway width in tiles — secondary to buildings and landscape. */
+export const CARRIAGE_TILES = 0.42;
+export const WALK_TILES = 0.2;
+export const CURB_TILES = 0.022;
 export const CARRIAGE_HALF = CARRIAGE_TILES / 2;
 /** Sidewalk center, just outside the curb. */
 export const WALK_OFF = CARRIAGE_HALF + WALK_TILES / 2;
@@ -68,7 +68,7 @@ export function makeTrafficRoutes(): TrafficRoute[] {
   const routes: TrafficRoute[] = [];
   let n = 0;
   const pushLane = (axis: "x" | "y", lane: number) => {
-    const segs = collectSegments(axis, lane, n % 2 === 0 ? -0.16 : 0.16);
+    const segs = collectSegments(axis, lane, n % 2 === 0 ? -0.1 : 0.1);
     for (const seg of segs) {
       if (seg.length < 5) continue;
       routes.push({

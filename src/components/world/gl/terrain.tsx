@@ -56,7 +56,7 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
     const along = Math.min(dx, dy);
     const fade = along > CARRIAGE_HALF - 0.07 ? ((along - (CARRIAGE_HALF - 0.07)) / 0.08) * 0.025 : 0;
     const grit = n * 0.03 + n2 * 0.015;
-    out.setRGB(0.37 + grit + fade, 0.36 + grit * 0.85, 0.33 + grit * 0.65);
+    out.setRGB(0.3 + grit + fade, 0.3 + grit * 0.9, 0.27 + grit * 0.7);
     return;
   }
   if (!onLot && (kind === "sidewalk" || dx < WALK_OFF + 0.1 || dy < WALK_OFF + 0.1)) {
