@@ -14,7 +14,7 @@ import {
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { coverageOfClaims, expandPrice, fitPlace, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
+import { buildingSize, centerPlace, coverageOfClaims, expandPrice, expandedRect, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -328,8 +328,12 @@ export function CityChrome() {
           onPreviewUse={(id) => {
             setPreviewUseId(id);
             if (!picked) return;
+            const extra = Math.min(plotExpand, maxExtra);
             const use = LAND_USES.find((u) => u.id === id);
-            if (use) setBuildingPlace(fitPlace(picked, use, Math.min(plotExpand, maxExtra), buildingPlace));
+            if (!use) return;
+            const size = buildingSize(picked, use, extra);
+            const r = expandedRect(picked, extra);
+            setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
           }}
           onExtra={(n) => {
             setPlotExpand(n);
@@ -338,7 +342,10 @@ export function CityChrome() {
             const nextId = uses.some((u) => u.id === previewUseId) ? previewUseId : (uses[0]?.id ?? "kiosk");
             if (nextId !== previewUseId) setPreviewUseId(nextId);
             const use = LAND_USES.find((u) => u.id === nextId);
-            if (use) setBuildingPlace(fitPlace(picked, use, n, buildingPlace));
+            if (!use) return;
+            const size = buildingSize(picked, use, n);
+            const r = expandedRect(picked, n);
+            setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
           }}
           onPlace={setBuildingPlace}
           onClose={() => selectPlot(null)}

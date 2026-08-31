@@ -154,7 +154,9 @@ export function PlotSheet({
               <div className="ns-plot-uses">
                 <p>Building</p>
                 <ul>
-                  {uses.map((u) => (
+                  {uses.map((u) => {
+                    const s = buildingSize(plot, u, extra);
+                    return (
                     <li key={u.id}>
                       <button
                         type="button"
@@ -163,10 +165,11 @@ export function PlotSheet({
                         onClick={() => onPreviewUse(u.id)}
                       >
                         <strong>{u.name}</strong>
-                        <span>{formatSqFt(bldgSqft)}</span>
+                        <span>{s ? formatSqFt(tilesToSqFt(s.w, s.h)) : "—"}</span>
                       </button>
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
               {size && use && !fillsLot ? (

@@ -542,11 +542,27 @@ export function matchingAnchor(place: LotPlace, landW: number, landH: number, bw
   return null;
 }
 
-/** Footprint always fills the lot. `minW`/`minH` only gate which types fit. */
+/**
+ * Max office tiles on a lot. Type minW×minH is both the starting pad and the cap
+ * (kiosk 3×3, office 4×3, warehouse/HQ 5×4). Lot extra grows the grass, not the
+ * building. Never returns the full plot.w × plot.h when the lot is larger than the type.
+ */
+export function maxOfficeFootprint(landW: number, landH: number, use: LandUse) {
+  const short = Math.min(landW, landH);
+  const third = Math.max(1, Math.floor(short / 3));
+  let w = Math.min(landW, use.minW);
+  let h = Math.min(landH, use.minH);
+  if (use.minW <= third) w = Math.min(w, third);
+  if (use.minH <= third) h = Math.min(h, third);
+  if (w >= landW && landW > use.minW) w = use.minW;
+  if (h >= landH && landH > use.minH) h = use.minH;
+  return { w, h };
+}
+
 export function buildingSize(p: Plot, use: LandUse, extra = 0) {
   const r = expandedRect(p, extra);
   if (r.w < use.minW || r.h < use.minH) return null;
-  return { w: r.w, h: r.h };
+  return maxOfficeFootprint(r.w, r.h, use);
 }
 
 export function footprintFillsLot(landW: number, landH: number, bw: number, bh: number) {
