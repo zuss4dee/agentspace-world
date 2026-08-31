@@ -32,11 +32,16 @@ import { paletteForUse } from "@/lib/building-grammar";
 import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
 import { useWorld } from "@/components/world/world-store";
 
+/** Empty/unclaimed = muted grey lawn. Claimed = maintained green. Edges stay close to the pad. */
 const C = {
-  sale: new THREE.Color("#4a6e3c"),
-  saleEdge: new THREE.Color("#3d5a34"),
-  owned: new THREE.Color("#9a9a9a"),
-  taken: new THREE.Color("#c8c8c8"),
+  empty: new THREE.Color("#8c9088"),
+  emptyEdge: new THREE.Color("#9aa09a"),
+  claimed: new THREE.Color("#4c8f48"),
+  claimedEdge: new THREE.Color("#5e9a58"),
+  owned: new THREE.Color("#868a84"),
+  ownedEdge: new THREE.Color("#949a92"),
+  selected: new THREE.Color("#c5cebc"),
+  selectedEdge: new THREE.Color("#d2d8cc"),
 };
 
 function officePalette(useId: string) {
@@ -62,23 +67,26 @@ export function PlotsLayer() {
       const taken = claimedCoversPlot(p.id, claimed) || remainingRects(p, claimed).length === 0;
       const forSale = p.kind === "sale" && !taken;
       const selected = selectedPlotIds.includes(p.id) || selectedPlotId === p.id || selectedPlotIds.some((id) => basePlotId(id) === p.id);
-      const hidePad = selected && forSale;
 
       dummy.position.set(cx, forSale ? h(0.07) : h(0.035), cz);
-      dummy.scale.set(hidePad ? 0 : p.w * TILE, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE);
+      dummy.scale.set(p.w * TILE * 0.992, 1, p.h * TILE * 0.992);
       dummy.updateMatrix();
       pad.setMatrixAt(i, dummy.matrix);
 
-      dummy.position.set(cx, forSale ? h(0.048) : h(0.028), cz);
-      dummy.scale.set(hidePad ? 0 : p.w * TILE * 1.012, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 1.012);
+      dummy.position.set(cx, forSale ? h(0.042) : h(0.024), cz);
+      dummy.scale.set(p.w * TILE * 0.998, 1, p.h * TILE * 0.998);
       dummy.updateMatrix();
       edge.setMatrixAt(i, dummy.matrix);
 
-      if (forSale) color.copy(C.sale);
-      else if (taken) color.copy(C.taken);
+      if (selected && forSale) color.copy(C.selected);
+      else if (forSale) color.copy(C.empty);
+      else if (taken) color.copy(C.claimed);
       else color.copy(C.owned);
       pad.setColorAt(i, color);
-      color.copy(C.saleEdge);
+      if (selected && forSale) color.copy(C.selectedEdge);
+      else if (forSale) color.copy(C.emptyEdge);
+      else if (taken) color.copy(C.claimedEdge);
+      else color.copy(C.ownedEdge);
       edge.setColorAt(i, color);
     });
     pad.instanceMatrix.needsUpdate = true;
@@ -99,12 +107,12 @@ export function PlotsLayer() {
   return (
     <group>
       <instancedMesh ref={edges} args={[undefined, undefined, list.length]} receiveShadow>
-        <boxGeometry args={[1, h(0.03), 1]} />
-        <meshStandardMaterial roughness={0.94} metalness={0} />
+        <boxGeometry args={[1, h(0.012), 1]} />
+        <meshStandardMaterial roughness={0.96} metalness={0} transparent opacity={0.38} />
       </instancedMesh>
       <instancedMesh ref={pads} args={[undefined, undefined, list.length]} onClick={onClick} receiveShadow>
         <boxGeometry args={[1, h(0.08), 1]} />
-        <meshStandardMaterial roughness={0.9} metalness={0} />
+        <meshStandardMaterial roughness={0.92} metalness={0} />
       </instancedMesh>
     </group>
   );
@@ -122,7 +130,7 @@ export function LatticeField() {
     for (let i = 0; i < LAND_COUNT; i++) {
       const p = latticePlot(i);
       dummy.position.set(wx(p.x + p.w / 2), h(0.05), wz(p.y + p.h / 2));
-      dummy.scale.set(p.w * TILE * 0.86, 1, p.h * TILE * 0.86);
+      dummy.scale.set(p.w * TILE * 0.975, 1, p.h * TILE * 0.975);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
     }
@@ -147,11 +155,11 @@ export function LatticeField() {
     <group>
       <mesh rotation-x={-Math.PI / 2} position={[cx, h(0.02), cz]} receiveShadow>
         <planeGeometry args={[w, d]} />
-        <meshStandardMaterial color="#3d4a38" roughness={0.96} />
+        <meshStandardMaterial color="#8a8e86" roughness={0.96} />
       </mesh>
       <instancedMesh ref={mesh} args={[undefined, undefined, LAND_COUNT]} onClick={onClick} receiveShadow>
         <boxGeometry args={[1, h(0.07), 1]} />
-        <meshStandardMaterial color="#3f7a44" roughness={0.78} />
+        <meshStandardMaterial color="#90948c" roughness={0.9} />
       </instancedMesh>
     </group>
   );
@@ -237,12 +245,12 @@ export function SaleStakes() {
         <meshStandardMaterial color="#efe8d8" roughness={0.55} />
       </instancedMesh>
       <instancedMesh ref={posts} args={[undefined, undefined, sales.length * 4]} frustumCulled={false}>
-        <boxGeometry args={[h(0.045), h(0.32), h(0.045)]} />
-        <meshStandardMaterial color="#6b5a48" roughness={0.82} />
+        <boxGeometry args={[h(0.028), h(0.22), h(0.028)]} />
+        <meshStandardMaterial color="#9aa092" roughness={0.9} />
       </instancedMesh>
       <instancedMesh ref={rails} args={[undefined, undefined, sales.length * 4]} frustumCulled={false}>
-        <boxGeometry args={[TILE, h(0.022), h(0.018)]} />
-        <meshStandardMaterial color="#7a6a58" roughness={0.8} />
+        <boxGeometry args={[TILE, h(0.01), h(0.01)]} />
+        <meshStandardMaterial color="#a8aea4" roughness={0.92} transparent opacity={0.42} />
       </instancedMesh>
     </group>
   );
@@ -310,12 +318,14 @@ export function BuildingGhost() {
               [xA, y0, zB],
               [xA, y0, zA],
             ]}
-            color="#7a8a70"
-            lineWidth={0.8}
+            color="#c4cac0"
+            lineWidth={0.35}
+            transparent
+            opacity={0.45}
           />
         );
       })}
-      <Line points={fence} color="#7a8a70" lineWidth={0.9} />
+      <Line points={fence} color="#c4cac0" lineWidth={0.4} transparent opacity={0.5} />
       {!fillsLot
         ? Array.from({ length: land.w * land.h }, (_, i) => {
             const col = i % land.w;
@@ -334,7 +344,7 @@ export function BuildingGhost() {
                 }}
               >
                 <boxGeometry args={[TILE, h(0.04), TILE]} />
-                <meshStandardMaterial color="#3d7a42" roughness={0.85} />
+                <meshStandardMaterial color="#b8c4b0" roughness={0.9} transparent opacity={0.55} />
               </mesh>
             );
           })
@@ -434,6 +444,10 @@ export function ClaimedMarks() {
         const z1 = wz(r.y + r.h);
         return (
           <group key={id}>
+            <mesh position={[wx(r.x + r.w / 2), h(0.05), wz(r.y + r.h / 2)]} receiveShadow>
+              <boxGeometry args={[r.w * TILE * 0.99, h(0.08), r.h * TILE * 0.99]} />
+              <meshStandardMaterial color="#4c8f48" roughness={0.88} />
+            </mesh>
             <Line
               points={[
                 [x0, h(0.16), z0],
@@ -442,8 +456,10 @@ export function ClaimedMarks() {
                 [x0, h(0.16), z1],
                 [x0, h(0.16), z0],
               ]}
-              color="#8a9680"
-              lineWidth={0.7}
+              color="#b8c4b4"
+              lineWidth={0.3}
+              transparent
+              opacity={0.4}
             />
             {fp ? (
               <>

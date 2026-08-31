@@ -73,6 +73,10 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
     out.setRGB(0.2 + n * 0.12 + n2 * 0.04 + worn, 0.44 + n * 0.14 + cool, 0.18 + n * 0.06);
     return;
   }
+  if (onLot) {
+    out.setRGB(0.41 + n * 0.05, 0.43 + n * 0.04, 0.38 + n * 0.03);
+    return;
+  }
   if (kind === "lot" || kind === "dirt") {
     out.setRGB(0.58 + n * 0.06, 0.48 + n * 0.04, 0.32);
     return;
