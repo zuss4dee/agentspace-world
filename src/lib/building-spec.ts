@@ -22,7 +22,9 @@ export type ArchFamily =
   | "cafe"
   | "retail"
   | "industrial"
-  | "hq";
+  | "hq"
+  | "finance"
+  | "media";
 
 export const BUILDING_SPEC_VERSION = 1;
 
@@ -54,7 +56,7 @@ export type MassingId =
 
 export type WindowKind = "punch" | "strip" | "curtain" | "storefront" | "none";
 export type RoofKind = "flat" | "gable" | "shed" | "hip-civic";
-export type WallKind = "brick" | "concrete" | "metal" | "plaster" | "curtain";
+export type WallKind = "brick" | "concrete" | "metal" | "plaster" | "curtain" | "limestone";
 export type EntranceKind = "door" | "wide" | "canopy" | "awning" | "loading";
 export type BalconyKind = "none" | "rail" | "terrace";
 export type SignageKind = "none" | "fascia" | "blade" | "roof-bar";
@@ -135,6 +137,8 @@ export const BUILDING_SPEC_SCHEMA = {
         "retail",
         "industrial",
         "hq",
+        "finance",
+        "media",
       ],
     },
     style: { type: "string" },
@@ -276,7 +280,7 @@ export function roofKindOf(spec: BuildingSpec): RoofKind {
 
 export function wallKindOf(spec: BuildingSpec): WallKind {
   const v = variantOf(spec, "wall", "concrete");
-  if (v === "brick" || v === "concrete" || v === "metal" || v === "plaster" || v === "curtain") return v;
+  if (v === "brick" || v === "concrete" || v === "metal" || v === "plaster" || v === "curtain" || v === "limestone") return v;
   return "concrete";
 }
 

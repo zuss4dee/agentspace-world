@@ -9,7 +9,7 @@
     "companyId": { "type": "string" },
     "family": {
       "type": "string",
-      "enum": ["office", "startup", "townhouse", "apartment", "warehouse", "studio", "research", "civic", "cafe", "retail", "industrial", "hq"]
+      "enum": ["office", "startup", "townhouse", "apartment", "warehouse", "studio", "research", "civic", "cafe", "retail", "industrial", "hq", "finance", "media"]
     },
     "style": { "type": "string" },
     "massing": {

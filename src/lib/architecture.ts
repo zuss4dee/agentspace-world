@@ -95,6 +95,8 @@ const KIT_BY_FAMILY: Record<ArchFamily, string> = {
   cafe: "pack.northshore.building.cafe.storefront",
   retail: "pack.northshore.building.retail.shopfront",
   industrial: "pack.northshore.building.industrial.sawtooth",
+  finance: "pack.northshore.building.office.ledger-frame",
+  media: "pack.northshore.building.studio.northlight",
 };
 
 export function specFor(family: ArchFamily, w: number, d: number, height: number): ArchSpec {
@@ -114,6 +116,8 @@ export function specFor(family: ArchFamily, w: number, d: number, height: number
     cafe: "#7a8a86",
     retail: "#7a868c",
     industrial: "#6a6e68",
+    finance: "#8a96a4",
+    media: "#5c6470",
   };
   const windowKind: WindowKind =
     family === "hq" || family === "startup"
