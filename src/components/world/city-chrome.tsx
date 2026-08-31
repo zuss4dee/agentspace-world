@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, Compass, Map, MapPin, Minus, Plus } from "lucide-react";
+import { Activity, ArrowDownToLine, Compass, Map, MapPin, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
@@ -37,6 +37,8 @@ export function CityChrome() {
     focusPoi,
     mapOverview,
     showCityOverview,
+    topView,
+    toggleTopView,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
@@ -178,6 +180,17 @@ export function CityChrome() {
           }}
         >
           <Map className="size-4" />
+        </button>
+        <button
+          type="button"
+          className="ns-zoom-top"
+          data-on={topView ? "1" : "0"}
+          aria-pressed={topView}
+          aria-label={topView ? "Leave top view" : "Look straight down"}
+          title={topView ? "Angle view" : "Top view"}
+          onClick={() => toggleTopView()}
+        >
+          <ArrowDownToLine className="size-4" />
         </button>
         <button
           type="button"

@@ -58,6 +58,8 @@ type WorldApi = {
   mapOverview: boolean;
   showCityOverview: () => void;
   setMapOverview: (v: boolean) => void;
+  topView: boolean;
+  toggleTopView: () => void;
   interiorId: string | null;
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
@@ -89,6 +91,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
   const [mapOverview, setMapOverview] = useState(false);
+  const [topView, setTopView] = useState(false);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -366,6 +369,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const b = ALL_BUILDINGS.find((item) => item.id === id) ?? LOT_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
     setInteriorId(id);
+    setTopView(false);
     setSelectedBuildingId(id);
     setSelectedAgentId(null);
     setFollowAgent(false);
@@ -396,6 +400,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const poi = poiById(id);
     if (!poi) return;
     setMapOverview(false);
+    setTopView(false);
     setCameraFocus({ x: poi.x, y: poi.y });
     setCameraScaleState(id === "hearth" ? 0.55 : 0.72);
     setCameraTick((t) => t + 1);
@@ -412,6 +417,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setFollowAgent(false);
     setMapOverview(true);
     setCameraFocus({ x: 32, y: 32 });
+    setCameraTick((t) => t + 1);
+  }, []);
+
+  const toggleTopView = useCallback(() => {
+    setTopView((v) => !v);
     setCameraTick((t) => t + 1);
   }, []);
 
@@ -447,6 +457,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       mapOverview,
       showCityOverview,
       setMapOverview,
+      topView,
+      toggleTopView,
       interiorId,
       enterBuilding,
       exitInterior,
@@ -483,6 +495,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       cameraTick,
       mapOverview,
       showCityOverview,
+      topView,
+      toggleTopView,
       interiorId,
       enterBuilding,
       exitInterior,
