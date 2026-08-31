@@ -646,8 +646,8 @@ export function groundZ(x: number, y: number) {
   const n = fbm(x * 0.08, y * 0.08);
   if (kind === "water") return -6.5 + n * 1.6;
   if (kind === "sand") return -1.4 + n * 0.6;
-  if (kind === "road") return 0.35;
-  if (kind === "sidewalk") return 1.55;
+  if (kind === "road") return 0.28;
+  if (kind === "sidewalk") return 0.72;
   if (kind === "plaza") return 1.7;
   if (kind === "lot") return 0.7;
   if (kind === "park") return 2.4 + n * 5.2;

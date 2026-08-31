@@ -7,6 +7,15 @@ import { TILE, WORLD_SPAN, h, wx, wz } from "@/lib/coords";
 import { fbm } from "@/lib/noise";
 import { sectionAt } from "@/lib/world-sections";
 
+function laneDist(v: number, lanes: number[]) {
+  let d = 1e9;
+  for (const r of lanes) {
+    const t = Math.abs(v - (r + 0.5));
+    if (t < d) d = t;
+  }
+  return d;
+}
+
 function sampleColor(gx: number, gy: number, out: THREE.Color) {
   const ix = Math.floor(gx);
   const iy = Math.floor(gy);
@@ -26,12 +35,19 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
     out.setRGB(0.16 + n * 0.05, 0.4 + n * 0.08, 0.58);
     return;
   }
-  if (kind === "road" || ROAD_XS.some((r) => Math.abs(gx - r) < 0.55) || ROAD_YS.some((r) => Math.abs(gy - r) < 0.55)) {
-    out.setRGB(0.3, 0.29, 0.28);
+  const dx = laneDist(gx, ROAD_XS);
+  const dy = laneDist(gy, ROAD_YS);
+  const onRoad = kind === "road" || dx < 0.5 || dy < 0.5;
+  if (onRoad) {
+    // Cooler, slightly darker than grass — readable grid, not a highway.
+    const along = Math.min(dx, dy);
+    const line = along < 0.045 ? 0.05 : 0;
+    const curb = along > 0.42 && along < 0.5 ? 0.035 : 0;
+    out.setRGB(0.3 + n * 0.03 + line + curb, 0.34 + n * 0.025 + line * 0.6, 0.33 + n * 0.03);
     return;
   }
   if (kind === "sidewalk") {
-    out.setRGB(0.78, 0.74, 0.68);
+    out.setRGB(0.4 + n * 0.04, 0.46 + n * 0.04, 0.38 + n * 0.03);
     return;
   }
   if (kind === "plaza") {
@@ -55,7 +71,7 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
 
 export function TerrainMesh() {
   const geometry = useMemo(() => {
-    const segs = 96;
+    const segs = 192;
     const size = WORLD_SPAN + 36;
     const geo = new THREE.PlaneGeometry(size, size, segs, segs);
     geo.rotateX(-Math.PI / 2);
