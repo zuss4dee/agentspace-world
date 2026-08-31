@@ -6,6 +6,7 @@ import { GRID, ROAD_XS, ROAD_YS, TERRAIN, groundZ } from "@/lib/campus";
 import { TILE, WORLD_SPAN, h, wx, wz } from "@/lib/coords";
 import { fbm, hash2 } from "@/lib/noise";
 import { hitsSaleLot } from "@/lib/plots";
+import { CARRIAGE_HALF, WALK_OFF } from "@/lib/traffic";
 import { sectionAt } from "@/lib/world-sections";
 
 function laneDist(v: number, lanes: number[]) {
@@ -50,16 +51,16 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
   const dx = laneDist(gx, ROAD_XS);
   const dy = laneDist(gy, ROAD_YS);
   const onLot = hitsSaleLot(gx, gy, 0.62);
-  const onRoad = !onLot && (kind === "road" || dx < 0.26 || dy < 0.26);
-  if (onRoad) {
+  const inCarriage = !onLot && (dx < CARRIAGE_HALF || dy < CARRIAGE_HALF);
+  if (inCarriage) {
     const along = Math.min(dx, dy);
-    const edge = along > 0.22 && along < 0.3 ? 0.05 : 0;
-    const grit = n * 0.04 + n2 * 0.02;
-    out.setRGB(0.4 + grit + edge, 0.38 + grit * 0.8 + edge * 0.7, 0.35 + grit * 0.6);
+    const fade = along > CARRIAGE_HALF - 0.07 ? ((along - (CARRIAGE_HALF - 0.07)) / 0.08) * 0.025 : 0;
+    const grit = n * 0.03 + n2 * 0.015;
+    out.setRGB(0.37 + grit + fade, 0.36 + grit * 0.85, 0.33 + grit * 0.65);
     return;
   }
-  if (kind === "sidewalk") {
-    out.setRGB(0.5 + n * 0.04, 0.48 + n * 0.03, 0.42 + n * 0.03);
+  if (!onLot && (kind === "sidewalk" || dx < WALK_OFF + 0.1 || dy < WALK_OFF + 0.1)) {
+    out.setRGB(0.5 + n * 0.03, 0.48 + n * 0.025, 0.43 + n * 0.02);
     return;
   }
   if (kind === "plaza") {
@@ -103,7 +104,7 @@ export function TerrainMesh() {
       if (inside) y = Math.max(h(-0.45), groundZ(gx, gy) * h(0.06));
       if (kind === "water") y = h(-0.38);
       if (kind === "sand") y = h(-0.04) + fbm(gx * 0.3, gy * 0.3) * h(0.06);
-      if (kind === "road" && !hitsSaleLot(gx, gy, 0.2)) y = h(0.02);
+      if (kind === "road" && !hitsSaleLot(gx, gy, 0.2) && (laneDist(gx, ROAD_XS) < CARRIAGE_HALF || laneDist(gy, ROAD_YS) < CARRIAGE_HALF)) y = h(0.02);
       const sec = sectionAt(gx, gy);
       if (sec?.locked) y = h(0.08) + fbm(gx * 0.2, gy * 0.2) * h(0.25);
       pos.setY(i, y);

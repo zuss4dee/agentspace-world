@@ -5,15 +5,15 @@ import * as THREE from "three";
 import { GRID, ROAD_XS, ROAD_YS, TERRAIN } from "@/lib/campus";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import { hitsSaleLot } from "@/lib/plots";
+import { CARRIAGE_TILES, CURB_OFF, CURB_TILES, WALK_OFF, WALK_TILES } from "@/lib/traffic";
 import { useCityMaps } from "@/components/world/gl/surface-maps";
 
 /** First-district street kit only — north campus around the authored buildings. */
 export const FIRST_DISTRICT = { x0: 6, y0: 0, x1: 46, y1: 13 };
 
-/** Carriageway is narrower than a tile so landscape and sidewalks read as the lot edge. */
-const ROAD_W = TILE * 0.52;
-const WALK_W = TILE * 0.2;
-const CURB_W = TILE * 0.045;
+const ROAD_W = TILE * CARRIAGE_TILES;
+const WALK_W = TILE * WALK_TILES;
+const CURB_W = TILE * CURB_TILES;
 
 function inDistrict(x: number, y: number) {
   return x >= FIRST_DISTRICT.x0 && x <= FIRST_DISTRICT.x1 && y >= FIRST_DISTRICT.y0 && y <= FIRST_DISTRICT.y1;
@@ -80,15 +80,13 @@ export function StreetsLayer() {
   const curbs = useMemo(() => {
     const list: { x: number; y: number; rot: number; len: number }[] = [];
     for (const s of segs) {
-      const half = s.len / 2;
       if (s.alongX) {
-        list.push({ x: s.cx, y: s.cy - 0.26, rot: 0, len: s.len });
-        list.push({ x: s.cx, y: s.cy + 0.26, rot: 0, len: s.len });
+        list.push({ x: s.cx, y: s.cy - CURB_OFF, rot: 0, len: s.len });
+        list.push({ x: s.cx, y: s.cy + CURB_OFF, rot: 0, len: s.len });
       } else {
-        list.push({ x: s.cx - 0.26, y: s.cy, rot: Math.PI / 2, len: s.len });
-        list.push({ x: s.cx + 0.26, y: s.cy, rot: Math.PI / 2, len: s.len });
+        list.push({ x: s.cx - CURB_OFF, y: s.cy, rot: Math.PI / 2, len: s.len });
+        list.push({ x: s.cx + CURB_OFF, y: s.cy, rot: Math.PI / 2, len: s.len });
       }
-      void half;
     }
     return list;
   }, [segs]);
@@ -97,11 +95,11 @@ export function StreetsLayer() {
     const list: { x: number; y: number; rot: number; len: number }[] = [];
     for (const s of segs) {
       if (s.alongX) {
-        list.push({ x: s.cx, y: s.cy - 0.38, rot: 0, len: s.len });
-        list.push({ x: s.cx, y: s.cy + 0.38, rot: 0, len: s.len });
+        list.push({ x: s.cx, y: s.cy - WALK_OFF, rot: 0, len: s.len });
+        list.push({ x: s.cx, y: s.cy + WALK_OFF, rot: 0, len: s.len });
       } else {
-        list.push({ x: s.cx - 0.38, y: s.cy, rot: Math.PI / 2, len: s.len });
-        list.push({ x: s.cx + 0.38, y: s.cy, rot: Math.PI / 2, len: s.len });
+        list.push({ x: s.cx - WALK_OFF, y: s.cy, rot: Math.PI / 2, len: s.len });
+        list.push({ x: s.cx + WALK_OFF, y: s.cy, rot: Math.PI / 2, len: s.len });
       }
     }
     return list;
@@ -112,9 +110,9 @@ export function StreetsLayer() {
     for (const rx of ROAD_XS) {
       for (const ry of ROAD_YS) {
         if (!inDistrict(rx, ry) || !isRoadCell(rx, ry)) continue;
-        for (let i = 0; i < 4; i++) {
-          list.push({ x: rx + 0.5, y: ry + 0.18 + i * 0.16, rot: 0 });
-          list.push({ x: rx + 0.18 + i * 0.16, y: ry + 0.5, rot: Math.PI / 2 });
+        for (let i = 0; i < 3; i++) {
+          list.push({ x: rx + 0.5, y: ry + 0.28 + i * 0.18, rot: 0 });
+          list.push({ x: rx + 0.28 + i * 0.18, y: ry + 0.5, rot: Math.PI / 2 });
         }
       }
     }
@@ -178,12 +176,12 @@ export function StreetsLayer() {
     <group>
       <instancedMesh ref={asphaltRef} args={[undefined, undefined, segs.length]} receiveShadow>
         <boxGeometry args={[TILE, h(0.045), ROAD_W]} />
-        <meshStandardMaterial color="#3f3d38" map={maps.asphalt} roughness={0.94} metalness={0.03} />
+        <meshStandardMaterial color="#4a4842" map={maps.asphalt} roughness={0.96} metalness={0.02} />
       </instancedMesh>
       {curbs.length ? (
         <instancedMesh ref={curbRef} args={[undefined, undefined, curbs.length]} receiveShadow>
           <boxGeometry args={[TILE, h(0.035), CURB_W]} />
-          <meshStandardMaterial color="#c6bdae" roughness={0.8} metalness={0.03} />
+          <meshStandardMaterial color="#b8b0a4" roughness={0.88} metalness={0.02} />
         </instancedMesh>
       ) : null}
       {walks.length ? (
@@ -194,8 +192,8 @@ export function StreetsLayer() {
       ) : null}
       {stripes.length ? (
         <instancedMesh ref={stripeRef} args={[undefined, undefined, stripes.length]} raycast={() => undefined}>
-          <boxGeometry args={[TILE * 0.08, h(0.016), TILE * 0.22]} />
-          <meshStandardMaterial color="#e6e1d4" roughness={0.72} />
+          <boxGeometry args={[TILE * 0.055, h(0.012), TILE * 0.2]} />
+          <meshStandardMaterial color="#cfc8ba" roughness={0.82} />
         </instancedMesh>
       ) : null}
     </group>

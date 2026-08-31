@@ -148,8 +148,8 @@ export function specFor(family: ArchFamily, w: number, d: number, height: number
     windowKind,
     roof,
     glass: glassBy[family],
-    mullion: family === "startup" || family === "hq" ? "#161410" : "#2e3338",
-    plinth: family === "startup" || family === "hq" ? "#1c1a16" : "#2a2824",
+    mullion: family === "startup" || family === "hq" ? "#3a3e44" : "#4a5056",
+    plinth: family === "startup" || family === "hq" ? "#6a6862" : "#7a766e",
     kitId: KIT_BY_FAMILY[family],
   };
 }

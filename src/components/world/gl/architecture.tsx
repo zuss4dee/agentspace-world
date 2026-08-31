@@ -130,7 +130,7 @@ function PunchWindows({
     const c = new THREE.Color();
     layout.forEach((p, i) => {
       dummy.position.set(p.x, p.y, p.z);
-      dummy.scale.set(p.sx * 1.12, p.sy * 1.14, p.sz * 1.15);
+      dummy.scale.set(p.sx * 1.04, p.sy * 1.05, p.sz * 1.06);
       dummy.updateMatrix();
       r.setMatrixAt(i, dummy.matrix);
       dummy.scale.set(p.sx, p.sy, p.sz);
@@ -159,7 +159,7 @@ function PunchWindows({
     <group>
       <instancedMesh ref={revealRef} args={[undefined, undefined, layout.length]} raycast={() => undefined}>
         <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#141210" roughness={0.7} transparent={trans} opacity={opacity} />
+        <meshStandardMaterial color="#5a564e" roughness={0.62} transparent={trans} opacity={opacity} />
       </instancedMesh>
       <instancedMesh ref={frameRef} args={[undefined, undefined, layout.length]} raycast={() => undefined}>
         <boxGeometry args={[1, 1, 1]} />
@@ -268,7 +268,7 @@ function CurtainWall({
       </mesh>
       {Array.from({ length: rows + 1 }).map((_, i) => (
         <mesh key={i} position={[0, (height / rows) * i, 0]}>
-          <boxGeometry args={[w * 1.03, TILE * 0.045, d * 1.03]} />
+          <boxGeometry args={[w * 0.995, TILE * 0.04, d * 0.995]} />
           <meshStandardMaterial color="#d8d2c6" roughness={0.45} metalness={0.22} transparent={trans} opacity={opacity} />
         </mesh>
       ))}
@@ -366,7 +366,7 @@ function Door({ d, accent, opacity, wide = false, occupied = false }: { d: numbe
     <group position={[0, TILE * 0.42, d / 2 + TILE * 0.02]}>
       <mesh>
         <boxGeometry args={[wide ? TILE * 0.72 : TILE * 0.38, TILE * 0.84, TILE * 0.12]} />
-        <meshStandardMaterial color="#191714" roughness={0.38} metalness={0.22} transparent={trans} opacity={opacity} />
+        <meshStandardMaterial color="#3a3630" roughness={0.48} metalness={0.18} transparent={trans} opacity={opacity} />
       </mesh>
       <mesh position={[0, TILE * 0.02, TILE * 0.04]}>
         <boxGeometry args={[wide ? TILE * 0.56 : TILE * 0.24, TILE * 0.58, TILE * 0.04]} />
@@ -503,7 +503,7 @@ export function ArchitectureMass({
     <group>
       <LotGrounds w={w} d={d} opacity={opacity} />
       <mesh position={[0, TILE * 0.08, 0]} receiveShadow>
-        <boxGeometry args={[bodyW * 1.08, TILE * 0.16, bodyD * 1.08]} />
+        <boxGeometry args={[bodyW * 1.04, TILE * 0.14, bodyD * 1.04]} />
         <meshStandardMaterial color={spec.plinth} roughness={0.5} metalness={0.22} map={concMap} transparent={trans} opacity={opacity} />
       </mesh>
 
@@ -571,7 +571,7 @@ export function ArchitectureMass({
           </mesh>
           {[-1, 1].map((s) => (
             <mesh key={s} position={[s * (bodyW / 2 - TILE * 0.04), height * 0.34, 0]}>
-              <boxGeometry args={[TILE * 0.08, height * 0.58, bodyD * 1.02]} />
+              <boxGeometry args={[TILE * 0.05, height * 0.58, bodyD]} />
               <meshStandardMaterial color="#efe6d8" roughness={0.7} />
             </mesh>
           ))}
@@ -626,7 +626,7 @@ export function ArchitectureMass({
           </mesh>
           <mesh position={[0, TILE * 0.4, bodyD / 2 - TILE * 0.04]}>
             <boxGeometry args={[bodyW * 0.78, TILE * 0.62, TILE * 0.1]} />
-            <meshStandardMaterial color="#161412" roughness={0.45} />
+            <meshStandardMaterial color="#4a4640" roughness={0.55} />
           </mesh>
           <mesh position={[0, TILE * 0.42, bodyD / 2 + TILE * 0.01]}>
             <boxGeometry args={[bodyW * 0.7, TILE * 0.5, TILE * 0.05]} />
@@ -710,7 +710,7 @@ export function ArchitectureMass({
           <ShedRoof w={bodyW} d={bodyD} y={height * 0.64} rise={height * 0.22} color={roof} opacity={opacity} />
           <mesh position={[0, height * 0.42, bodyD / 2 - TILE * 0.02]}>
             <boxGeometry args={[bodyW * 0.62, height * 0.38, TILE * 0.08]} />
-            <meshStandardMaterial color="#1a1816" roughness={0.4} />
+            <meshStandardMaterial color="#4a4440" roughness={0.48} />
           </mesh>
           <mesh position={[0, height * 0.44, bodyD / 2 + TILE * 0.02]}>
             <boxGeometry args={[bodyW * 0.54, height * 0.3, TILE * 0.05]} />
@@ -763,7 +763,7 @@ export function ArchitectureMass({
           </mesh>
           {Array.from({ length: floors }).map((_, i) => (
             <mesh key={i} position={[0, (height / Math.max(1, floors)) * i, 0]}>
-              <boxGeometry args={[bodyW * 1.03, TILE * 0.04, bodyD * 1.03]} />
+              <boxGeometry args={[bodyW * 0.998, TILE * 0.03, bodyD * 0.998]} />
               <meshStandardMaterial color="#d4cfc4" roughness={0.5} metalness={0.12} />
             </mesh>
           ))}
