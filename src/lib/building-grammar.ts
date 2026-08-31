@@ -17,20 +17,18 @@ export type QuickPreset = {
 };
 
 export const QUICK_PRESETS: QuickPreset[] = [
-  { id: "quick.startup", label: "Startup studio", family: "startup", massing: "wing", style: "curtain" },
-  { id: "quick.office", label: "Tech office", family: "office", massing: "block", style: "frame" },
-  { id: "quick.hq", label: "Corporate HQ", family: "hq", massing: "podium-tower", style: "curtain" },
-  { id: "quick.finance", label: "Finance firm", family: "finance", massing: "block", style: "stone" },
-  { id: "quick.studio", label: "Creative agency", family: "studio", massing: "northlight", style: "shed" },
-  { id: "quick.research", label: "Research lab", family: "research", massing: "ribbon", style: "strip" },
-  { id: "quick.industrial", label: "Industrial", family: "industrial", massing: "sawtooth", style: "works" },
-  { id: "quick.media", label: "Media house", family: "media", massing: "northlight", style: "broadcast" },
-  { id: "quick.retail", label: "Retail", family: "retail", massing: "shopfront", style: "storefront" },
+  { id: "quick.hq", label: "HQ tower", family: "hq", massing: "podium-tower", style: "curtain" },
+  { id: "quick.office", label: "Ledger office", family: "office", massing: "block", style: "ledger" },
+  { id: "quick.startup", label: "Glass wing", family: "startup", massing: "wing", style: "curtain" },
   { id: "quick.townhouse", label: "Gable house", family: "townhouse", massing: "gable-row", style: "gable" },
   { id: "quick.apartment", label: "Balcony stack", family: "apartment", massing: "balcony-stack", style: "stack" },
   { id: "quick.warehouse", label: "Loading shed", family: "warehouse", massing: "loading", style: "shed" },
+  { id: "quick.studio", label: "North-light", family: "studio", massing: "northlight", style: "shed" },
+  { id: "quick.research", label: "Ribbon lab", family: "research", massing: "ribbon", style: "strip" },
   { id: "quick.civic", label: "Colonnade", family: "civic", massing: "colonnade", style: "civic" },
   { id: "quick.cafe", label: "Cafe front", family: "cafe", massing: "shopfront", style: "storefront" },
+  { id: "quick.retail", label: "Shopfront", family: "retail", massing: "shopfront", style: "storefront" },
+  { id: "quick.industrial", label: "Sawtooth", family: "industrial", massing: "sawtooth", style: "works" },
 ];
 
 const GLASS: Record<ArchFamily, string> = {
