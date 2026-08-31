@@ -19,7 +19,6 @@ import {
   pushEvent,
   stepAgents,
 } from "@/lib/simulation";
-import { LOT_BUILDINGS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
 import {
   getPlot,
@@ -44,6 +43,14 @@ import { DISTRICT_SPECS } from "@/lib/district-specs";
 import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import type { BuildingSpec } from "@/lib/building-spec";
+import {
+  applyStoredProfiles,
+  defaultClaimProfile,
+  loadStoredProfiles,
+  occupiedBuilding,
+  profilesFromSpecs,
+  saveStoredProfiles,
+} from "@/lib/company-profile";
 import { h } from "@/lib/coords";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
@@ -158,7 +165,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [buildingPlace, setBuildingPlace] = useState<LotPlace>({ ox: 0, oy: 0 });
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
-  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() => ({ ...DISTRICT_SPECS }));
+  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() =>
+    applyStoredProfiles({ ...DISTRICT_SPECS }, loadStoredProfiles()),
+  );
   const [draftSpec, setDraftSpec] = useState<BuildingSpec | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioMode, setStudioMode] = useState<StudioMode>("quick");
@@ -169,6 +178,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
+
+  useEffect(() => {
+    saveStoredProfiles(profilesFromSpecs(buildingSpecs));
+  }, [buildingSpecs]);
 
   const apply = useCallback((fn: (prev: WorldSnapshot) => WorldSnapshot) => {
     const next = fn(liveRef.current);
@@ -464,7 +477,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const enterBuilding = useCallback((id: string) => {
-    const b = ALL_BUILDINGS.find((item) => item.id === id) ?? LOT_BUILDINGS.find((item) => item.id === id);
+    const spec = buildingSpecs[id] ?? DISTRICT_SPECS[id];
+    const b = occupiedBuilding(id, spec);
     if (!b) return;
     setInteriorId(id);
     setTopView(false);
@@ -478,7 +492,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
     setCameraScaleState(1.85);
     setCameraTick((t) => t + 1);
-  }, []);
+  }, [buildingSpecs]);
 
   const exitInterior = useCallback(() => {
     setInteriorId(null);
@@ -558,11 +572,20 @@ export function WorldProvider({ children }: { children: ReactNode }) {
         const pal = paletteForUse(useId);
         const base = getPlot(id);
         if (draftSpec && pending[0] && id === pending[0].id) {
-          next[id] = { ...draftSpec, id };
+          next[id] = {
+            ...draftSpec,
+            id,
+            profile: draftSpec.profile ?? defaultClaimProfile(LAND_USES.find((u) => u.id === useId)?.name),
+          };
         } else if (base) {
           const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
           const fp = buildingFootprint(base, use, row.extra, row.place);
-          if (fp) next[id] = specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal);
+          if (fp) {
+            next[id] = {
+              ...specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal),
+              profile: defaultClaimProfile(use.name),
+            };
+          }
         }
       }
       return next;

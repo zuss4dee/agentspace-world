@@ -64,6 +64,7 @@ export function massingForFamily(family: ArchFamily): MassingId {
     case "industrial":
       return "sawtooth";
     case "studio":
+    case "media":
       return "northlight";
     case "apartment":
       return "balcony-stack";
@@ -84,25 +85,27 @@ export function defaultModules(family: ArchFamily): ModuleRef[] {
       ? "curtain"
       : family === "cafe" || family === "retail"
         ? "storefront"
-        : family === "research"
+        : family === "research" || family === "media"
           ? "strip"
           : family === "civic"
             ? "none"
             : "punch";
   const roof =
-    family === "townhouse" || family === "civic" ? (family === "civic" ? "hip-civic" : "gable") : family === "cafe" || family === "studio" || family === "industrial" ? "shed" : "flat";
+    family === "townhouse" || family === "civic" ? (family === "civic" ? "hip-civic" : "gable") : family === "cafe" || family === "studio" || family === "industrial" || family === "media" ? "shed" : "flat";
   const wall =
-    family === "townhouse" || family === "cafe" || family === "industrial" || family === "retail"
-      ? "brick"
-      : family === "warehouse"
-        ? "metal"
-        : family === "startup" || family === "hq"
-          ? "curtain"
-          : family === "studio"
-            ? "plaster"
-            : "concrete";
+    family === "finance"
+      ? "limestone"
+      : family === "townhouse" || family === "cafe" || family === "industrial" || family === "retail"
+        ? "brick"
+        : family === "warehouse" || family === "media"
+          ? "metal"
+          : family === "startup" || family === "hq"
+            ? "curtain"
+            : family === "studio"
+              ? "plaster"
+              : "concrete";
   const entrance =
-    family === "cafe" || family === "retail" || family === "hq"
+    family === "cafe" || family === "retail" || family === "hq" || family === "finance" || family === "media"
       ? family === "cafe"
         ? "awning"
         : "wide"
@@ -112,8 +115,8 @@ export function defaultModules(family: ArchFamily): ModuleRef[] {
           ? "wide"
           : "canopy";
   const balcony = family === "apartment" ? "rail" : family === "research" ? "terrace" : "none";
-  const signage = family === "cafe" || family === "retail" || family === "startup" || family === "hq" ? "fascia" : family === "studio" ? "blade" : "none";
-  const landscape = family === "civic" ? "plaza" : family === "warehouse" || family === "industrial" ? "none" : "lawn";
+  const signage = family === "cafe" || family === "retail" || family === "startup" || family === "hq" || family === "finance" ? "fascia" : family === "studio" || family === "media" ? "blade" : family === "office" ? "roof-bar" : "none";
+  const landscape = family === "civic" || family === "finance" || family === "hq" ? "plaza" : family === "warehouse" || family === "industrial" ? "none" : family === "research" || family === "studio" ? "hedge" : "lawn";
   const interior =
     family === "cafe"
       ? "cafe-floor"
@@ -121,10 +124,10 @@ export function defaultModules(family: ArchFamily): ModuleRef[] {
         ? "hall-nave"
         : family === "research"
           ? "lab-bay"
-          : family === "startup" || family === "studio"
+          : family === "startup" || family === "studio" || family === "media"
             ? "loft-open"
             : "office-grid";
-  const foundation = family === "civic" ? "pad-wide" : family === "warehouse" || family === "industrial" ? "loading-slab" : "plinth";
+  const foundation = family === "civic" || family === "finance" ? "pad-wide" : family === "warehouse" || family === "industrial" ? "loading-slab" : "plinth";
   return [
     ref("foundation", foundation),
     ref("floor", "belt-concrete"),
@@ -135,7 +138,7 @@ export function defaultModules(family: ArchFamily): ModuleRef[] {
     ref("balcony", balcony),
     ref("signage", signage),
     ref("landscaping", landscape),
-    ref("lighting", family === "research" ? "cool" : "warm"),
+    ref("lighting", family === "research" || family === "media" ? "cool" : "warm"),
     ref("interior", interior),
   ];
 }

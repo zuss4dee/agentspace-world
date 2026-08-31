@@ -428,7 +428,7 @@ function SitLandmark({
 }
 
 export function ClaimedMarks() {
-  const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs } = useWorld();
+  const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs, selectPlot } = useWorld();
   return (
     <group>
       {claimedPlotIds.map((id) => {
@@ -443,7 +443,13 @@ export function ClaimedMarks() {
         const x1 = wx(r.x + r.w);
         const z1 = wz(r.y + r.h);
         return (
-          <group key={id}>
+          <group
+            key={id}
+            onClick={(e) => {
+              e.stopPropagation();
+              selectPlot(id);
+            }}
+          >
             <mesh position={[wx(r.x + r.w / 2), h(0.05), wz(r.y + r.h / 2)]} receiveShadow>
               <boxGeometry args={[r.w * TILE * 0.99, h(0.08), r.h * TILE * 0.99]} />
               <meshStandardMaterial color="#4c8f48" roughness={0.88} />

@@ -1,5 +1,15 @@
 import type { Building } from "./types";
 
+export type CompanyProfile = {
+  name: string;
+  logo: string;
+  does: string;
+  description: string;
+  founder: string;
+  team: string;
+  visitorMessage: string;
+};
+
 export type ArchFamily =
   | "office"
   | "startup"
@@ -83,6 +93,8 @@ export type BuildingSpec = {
   signage: { text: string; color: string };
   modules: ModuleRef[];
   packId?: string;
+  /** Tenant card shown when someone clicks the occupied building. */
+  profile?: CompanyProfile;
 };
 
 export const GRAMMAR_SLOTS: GrammarSlot[] = [
@@ -187,6 +199,19 @@ export const BUILDING_SPEC_SCHEMA = {
       },
     },
     packId: { type: "string" },
+    profile: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        name: { type: "string" },
+        logo: { type: "string" },
+        does: { type: "string" },
+        description: { type: "string" },
+        founder: { type: "string" },
+        team: { type: "string" },
+        visitorMessage: { type: "string" },
+      },
+    },
   },
 } as const;
 
@@ -233,6 +258,7 @@ export function cloneSpec(spec: BuildingSpec, id: string): BuildingSpec {
     materials: { ...spec.materials },
     signage: { ...spec.signage },
     modules: spec.modules.map((m) => ({ ...m })),
+    profile: spec.profile ? { ...spec.profile } : undefined,
   };
 }
 

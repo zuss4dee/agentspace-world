@@ -5,6 +5,7 @@ import { Activity, ArrowDownToLine, Compass, Keyboard, Map, MapPin, Minus, Plus 
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
+import { CompanyProfileCard } from "@/components/world/company-profile";
 import { BuildingStudio } from "@/components/world/building-studio";
 import { useWorld } from "@/components/world/world-store";
 import {
@@ -17,6 +18,8 @@ import {
 } from "@/lib/city-shop";
 import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, formatSqFt, getPlot, isLotMultiModifier, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, plotRect, resizeSlice, SALE_STOCK, usesForPlot, workingLand, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
+import { WORLD_BUILDINGS } from "@/lib/campus";
+import { profileOf } from "@/lib/company-profile";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
 export function CityChrome() {
@@ -24,6 +27,7 @@ export function CityChrome() {
     world,
     selectedPlotId,
     selectedPlotIds,
+    selectedBuildingId,
     selectPlot,
     claimedPlotIds,
     claimedExtras,
@@ -41,6 +45,8 @@ export function CityChrome() {
     setCameraScale,
     zoomBy,
     enterBuilding,
+    interiorId,
+    buildingSpecs,
     beaconBidCents,
     placeBeaconBid,
     beaconOpen,
@@ -65,6 +71,13 @@ export function CityChrome() {
   const activity = useMemo(() => shopActivity(), []);
   const picked = getPlot(selectedPlotId);
   const pickedClaimed = Boolean(picked && claimedCoversPlot(picked.id, claimedPlotIds));
+  const worldBuilding = selectedBuildingId
+    ? WORLD_BUILDINGS.find((b) => b.id === selectedBuildingId)
+    : undefined;
+  const occupiedId = worldBuilding?.id ?? (pickedClaimed && picked ? picked.id : null);
+  const showCompany = Boolean(occupiedId && !interiorId);
+  const occupiedSpec = occupiedId ? buildingSpecs[occupiedId] : undefined;
+  const occupiedProfile = occupiedId ? profileOf(occupiedSpec, occupiedId) : null;
   const land = picked ? workingLand(picked, landSlice ?? plotRect(picked)) : undefined;
   const selectedLands = selectedPlotIds
     .map((id) => {
@@ -103,7 +116,10 @@ export function CityChrome() {
         e.preventDefault();
         setKeysOpen((v) => !v);
       }
-      if (e.key === "Escape") setKeysOpen(false);
+      if (e.key === "Escape") {
+        setKeysOpen(false);
+        selectPlot(null);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -347,7 +363,18 @@ export function CityChrome() {
         </aside>
       ) : null}
 
-      {picked && land ? (
+      {showCompany && occupiedProfile && occupiedId ? (
+        <CompanyProfileCard
+          profile={occupiedProfile}
+          owned={Boolean(pickedClaimed && occupiedId === picked?.id)}
+          onClose={() => selectPlot(null)}
+          onEnter={() => enterBuilding(occupiedId)}
+          onVisit={() => {
+            const b = WORLD_BUILDINGS.find((row) => row.id === occupiedId);
+            if (b) focusCoord(b.origin.x + b.size.x / 2, b.origin.y + b.size.y / 2, 1.55);
+          }}
+        />
+      ) : picked && land && !interiorId ? (
         <PlotSheet
           plot={picked}
           land={land}

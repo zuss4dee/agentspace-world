@@ -127,8 +127,10 @@ export function PlotSheet({
       ? "Your plot"
       : owned
         ? (company?.name ?? building?.name ?? "Occupied")
-        : multi
-          ? `${selectedCount} lots`
+        : listed
+          ? multi
+            ? `${selectedCount} lots`
+            : "Available Land"
           : plot.groupLabel;
   const kicker = park
     ? "Park"
@@ -139,7 +141,7 @@ export function PlotSheet({
         : listed
           ? multi
             ? "Selected"
-            : "For sale"
+            : "Available"
           : theme.label;
   const priceText = park ? "—" : listed || plot.zone === "ultimate" ? formatUsd(price) : claimed ? "Yours" : theme.price;
   const sizeLine = multi
@@ -161,7 +163,7 @@ export function PlotSheet({
             </button>
           </div>
           <p className="ns-plot-copy">{sizeLine}</p>
-          {listed ? <p className="ns-plot-hint">Shift or Ctrl-click to add lots. Studio (left of zoom) edits the building spec.</p> : null}
+          {listed ? <p className="ns-plot-hint">Claim this pad, then build. Shift or Ctrl-click to add lots.</p> : null}
 
           {listed ? (
             <>

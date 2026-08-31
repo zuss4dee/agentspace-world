@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { CityChrome } from "@/components/world/city-chrome";
 import { useWorld } from "@/components/world/world-store";
-import { ALL_BUILDINGS } from "@/lib/city-gen";
+import { occupiedBuilding } from "@/lib/company-profile";
 
 export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "plaza" }) {
-  const { interiorId, exitInterior } = useWorld();
+  const { interiorId, exitInterior, buildingSpecs } = useWorld();
   void place;
   void mapId;
 
@@ -29,7 +29,7 @@ export function HabitatHud({ place, mapId }: { place: string; mapId: "lot" | "pl
       <CityChrome />
       {interiorId ? (
         <button type="button" className="gbw-inside" onClick={exitInterior}>
-          Leave {ALL_BUILDINGS.find((b) => b.id === interiorId)?.name ?? "building"}
+          Leave {occupiedBuilding(interiorId, buildingSpecs[interiorId])?.name ?? "building"}
         </button>
       ) : null}
     </>

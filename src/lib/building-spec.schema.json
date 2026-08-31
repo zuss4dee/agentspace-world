@@ -66,6 +66,19 @@
         }
       }
     },
-    "packId": { "type": "string" }
+    "packId": { "type": "string" },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "logo": { "type": "string" },
+        "does": { "type": "string" },
+        "description": { "type": "string" },
+        "founder": { "type": "string" },
+        "team": { "type": "string" },
+        "visitorMessage": { "type": "string" }
+      }
+    }
   }
 }

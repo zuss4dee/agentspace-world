@@ -7,7 +7,7 @@ import { kitIdFor, modulesForSlot, registerPack } from "@/lib/city-kit";
 import { GRAMMAR_SLOTS, setModule, type GrammarSlot } from "@/lib/building-spec";
 import { useWorld, type StudioMode } from "@/components/world/world-store";
 
-const CUSTOMISE_SLOTS: GrammarSlot[] = ["roof", "wall", "entrance", "window"];
+const CUSTOMISE_SLOTS: GrammarSlot[] = ["roof", "wall", "entrance", "window", "signage", "landscaping", "interior"];
 
 export function BuildingStudio() {
   const {
@@ -65,6 +65,8 @@ export function BuildingStudio() {
           </ul>
         ) : studioMode === "customise" ? (
           <div className="ns-studio-slots">
+            <ProfileFields />
+            <ColourFields />
             {CUSTOMISE_SLOTS.map((slot) => (
               <SlotRow key={slot} slot={slot} />
             ))}
@@ -77,6 +79,99 @@ export function BuildingStudio() {
         </p>
       </div>
     </aside>
+  );
+}
+
+function ProfileFields() {
+  const { draftSpec, upsertBuildingSpec } = useWorld();
+  if (!draftSpec) return null;
+  const p = draftSpec.profile ?? {
+    name: "",
+    logo: "",
+    does: "",
+    description: "",
+    founder: "",
+    team: "",
+    visitorMessage: "",
+  };
+  const set = (patch: Partial<typeof p>) =>
+    upsertBuildingSpec({
+      ...draftSpec,
+      profile: { ...p, ...patch },
+      signage: patch.name ? { ...draftSpec.signage, text: patch.name.slice(0, 18).toUpperCase() } : draftSpec.signage,
+    });
+  return (
+    <div className="ns-studio-profile">
+      <p className="ns-plot-mute">Company profile</p>
+      <p className="ns-plot-copy">Who lives here — visitors see this when they click the building.</p>
+      <label>
+        Company name
+        <input value={p.name} onChange={(e) => set({ name: e.target.value })} placeholder="Echt" />
+      </label>
+      <label>
+        Logo URL
+        <input value={p.logo} onChange={(e) => set({ logo: e.target.value })} placeholder="https://… or leave blank for letters" />
+      </label>
+      <label>
+        What you do
+        <input value={p.does} onChange={(e) => set({ does: e.target.value })} placeholder="A startup on Agentspace" />
+      </label>
+      <label>
+        Short description
+        <textarea value={p.description} onChange={(e) => set({ description: e.target.value })} rows={3} placeholder="Desks downstairs, founder room on the glass." />
+      </label>
+      <label>
+        Founder
+        <input value={p.founder} onChange={(e) => set({ founder: e.target.value })} placeholder="Optional" />
+      </label>
+      <label>
+        Team
+        <input value={p.team} onChange={(e) => set({ team: e.target.value })} placeholder="Optional" />
+      </label>
+      <label>
+        Message to visitors
+        <textarea value={p.visitorMessage} onChange={(e) => set({ visitorMessage: e.target.value })} rows={2} placeholder="Come in. The kettle is on." />
+      </label>
+    </div>
+  );
+}
+
+function ColourFields() {
+  const { draftSpec, upsertBuildingSpec } = useWorld();
+  if (!draftSpec) return null;
+  const m = draftSpec.materials;
+  return (
+    <div className="ns-studio-profile">
+      <p className="ns-plot-mute">Colours & signage</p>
+      <label>
+        Wall
+        <input value={m.wall} onChange={(e) => upsertBuildingSpec({ ...draftSpec, materials: { ...m, wall: e.target.value } })} />
+      </label>
+      <label>
+        Accent
+        <input
+          value={m.accent}
+          onChange={(e) =>
+            upsertBuildingSpec({
+              ...draftSpec,
+              materials: { ...m, accent: e.target.value },
+              signage: { ...draftSpec.signage, color: e.target.value },
+            })
+          }
+        />
+      </label>
+      <label>
+        Glass
+        <input value={m.glass} onChange={(e) => upsertBuildingSpec({ ...draftSpec, materials: { ...m, glass: e.target.value } })} />
+      </label>
+      <label>
+        Sign
+        <input
+          value={draftSpec.signage.text}
+          onChange={(e) => upsertBuildingSpec({ ...draftSpec, signage: { ...draftSpec.signage, text: e.target.value.slice(0, 18).toUpperCase() } })}
+        />
+      </label>
+    </div>
   );
 }
 
@@ -110,6 +205,7 @@ function CreatorBody() {
   if (!draftSpec) return null;
   return (
     <div className="ns-studio-creator">
+      <ProfileFields />
       {GRAMMAR_SLOTS.map((slot) => (
         <SlotRow key={slot} slot={slot} />
       ))}

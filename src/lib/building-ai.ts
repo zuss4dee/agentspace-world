@@ -1,6 +1,7 @@
 import { familyForBuilding, familyForUse, LOT_DEPTH, LOT_FILL } from "./architecture";
 import { applyPreset, emptySpec, glassForFamily, presetByFamily } from "./building-grammar";
 import { BUILDING_SPEC_VERSION, setModule, type BuildingSpec } from "./building-spec";
+import { BUILDING_PROFILES } from "./company-profile";
 import { BUILDING_OWNER } from "./companies";
 import { buildingHeight, TILE } from "./coords";
 import type { Building } from "./types";
@@ -196,6 +197,7 @@ export function specFromBuilding(b: Building): BuildingSpec {
   };
   spec.signage = { text: (b.sign ?? "").toUpperCase(), color: b.accent };
   spec.packId = b.assetId;
+  spec.profile = BUILDING_PROFILES[b.id] ? { ...BUILDING_PROFILES[b.id]! } : spec.profile;
   spec.version = BUILDING_SPEC_VERSION;
   return spec;
 }

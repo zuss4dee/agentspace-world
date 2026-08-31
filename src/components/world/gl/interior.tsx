@@ -3,10 +3,10 @@
 import { useLayoutEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { ALL_BUILDINGS } from "@/lib/city-gen";
 import { useWorld } from "@/components/world/world-store";
 import { DISTRICT_SPECS } from "@/lib/district-specs";
 import { interiorKindOf } from "@/lib/building-spec";
+import { occupiedBuilding } from "@/lib/company-profile";
 
 function InteriorCamera() {
   const camera = useThree((s) => s.camera);
@@ -34,9 +34,9 @@ function InteriorCamera() {
 export function InteriorRoom() {
   const { interiorId, world, selectAgent, setFollowAgent, setCameraScale, buildingSpecs } = useWorld();
   if (!interiorId) return null;
-  const b = ALL_BUILDINGS.find((item) => item.id === interiorId);
-  if (!b) return null;
   const spec = buildingSpecs[interiorId] ?? DISTRICT_SPECS[interiorId];
+  const b = occupiedBuilding(interiorId, spec);
+  if (!b) return null;
   const kind = spec ? interiorKindOf(spec) : "office-grid";
   const w = kind === "hall-nave" ? 10.4 : kind === "loft-open" ? 9.8 : 9.2;
   const d = kind === "cafe-floor" ? 6.6 : 7.4;
