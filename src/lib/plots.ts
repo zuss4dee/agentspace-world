@@ -1,4 +1,4 @@
-import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, districtAt } from "./campus";
+import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, ANCHOR_BUILDING_ID, districtAt } from "./campus";
 import { hash2 } from "./noise";
 import { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, measureTiles, tilesToSqFt } from "./units";
 

@@ -52,8 +52,22 @@ function footprint(
   };
 }
 
-/** Only one pre-built world landmark. Claimed offices still spawn from sale lots. */
+/** First-district architecture (parklands + corporate + startup). Later districts stay open lots. */
 export const WORLD_BUILDINGS: Building[] = [
+  footprint("pavilion", "Lawn Pavilion", {
+    kind: "pavilion",
+    style: "pavilion",
+    districtId: "parklands",
+    origin: { x: 7, y: 2 },
+    size: { x: 3, y: 3 },
+    height: 28,
+    roof: "#6b5340",
+    wall: "#e8d4b0",
+    wallDark: "#b08968",
+    accent: "#c4a574",
+    sign: "LAWN",
+    desks: [["shade", "Shade bench", 1.4, 1.4]],
+  }),
   footprint("hq", "Agentspace HQ", {
     kind: "office",
     style: "hq",
@@ -73,9 +87,101 @@ export const WORLD_BUILDINGS: Building[] = [
       ["board", "Board glass", 2.4, 0.6],
     ],
   }),
+  footprint("finance", "Ledger House", {
+    kind: "office",
+    style: "office",
+    districtId: "corporate",
+    origin: { x: 20, y: 2 },
+    size: { x: 3, y: 3 },
+    height: 58,
+    roof: "#2f3d55",
+    wall: "#9aafd4",
+    wallDark: "#5c7394",
+    accent: "#60a5fa",
+    sign: "LEDGER",
+    desks: [["midas-desk", "Midas desk", 1.4, 1.4]],
+  }),
+  footprint("hall", "Board Hall", {
+    kind: "hall",
+    style: "hall",
+    districtId: "corporate",
+    origin: { x: 14, y: 7 },
+    size: { x: 4, y: 3 },
+    height: 44,
+    roof: "#5c4634",
+    wall: "#d4c4a8",
+    wallDark: "#9a8668",
+    accent: "#c4a574",
+    desks: [["circle", "Round table", 2, 1.4]],
+  }),
+  footprint("loft", "Echt Studio", {
+    kind: "office",
+    style: "studio",
+    districtId: "startup",
+    origin: { x: 26, y: 2 },
+    size: { x: 4, y: 3 },
+    height: 48,
+    roof: "#111827",
+    wall: "#d9f99d",
+    wallDark: "#365314",
+    accent: "#84cc16",
+    sign: "ECHT",
+    purpose: "Echt’s design loft — campaigns and the product surface.",
+    desks: [["vega-desk", "Campaign desk", 1.6, 1.3]],
+  }),
+  footprint("seed-cafe", "Seed Cafe", {
+    kind: "cafe",
+    style: "cafe",
+    districtId: "startup",
+    origin: { x: 31, y: 2 },
+    size: { x: 3, y: 3 },
+    height: 34,
+    roof: "#6b3a28",
+    wall: "#e8b48a",
+    wallDark: "#b06a40",
+    accent: "#f59e0b",
+    sign: "CAFE",
+    desks: [
+      ["bar", "Bar", 1.2, 1],
+      ["booth", "Booth", 2, 2],
+    ],
+  }),
+  footprint("incubator", "Echt House", {
+    kind: "office",
+    style: "hq",
+    districtId: "startup",
+    origin: { x: 26, y: 6 },
+    size: { x: 5, y: 4 },
+    height: 78,
+    roof: "#0f172a",
+    wall: "#ecfccb",
+    wallDark: "#3f6212",
+    accent: "#65a30d",
+    sign: "ECHT",
+    purpose: "Echt’s startup building — desks, ship room, and the front door on Startup Row.",
+    desks: [
+      ["hotdesk", "Floor desk", 2.4, 2],
+      ["echt-founder", "Founder desk", 1.2, 1.1],
+      ["echt-ship", "Ship table", 3.4, 2.4],
+    ],
+  }),
+  footprint("retail", "Ribbon Shop", {
+    kind: "retail",
+    style: "retail",
+    districtId: "startup",
+    origin: { x: 32, y: 7 },
+    size: { x: 3, y: 3 },
+    height: 36,
+    roof: "#7a3038",
+    wall: "#f0c4c8",
+    wallDark: "#c47880",
+    accent: "#fb7185",
+    sign: "RIBBON",
+    desks: [["till", "Till", 1.4, 1.5]],
+  }),
 ];
 
-export const ANCHOR_BUILDING_ID = "hq";
+export const ANCHOR_BUILDING_ID = "incubator";
 export const LOT_BUILDINGS = WORLD_BUILDINGS.filter((b) => b.id === ANCHOR_BUILDING_ID);
 
 export const PLAZA_COMPANIES = WORLD_BUILDINGS.filter((b) => b.districtId === "waterfront").map((b) => ({
