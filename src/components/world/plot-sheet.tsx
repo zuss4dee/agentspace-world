@@ -1,6 +1,6 @@
 "use client";
 
-import { Landmark, Minus, Plus, X } from "lucide-react";
+import { Minus, Plus, X } from "lucide-react";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { companyForBuilding, formatUsd, isCivicBuilding } from "@/lib/companies";
 import { ZONE_THEME } from "@/lib/city-shop";
@@ -17,13 +17,10 @@ import {
   fitPlace,
   formatSqFt,
   matchingAnchor,
-  measureTiles,
-  placeAtCell,
   placeFromAnchor,
   plotArea,
   portionChoices,
   rectsEqual,
-  tilesToSqFt,
   usesForPlot,
   type ClaimIssue,
   type LotPlace,
@@ -110,86 +107,75 @@ export function PlotSheet({
   const sliceable = listed && canSlicePlot(plot);
   const portions = sliceable ? portionChoices(plot) : [];
   const partial = listed && !rectsEqual(land, plot);
+  const showWidth = listed && (maxExtra > 0 || extra > 0);
   const claimLabel = multi
-    ? `Claim ${selectedCount} lots · ${formatUsd(price)}`
+    ? `Claim ${selectedCount} · ${formatUsd(price)}`
     : `Claim · ${formatUsd(price)}`;
   const warn =
     listed && claimIssue === "cap"
-      ? `Lot cap — ${selectedCount} selected, ${remainingClaims} of ${MAX_CLAIMS} left this session.`
+      ? `Cap ${selectedCount} / ${remainingClaims} of ${MAX_CLAIMS} left.`
       : listed && claimIssue === "overlap"
-        ? "That land overlaps a claimed pad."
+        ? "Overlaps a claimed pad."
         : listed && claimIssue === "closed"
-          ? "Nothing left to claim on this pad."
+          ? "Nothing left on this pad."
           : null;
+
+  const title = park
+    ? "Park"
+    : claimed
+      ? "Your plot"
+      : owned
+        ? (company?.name ?? building?.name ?? "Occupied")
+        : multi
+          ? `${selectedCount} lots`
+          : plot.groupLabel;
+  const kicker = park
+    ? "Park"
+    : claimed
+      ? "Yours"
+      : owned
+        ? "Occupied"
+        : listed
+          ? multi
+            ? "Selected"
+            : "For sale"
+          : theme.label;
+  const priceText = park ? "—" : listed || plot.zone === "ultimate" ? formatUsd(price) : claimed ? "Yours" : theme.price;
+  const sizeLine = multi
+    ? `${formatSqFt(selectedSqFt)} · ${district?.label ?? theme.label}`
+    : `${formatSqFt(area.sqft)} · ${area.footprint} · ${district?.label ?? theme.label}${partial ? " · portion" : ""}`;
 
   return (
     <div className="ns-plot-sheet" data-zone={plot.zone}>
       <div className="ns-card">
-        {owned && company ? (
-          <div className="ns-plot-hero">
-            <p className="ns-plot-kicker">Occupied</p>
-            <p className="ns-plot-hero-brand">{company.name}</p>
-          </div>
-        ) : park ? (
-          <div className="ns-plot-hero">
-            <p className="ns-plot-kicker">Park</p>
-            <p className="ns-plot-price">Protected</p>
-          </div>
-        ) : listed ? (
-          <div className="ns-plot-hero">
-            <p className="ns-plot-kicker">{multi ? `${selectedCount} lots` : "For sale"}</p>
-            <p className="ns-plot-price">{formatUsd(price)}</p>
-          </div>
-        ) : (
-          <div className="ns-plot-hero">
-            <div className="ns-plot-mark">
-              <Landmark className="size-6" />
-            </div>
-            <p className="ns-plot-price">{claimed ? "Yours" : theme.price}</p>
-          </div>
-        )}
-
         <div className="ns-plot-body">
           <div className="ns-plot-title-row">
-            <h3>
-              {park
-                ? "Park"
-                : claimed
-                  ? "Your plot"
-                  : owned
-                    ? (company?.name ?? building?.name ?? "Occupied")
-                    : multi
-                      ? `${selectedCount} lots selected`
-                      : plot.groupLabel}
-            </h3>
+            <div className="ns-plot-id">
+              <p className="ns-plot-kicker">{kicker}</p>
+              <h3>{title}</h3>
+            </div>
+            <p className="ns-plot-price">{priceText}</p>
             <button type="button" className="ns-icon-btn" aria-label="Close" onClick={onClose}>
               <X className="size-4" />
             </button>
           </div>
-          <p className="ns-plot-copy">
-            {multi
-              ? `${formatSqFt(selectedSqFt)} combined · ${district?.label ?? theme.label}`
-              : `${area.text} · ${district?.label ?? theme.label}`}
-            {bldg && !multi ? ` · ${use?.name} ${bldg.text}` : ""}
-            {partial ? " · portion of pad" : ""}
-          </p>
+          <p className="ns-plot-copy">{sizeLine}</p>
+          {listed ? <p className="ns-plot-hint">Shift or Ctrl-click to add lots.</p> : null}
 
           {listed ? (
             <>
               {sliceable ? (
                 <div className="ns-expand">
-                  <p>Land you buy</p>
                   <div className="ns-portion-row">
                     {portions.map((row) => (
                       <button
                         key={row.id}
                         type="button"
-                        className="ns-use-btn"
+                        className="ns-chip"
                         data-on={rectsEqual(landSlice, row.slice) ? "1" : "0"}
                         onClick={() => onLandSlice(row.slice)}
                       >
-                        <strong>{row.label}</strong>
-                        <span>{formatSqFt(tilesToSqFt(row.slice.w, row.slice.h))}</span>
+                        {row.label}
                       </button>
                     ))}
                   </div>
@@ -203,7 +189,7 @@ export function PlotSheet({
                     >
                       <Minus className="size-4" />
                     </button>
-                    <strong>{measureTiles(land.w, land.h).text}</strong>
+                    <strong>{`${land.w}×${land.h}`}</strong>
                     <button
                       type="button"
                       className="ns-icon-btn"
@@ -214,97 +200,61 @@ export function PlotSheet({
                       <Plus className="size-4" />
                     </button>
                   </div>
-                  <span>Pay for a quarter, half, or a custom slice — not the whole field.</span>
                 </div>
               ) : null}
-              <div className="ns-expand">
-                  <p>Building width</p>
-                  <div className="ns-expand-row">
-                    <button
-                      type="button"
-                      className="ns-icon-btn"
-                      aria-label="Narrower"
-                      disabled={extra <= 0}
-                      onClick={() => onExtra(Math.max(0, extra - 1))}
-                    >
-                      <Minus className="size-4" />
-                    </button>
-                    <strong>{bldg ? bldg.text : "—"}</strong>
-                    <button
-                      type="button"
-                      className="ns-icon-btn"
-                      aria-label="Wider"
-                      disabled={extra >= maxExtra}
-                      onClick={() => onExtra(Math.min(maxExtra, extra + 1))}
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
-                  <span>Stays on your pad. Cannot cross the fence or a road.</span>
-                </div>
               <div className="ns-plot-uses">
-                <p>Building</p>
                 <ul>
-                  {uses.map((u) => {
-                    const s = buildingSize(land, u, extra, place);
-                    return (
+                  {uses.map((u) => (
                     <li key={u.id}>
                       <button
                         type="button"
-                        className="ns-use-btn"
+                        className="ns-chip"
                         data-on={previewUseId === u.id ? "1" : "0"}
                         onClick={() => onPreviewUse(u.id)}
                       >
-                        <strong>{u.name}</strong>
-                        <span>{s ? measureTiles(s.w, s.h).text : "—"}</span>
+                        {u.name}
                       </button>
                     </li>
-                    );
-                  })}
+                  ))}
                 </ul>
               </div>
+              {showWidth ? (
+                <div className="ns-expand-row">
+                  <span className="ns-plot-mute">Width</span>
+                  <button
+                    type="button"
+                    className="ns-icon-btn"
+                    aria-label="Narrower"
+                    disabled={extra <= 0}
+                    onClick={() => onExtra(Math.max(0, extra - 1))}
+                  >
+                    <Minus className="size-4" />
+                  </button>
+                  <strong>{bldg ? `${bldg.w}×${bldg.h}` : "—"}</strong>
+                  <button
+                    type="button"
+                    className="ns-icon-btn"
+                    aria-label="Wider"
+                    disabled={extra >= maxExtra}
+                    onClick={() => onExtra(Math.min(maxExtra, extra + 1))}
+                  >
+                    <Plus className="size-4" />
+                  </button>
+                </div>
+              ) : null}
               {size && use && !fillsLot ? (
-                <div className="ns-place">
-                  <p>Sit on the lot</p>
-                  <div className="ns-place-body">
-                    <div className="ns-site-wrap">
-                      <div
-                        className="ns-site-plan"
-                        style={{ gridTemplateColumns: `repeat(${grown.w}, 1fr)` }}
-                        role="grid"
-                        aria-label="Move the building on the lot"
-                      >
-                        {Array.from({ length: grown.w * grown.h }, (_, i) => {
-                          const col = i % grown.w;
-                          const row = Math.floor(i / grown.w);
-                          const on =
-                            col >= pos.ox && col < pos.ox + size.w && row >= pos.oy && row < pos.oy + size.h;
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              role="gridcell"
-                              data-on={on ? "1" : "0"}
-                              onClick={() => onPlace(placeAtCell(grown.w, grown.h, size.w, size.h, col, row))}
-                            />
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="ns-place-grid" role="group" aria-label="Position">
-                      {PLACE_ANCHORS.map((a) => (
-                        <button
-                          key={a.id}
-                          type="button"
-                          title={a.hint}
-                          data-on={activeAnchor === a.id ? "1" : "0"}
-                          onClick={() => onPlace(placeFromAnchor(grown.w, grown.h, size.w, size.h, a.fx, a.fy))}
-                        >
-                          {a.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                <div className="ns-place-grid" role="group" aria-label="Place on lot">
+                  {PLACE_ANCHORS.map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      title={a.hint}
+                      data-on={activeAnchor === a.id ? "1" : "0"}
+                      onClick={() => onPlace(placeFromAnchor(grown.w, grown.h, size.w, size.h, a.fx, a.fy))}
+                    >
+                      {a.label}
+                    </button>
+                  ))}
                 </div>
               ) : null}
             </>
@@ -312,15 +262,11 @@ export function PlotSheet({
 
           {adjoining && (listed || claimed) ? (
             <button type="button" className="ns-ghost ns-adjoin-btn" onClick={onAddAdjoining}>
-              Add adjoining lot · {adjoining.groupLabel} · {formatUsd(adjoining.price)}
+              Adjoin · {formatUsd(adjoining.price)}
             </button>
           ) : null}
 
-          {owned && inside.length ? (
-            <div className="ns-plot-badges">
-              <span className="ns-badge">{inside.length} on site</span>
-            </div>
-          ) : null}
+          {owned && inside.length ? <p className="ns-plot-mute">{inside.length} on site</p> : null}
 
           {warn ? <p className="ns-plot-warn">{warn}</p> : null}
 

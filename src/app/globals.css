@@ -977,11 +977,13 @@
 .ns-plot-sheet {
   pointer-events: auto;
   position: absolute;
-  z-index: 40;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  max-height: 100%;
+  z-index: 35;
+  left: 12px;
+  right: 56px;
+  bottom: 12px;
+  width: auto;
+  max-width: none;
+  max-height: min(46vh, 380px);
   overflow: auto;
 }
 .ns-card-zone-downtown,
@@ -993,15 +995,7 @@
   background: #fff;
 }
 .ns-plot-hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 22px 12px 14px;
-  background: repeating-linear-gradient(-12deg, #fff, #fff 10px, #f3f3f3 10px, #f3f3f3 20px);
-  border-bottom: 2px solid #111;
+  display: none;
 }
 .ns-plot-glow {
   display: none;
@@ -1021,13 +1015,13 @@
   box-shadow: 3px 3px 0 #111;
 }
 .ns-plot-price {
-  position: relative;
-  z-index: 1;
-  margin: 4px 0 0;
-  font-size: 1.85rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-  color: #111;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 .ns-plot-onetime,
 .ns-plot-hero-brand {
@@ -1046,11 +1040,11 @@
 }
 .ns-plot-kicker {
   margin: 0;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #111;
+  color: #888;
 }
 .ns-footprint {
   display: grid;
@@ -1096,36 +1090,31 @@
 .ns-expand {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 .ns-expand p {
-  margin: 0;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: none;
 }
 .ns-expand-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .ns-expand-row strong {
   flex: 1;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
 }
 .ns-expand > span {
-  font-size: 11px;
-  color: #555;
-  line-height: 1.35;
+  display: none;
 }
 .ns-portion-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 148px;
-  overflow: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: none;
+  overflow: visible;
 }
 .ns-plot-warn {
   margin: 0;
@@ -1143,16 +1132,10 @@
   transform: none;
 }
 .ns-place {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: none;
 }
 .ns-place > p:first-child {
-  margin: 0;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: none;
 }
 .ns-place-legend {
   display: flex;
@@ -1229,22 +1212,25 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 3px;
+  width: 132px;
+  margin: 0 auto;
 }
 .ns-place-grid button {
-  min-width: 34px;
-  padding: 5px 4px;
-  border: 1.5px solid #111;
-  border-radius: 8px;
-  background: #fff;
-  color: #111;
+  min-width: 0;
+  padding: 4px 2px;
+  border: 1.5px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #f5f5f5;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.04em;
   cursor: pointer;
 }
 .ns-place-grid button[data-on="1"] {
-  background: #111;
-  color: #fff;
+  background: #fff;
+  color: #111;
+  border-color: #fff;
 }
 .ns-nudge {
   display: grid;
@@ -1276,21 +1262,18 @@
   cursor: default;
 }
 .ns-plot-uses p {
-  margin: 0 0 6px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: none;
 }
 .ns-plot-uses ul {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 112px;
-  overflow: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: none;
+  overflow: visible;
 }
 .ns-plot-uses li {
   padding: 0;
@@ -1369,11 +1352,11 @@
   transform: rotate(-2deg);
 }
 .ns-plot-body {
-  padding: 16px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: #fff;
+  gap: 8px;
+  background: #111;
 }
 .ns-plot-title-row {
   display: flex;
@@ -1381,17 +1364,29 @@
   justify-content: space-between;
   gap: 8px;
 }
+.ns-plot-id {
+  min-width: 0;
+  flex: 1;
+}
 .ns-plot-title-row h3 {
-  margin: 0;
-  font-size: 1rem;
+  margin: 2px 0 0;
+  font-size: 0.95rem;
   font-weight: 800;
-  color: #111;
+  color: #fff;
+  line-height: 1.2;
 }
 .ns-plot-copy {
   margin: 0;
-  font-size: 0.875rem;
-  color: #444;
-  line-height: 1.45;
+  font-size: 0.75rem;
+  color: #bbb;
+  line-height: 1.3;
+}
+.ns-plot-hint,
+.ns-plot-mute {
+  margin: 0;
+  font-size: 0.68rem;
+  color: #888;
+  line-height: 1.3;
 }
 .ns-plot-badges {
   display: flex;
@@ -1805,10 +1800,10 @@
 @media (width >= 640px) {
   .ns-plot-sheet {
     left: auto;
-    right: 16px;
+    right: 64px;
     bottom: 16px;
-    width: 380px;
-    max-height: min(90vh, 820px);
+    width: 268px;
+    max-height: min(56vh, 440px);
     overflow: auto;
   }
   .ns-zoom,
@@ -1837,7 +1832,62 @@
   transform: rotate(1deg);
 }
 .ns-plot-sheet .ns-card {
-  transform: rotate(-0.7deg);
+  transform: none;
+  background: #111;
+  color: #f5f5f5;
+  border: 2px solid #111;
+  box-shadow: 4px 4px 0 #fff;
+  border-radius: 16px;
+}
+.ns-plot-sheet .ns-card .ns-icon-btn {
+  color: #f5f5f5;
+  border-color: #444;
+}
+.ns-plot-sheet .ns-card .ns-icon-btn:hover {
+  background: #fff;
+  color: #111;
+}
+.ns-plot-sheet .ns-game-btn {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+  box-shadow: none;
+  padding: 8px 12px;
+}
+.ns-plot-sheet .ns-game-btn:hover {
+  background: #111;
+  color: #fff;
+  border-color: #fff;
+  transform: none;
+}
+.ns-plot-sheet .ns-ghost {
+  color: #f5f5f5;
+  background: transparent;
+  border-color: #444;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.ns-plot-sheet .ns-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1.5px solid #333;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-plot-sheet .ns-chip[data-on="1"] {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+}
+.ns-plot-sheet .ns-plot-warn {
+  color: #eee;
+  font-size: 11px;
 }
 .ns-bid {
   transform: rotate(-0.4deg);
