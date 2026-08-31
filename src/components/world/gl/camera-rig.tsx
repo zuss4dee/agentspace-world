@@ -12,10 +12,34 @@ const _forward = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
+const _sph = new THREE.Spherical();
+
+function orbitCamera(camera: THREE.Camera, target: THREE.Vector3, dx: number, dy: number) {
+  _dir.copy(camera.position).sub(target);
+  if (_dir.lengthSq() < 0.001) _dir.set(0.4, 12, 0.4);
+  _sph.setFromVector3(_dir);
+  _sph.theta -= dx;
+  _sph.phi = THREE.MathUtils.clamp(_sph.phi + dy, 0.08, Math.PI - 0.22);
+  _sph.makeSafe();
+  camera.position.copy(target).add(_dir.setFromSpherical(_sph));
+  camera.up.set(0, 1, 0);
+}
 
 export function ExplorerCamera() {
-  const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick, setFollowAgent, mapOverview, setMapOverview, topView } =
-    useWorld();
+  const {
+    cameraFocus,
+    cameraScale,
+    followAgent,
+    selectedAgentId,
+    liveRef,
+    interiorId,
+    cameraTick,
+    setFollowAgent,
+    mapOverview,
+    setMapOverview,
+    topView,
+    setTopView,
+  } = useWorld();
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -23,6 +47,8 @@ export function ExplorerCamera() {
   const applyDist = useRef(true);
   const lastTick = useRef(cameraTick);
   const dragging = useRef(false);
+  const orbiting = useRef(false);
+  const shiftHeld = useRef(false);
   const last = useRef({ x: 0, y: 0 });
   const followRef = useRef(followAgent);
   followRef.current = followAgent;
@@ -30,9 +56,11 @@ export function ExplorerCamera() {
   overviewRef.current = mapOverview;
   const topRef = useRef(topView);
   topRef.current = topView;
+  const wasTop = useRef(false);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (e.key === "Shift") shiftHeld.current = true;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       const k = e.key.toLowerCase();
@@ -41,30 +69,62 @@ export function ExplorerCamera() {
         e.preventDefault();
       }
     };
-    const up = (e: KeyboardEvent) => keys.delete(e.key.toLowerCase());
+    const up = (e: KeyboardEvent) => {
+      if (e.key === "Shift") {
+        shiftHeld.current = false;
+        if (!dragging.current) orbiting.current = false;
+      }
+      keys.delete(e.key.toLowerCase());
+    };
+    const blur = () => {
+      shiftHeld.current = false;
+      keys.clear();
+    };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
+    window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", blur);
     };
   }, []);
 
   useEffect(() => {
     const el = gl.domElement;
     el.style.touchAction = "none";
+    const beginOrbit = () => {
+      orbiting.current = true;
+      applyDist.current = false;
+      if (topRef.current) {
+        wasTop.current = false;
+        setTopView(false);
+        const t = target.current;
+        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < 0.35) {
+          camera.position.x = t.x + 0.45;
+          camera.position.z = t.z + 0.45;
+        }
+        camera.up.set(0, 1, 0);
+      }
+    };
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0 && e.pointerType !== "touch") return;
       dragging.current = true;
       last.current = { x: e.clientX, y: e.clientY };
       applyDist.current = false;
       if (followRef.current) setFollowAgent(false);
+      if (e.shiftKey) beginOrbit();
     };
     const onMove = (e: PointerEvent) => {
       if (!dragging.current) return;
       const dx = e.clientX - last.current.x;
       const dy = e.clientY - last.current.y;
       last.current = { x: e.clientX, y: e.clientY };
+      if (e.shiftKey || orbiting.current) {
+        if (!orbiting.current) beginOrbit();
+        orbitCamera(camera, target.current, dx * 0.0055, dy * 0.0042);
+        return;
+      }
       const dist = camera.position.distanceTo(target.current);
       const speed = dist * 0.0024;
       if (topRef.current) {
@@ -90,6 +150,7 @@ export function ExplorerCamera() {
     };
     const onUp = () => {
       dragging.current = false;
+      orbiting.current = false;
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -99,7 +160,7 @@ export function ExplorerCamera() {
       const cap = overviewRef.current ? OVERVIEW_DIST : MAX_VIEW_DIST;
       const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
       if (overviewRef.current && next <= MAX_VIEW_DIST + 0.4) setMapOverview(false);
-      if (topRef.current) {
+      if (topRef.current && !orbiting.current) {
         const height = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
         camera.position.set(target.current.x, height, target.current.z);
         return;
@@ -124,13 +185,14 @@ export function ExplorerCamera() {
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("contextmenu", onContext);
     };
-  }, [camera, gl, setFollowAgent, setMapOverview]);
+  }, [camera, gl, setFollowAgent, setMapOverview, setTopView]);
 
   useFrame((_, dt) => {
     const t = target.current;
     if (cameraTick !== lastTick.current) {
       lastTick.current = cameraTick;
       applyDist.current = true;
+      orbiting.current = false;
     }
 
     if (followAgent && selectedAgentId && !dragging.current) {
@@ -140,51 +202,67 @@ export function ExplorerCamera() {
         t.x += (wx(a.x) - t.x) * k;
         t.z += (wz(a.y) - t.z) * k;
       }
-    } else if (applyDist.current && cameraFocus && !dragging.current) {
+    } else if (applyDist.current && cameraFocus && !dragging.current && !orbiting.current) {
       const k = Math.min(1, dt * 4.2);
       t.x += (wx(cameraFocus.x) - t.x) * k;
       t.z += (wz(cameraFocus.y) - t.z) * k;
     }
 
-    const pan = 48 * dt;
-    if (topRef.current && !interiorId) {
-      if (keys.has("w") || keys.has("arrowup")) {
-        t.z -= pan;
-        camera.position.z -= pan;
+    const turn = 1.55 * dt;
+    if (shiftHeld.current && !interiorId) {
+      if (keys.has("arrowleft") || keys.has("a")) {
+        beginFrameOrbit(-turn, 0);
       }
-      if (keys.has("s") || keys.has("arrowdown")) {
-        t.z += pan;
-        camera.position.z += pan;
+      if (keys.has("arrowright") || keys.has("d")) {
+        beginFrameOrbit(turn, 0);
       }
-      if (keys.has("d") || keys.has("arrowright")) {
-        t.x += pan;
-        camera.position.x += pan;
+      if (keys.has("arrowup") || keys.has("w")) {
+        beginFrameOrbit(0, -turn * 0.75);
       }
-      if (keys.has("a") || keys.has("arrowleft")) {
-        t.x -= pan;
-        camera.position.x -= pan;
+      if (keys.has("arrowdown") || keys.has("s")) {
+        beginFrameOrbit(0, turn * 0.75);
       }
     } else {
-      camera.getWorldDirection(_forward);
-      _forward.y = 0;
-      if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
-      _forward.normalize();
-      _right.crossVectors(_forward, _up).normalize();
-      if (keys.has("w") || keys.has("arrowup")) {
-        t.addScaledVector(_forward, pan);
-        camera.position.addScaledVector(_forward, pan);
-      }
-      if (keys.has("s") || keys.has("arrowdown")) {
-        t.addScaledVector(_forward, -pan);
-        camera.position.addScaledVector(_forward, -pan);
-      }
-      if (keys.has("d") || keys.has("arrowright")) {
-        t.addScaledVector(_right, pan);
-        camera.position.addScaledVector(_right, pan);
-      }
-      if (keys.has("a") || keys.has("arrowleft")) {
-        t.addScaledVector(_right, -pan);
-        camera.position.addScaledVector(_right, -pan);
+      const pan = 48 * dt;
+      if (topRef.current && !interiorId) {
+        if (keys.has("w") || keys.has("arrowup")) {
+          t.z -= pan;
+          camera.position.z -= pan;
+        }
+        if (keys.has("s") || keys.has("arrowdown")) {
+          t.z += pan;
+          camera.position.z += pan;
+        }
+        if (keys.has("d") || keys.has("arrowright")) {
+          t.x += pan;
+          camera.position.x += pan;
+        }
+        if (keys.has("a") || keys.has("arrowleft")) {
+          t.x -= pan;
+          camera.position.x -= pan;
+        }
+      } else {
+        camera.getWorldDirection(_forward);
+        _forward.y = 0;
+        if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
+        _forward.normalize();
+        _right.crossVectors(_forward, _up).normalize();
+        if (keys.has("w") || keys.has("arrowup")) {
+          t.addScaledVector(_forward, pan);
+          camera.position.addScaledVector(_forward, pan);
+        }
+        if (keys.has("s") || keys.has("arrowdown")) {
+          t.addScaledVector(_forward, -pan);
+          camera.position.addScaledVector(_forward, -pan);
+        }
+        if (keys.has("d") || keys.has("arrowright")) {
+          t.addScaledVector(_right, pan);
+          camera.position.addScaledVector(_right, pan);
+        }
+        if (keys.has("a") || keys.has("arrowleft")) {
+          t.addScaledVector(_right, -pan);
+          camera.position.addScaledVector(_right, -pan);
+        }
       }
     }
 
@@ -204,8 +282,22 @@ export function ExplorerCamera() {
     }
 
     const wantH = interiorId ? 7.2 : mapOverview ? OVERVIEW_DIST : distFromScale(cameraScale);
+    const overhead = topRef.current && !interiorId && !orbiting.current;
 
-    if (topRef.current && !interiorId) {
+    if (overhead && !wasTop.current) {
+      camera.position.set(t.x, t.y + wantH, t.z);
+      wasTop.current = true;
+      applyDist.current = false;
+    } else if (!overhead && wasTop.current && !orbiting.current) {
+      _dir.set(12, 14, 12).normalize().multiplyScalar(wantH);
+      camera.position.copy(t).add(_dir);
+      wasTop.current = false;
+      applyDist.current = true;
+    }
+
+    if (orbiting.current) {
+      camera.up.set(0, 1, 0);
+    } else if (overhead) {
       camera.up.set(0, 0, -1);
       const k = dragging.current ? 1 : Math.min(1, dt * 8);
       camera.position.x += (t.x - camera.position.x) * k;
@@ -253,6 +345,20 @@ export function ExplorerCamera() {
     }
 
     camera.lookAt(t);
+
+    function beginFrameOrbit(dx: number, dy: number) {
+      orbiting.current = true;
+      applyDist.current = false;
+      if (topRef.current) {
+        wasTop.current = false;
+        setTopView(false);
+        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < 0.35) {
+          camera.position.x = t.x + 0.45;
+          camera.position.z = t.z + 0.45;
+        }
+      }
+      orbitCamera(camera, t, dx, dy);
+    }
   });
 
   return null;

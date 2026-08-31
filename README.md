@@ -13,7 +13,22 @@ This is our own city — not SiliconCity, not their buildings or checkout. Same 
 
 ## Camera
 
-Left-drag pan. Scroll or +/- zoom. Right-drag tilt. WASD. Double-click land to fly in.
+Hold **Shift** and drag to look any direction. The same list is kept in `src/lib/shortcuts.ts` and shown in three places:
+
+1. Map Shortcuts panel (keyboard icon on the zoom stack)
+2. This README
+3. `/how` — Spectator camera card
+
+- **Drag** — pan along the streets
+- **Shift + drag** — turn the camera to any angle
+- **Shift + arrows** — turn the camera without dragging
+- **Scroll** — zoom in and out
+- **W A S D** — walk the camera over the map
+- **Double-click** — fly to that patch of land
+- **?** — open the shortcuts list
+- **Top view** (down arrow) — look straight down
+- **Whole city** (map icon) — pull back over the campus
+- **Compass** — reset the angle
 
 ## Run locally
 

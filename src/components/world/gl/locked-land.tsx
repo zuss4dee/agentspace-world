@@ -7,7 +7,7 @@ import { useWorld } from "@/components/world/world-store";
 import { hash2 } from "@/lib/noise";
 
 export function LockedLand() {
-  const { selectDistrict, selectBuilding, selectAgent, selectPlot } = useWorld();
+  const { selectDistrict, selectBuilding, selectAgent, selectPlot, topView } = useWorld();
   return (
     <group>
       {WORLD_SECTIONS.filter((s) => s.locked).map((s) => {
@@ -48,11 +48,11 @@ export function LockedLand() {
                 <meshStandardMaterial color="#8a9188" roughness={0.9} transparent opacity={0.45} />
               </mesh>
             ))}
-            <Html position={[0, 2.2, 0]} center distanceFactor={18} occlude={false} pointerEvents="none">
-              <div className="gbw-lockchip">
-                Locked · {s.label}
-              </div>
-            </Html>
+            {!topView ? (
+              <Html position={[0, 2.2, 0]} center distanceFactor={18} occlude={false} pointerEvents="none">
+                <div className="gbw-lockchip">Locked · {s.label}</div>
+              </Html>
+            ) : null}
           </group>
         );
       })}

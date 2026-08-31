@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Activity, ArrowDownToLine, Compass, Map, MapPin, Minus, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Activity, ArrowDownToLine, Compass, Keyboard, Map, MapPin, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/city-shop";
 import { PLOTS } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
+import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
 export function CityChrome() {
   const {
@@ -41,6 +42,7 @@ export function CityChrome() {
     toggleTopView,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
+  const [keysOpen, setKeysOpen] = useState(false);
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const counts = useMemo(() => {
     const next: Record<string, number> = {};
@@ -51,6 +53,20 @@ export function CityChrome() {
   const picked = selectedPlotId ? PLOTS.find((p) => p.id === selectedPlotId) : undefined;
 
   const active = world.agents.filter((a) => a.mapId === "lot").length;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.key === "?" || (e.key === "/" && e.shiftKey)) {
+        e.preventDefault();
+        setKeysOpen((v) => !v);
+      }
+      if (e.key === "Escape") setKeysOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   return (
     <>
@@ -202,7 +218,43 @@ export function CityChrome() {
         >
           <Compass className="size-4" />
         </button>
+        <button
+          type="button"
+          className="ns-zoom-keys"
+          data-on={keysOpen ? "1" : "0"}
+          aria-pressed={keysOpen}
+          aria-label={keysOpen ? "Hide shortcuts" : "Show shortcuts"}
+          title="Shortcuts"
+          onClick={() => setKeysOpen((v) => !v)}
+        >
+          <Keyboard className="size-4" />
+        </button>
       </div>
+
+      {keysOpen ? (
+        <aside className="ns-keys" aria-label="Shortcuts">
+          <div className="ns-card ns-pad">
+            <div className="ns-card-kicker">
+              <Keyboard className="size-3.5 text-lime-300" />
+              <p>Shortcuts</p>
+            </div>
+            <ul className="ns-keys-list">
+              {CAMERA_SHORTCUTS.map((row) => (
+                <li key={row.keys}>
+                  <kbd>{row.keys}</kbd>
+                  <span>{row.does}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="ns-keys-where">Listed in the same words here, in the README, and on Join.</p>
+            <ul className="ns-keys-surfaces">
+              {SHORTCUT_SURFACES.map((row) => (
+                <li key={row.id}>{row.where}</li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+      ) : null}
 
       {picked ? (
         <PlotSheet

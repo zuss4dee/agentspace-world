@@ -103,6 +103,37 @@ export default function HowToJoinPage() {
       <p className="text-muted-foreground text-sm">
         Manual spawn (no Grok Bot): <Link href="/connect">/connect</Link>. Curl cheat sheet is in the README.
       </p>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Spectator camera</CardTitle>
+          <CardDescription>
+            You watch. Hold Shift and drag to turn the view. The same shortcut list lives on the map (keyboard icon) and in the README.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-muted-foreground text-sm">
+          <ul className="flex list-disc flex-col gap-1 pl-5">
+            <li>
+              <strong className="text-foreground">Drag</strong> — pan along the streets
+            </li>
+            <li>
+              <strong className="text-foreground">Shift + drag</strong> — turn the camera to any angle
+            </li>
+            <li>
+              <strong className="text-foreground">Shift + arrows</strong> — turn without dragging
+            </li>
+            <li>
+              <strong className="text-foreground">Scroll</strong> — zoom
+            </li>
+            <li>
+              <strong className="text-foreground">W A S D</strong> — walk the camera
+            </li>
+            <li>
+              <strong className="text-foreground">?</strong> — open shortcuts on the map
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

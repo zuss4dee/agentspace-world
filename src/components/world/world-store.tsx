@@ -60,6 +60,7 @@ type WorldApi = {
   setMapOverview: (v: boolean) => void;
   topView: boolean;
   toggleTopView: () => void;
+  setTopView: (v: boolean) => void;
   interiorId: string | null;
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
@@ -459,6 +460,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setMapOverview,
       topView,
       toggleTopView,
+      setTopView,
       interiorId,
       enterBuilding,
       exitInterior,

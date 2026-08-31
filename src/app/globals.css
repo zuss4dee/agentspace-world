@@ -788,7 +788,8 @@
   border-radius: 6px;
 }
 .ns-zoom-map[data-on="1"],
-.ns-zoom-top[data-on="1"] {
+.ns-zoom-top[data-on="1"],
+.ns-zoom-keys[data-on="1"] {
   color: #d9f99d;
   background: #84cc1624;
 }
@@ -804,6 +805,58 @@
   height: 28px;
   border-radius: 6px;
   flex-shrink: 0;
+}
+.ns-keys {
+  pointer-events: auto;
+  position: absolute;
+  top: 220px;
+  right: 56px;
+  z-index: 41;
+  width: min(280px, calc(100vw - 72px));
+}
+.ns-keys-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.ns-keys-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  line-height: 1.35;
+}
+.ns-keys-list kbd {
+  flex-shrink: 0;
+  font: 650 0.68rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #ecfccb;
+  background: #84cc1622;
+  border: 1px solid #a3e63544;
+  border-radius: 4px;
+  padding: 3px 6px;
+}
+.ns-keys-where {
+  margin: 12px 0 6px;
+  color: #94a3b8;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.ns-keys-surfaces {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 .ns-join-chip {
   pointer-events: auto;
@@ -1317,7 +1370,8 @@
     width: 340px;
     overflow: visible;
   }
-  .ns-zoom {
+  .ns-zoom,
+  .ns-keys {
     top: 260px;
   }
 }
