@@ -173,33 +173,68 @@ export function LatticeField() {
 export function SaleStakes() {
   const poles = useRef<THREE.InstancedMesh>(null);
   const flags = useRef<THREE.InstancedMesh>(null);
+  const posts = useRef<THREE.InstancedMesh>(null);
+  const rails = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const { claimedPlotIds, selectedPlotId, selectedPlotIds } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
-  const sales = useMemo(() => CITY_PLOTS.filter((p) => p.kind === "sale"), []);
+  const sales = useMemo(() => CITY_PLOTS.filter((p) => p.kind === "sale" && p.y < 80), []);
 
   useLayoutEffect(() => {
     const pole = poles.current;
     const flag = flags.current;
-    if (!pole || !flag) return;
+    const post = posts.current;
+    const rail = rails.current;
+    if (!pole || !flag || !post || !rail) return;
     sales.forEach((p, i) => {
       const hide =
         claimed.has(p.id) ||
         claimedCoversPlot(p.id, claimed) ||
         selectedPlotId === p.id ||
         selectedPlotIds.includes(p.id);
-      const x = wx(p.x + p.w / 2) + p.w * TILE * 0.32;
-      const z = wz(p.y + p.h / 2) + p.h * TILE * 0.32;
-      dummy.position.set(x, h(0.55), z);
-      dummy.scale.set(hide ? 0 : 1, hide ? 0 : 1, hide ? 0 : 1);
+      const s = hide ? 0 : 1;
+      const x = wx(p.x + p.w / 2) + p.w * TILE * 0.28;
+      const z = wz(p.y + p.h / 2) + p.h * TILE * 0.28;
+      dummy.position.set(x, h(0.42), z);
+      dummy.scale.set(s, s, s);
+      dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
       pole.setMatrixAt(i, dummy.matrix);
-      dummy.position.set(x + h(0.16), h(1.02), z);
+      dummy.position.set(x + h(0.12), h(0.78), z);
       dummy.updateMatrix();
       flag.setMatrixAt(i, dummy.matrix);
+
+      const corners: [number, number][] = [
+        [wx(p.x) + h(0.08), wz(p.y) + h(0.08)],
+        [wx(p.x + p.w) - h(0.08), wz(p.y) + h(0.08)],
+        [wx(p.x + p.w) - h(0.08), wz(p.y + p.h) - h(0.08)],
+        [wx(p.x) + h(0.08), wz(p.y + p.h) - h(0.08)],
+      ];
+      corners.forEach(([cx, cz], ci) => {
+        dummy.position.set(cx, h(0.22), cz);
+        dummy.scale.set(s, s, s);
+        dummy.rotation.set(0, 0, 0);
+        dummy.updateMatrix();
+        post.setMatrixAt(i * 4 + ci, dummy.matrix);
+      });
+      const spans: { x: number; z: number; rot: number; len: number }[] = [
+        { x: wx(p.x + p.w / 2), z: wz(p.y) + h(0.08), rot: 0, len: p.w * TILE * 0.92 },
+        { x: wx(p.x + p.w / 2), z: wz(p.y + p.h) - h(0.08), rot: 0, len: p.w * TILE * 0.92 },
+        { x: wx(p.x) + h(0.08), z: wz(p.y + p.h / 2), rot: Math.PI / 2, len: p.h * TILE * 0.92 },
+        { x: wx(p.x + p.w) - h(0.08), z: wz(p.y + p.h / 2), rot: Math.PI / 2, len: p.h * TILE * 0.92 },
+      ];
+      spans.forEach((sp, si) => {
+        dummy.position.set(sp.x, h(0.18), sp.z);
+        dummy.rotation.set(0, sp.rot, 0);
+        dummy.scale.set(s * (sp.len / TILE), s, s);
+        dummy.updateMatrix();
+        rail.setMatrixAt(i * 4 + si, dummy.matrix);
+      });
     });
     pole.instanceMatrix.needsUpdate = true;
     flag.instanceMatrix.needsUpdate = true;
+    post.instanceMatrix.needsUpdate = true;
+    rail.instanceMatrix.needsUpdate = true;
   }, [dummy, claimed, sales, selectedPlotId, selectedPlotIds]);
 
   if (sales.length === 0) return null;
@@ -207,12 +242,20 @@ export function SaleStakes() {
   return (
     <group>
       <instancedMesh ref={poles} args={[undefined, undefined, sales.length]} frustumCulled={false}>
-        <cylinderGeometry args={[h(0.028), h(0.034), h(1.1), 5]} />
-        <meshStandardMaterial color="#111111" roughness={0.6} />
+        <cylinderGeometry args={[h(0.022), h(0.028), h(0.84), 6]} />
+        <meshStandardMaterial color="#3a3228" roughness={0.7} />
       </instancedMesh>
       <instancedMesh ref={flags} args={[undefined, undefined, sales.length]} frustumCulled={false}>
-        <boxGeometry args={[h(0.38), h(0.2), h(0.04)]} />
-        <meshStandardMaterial color="#ffffff" roughness={0.45} />
+        <boxGeometry args={[h(0.34), h(0.22), h(0.04)]} />
+        <meshStandardMaterial color="#efe8d8" roughness={0.55} />
+      </instancedMesh>
+      <instancedMesh ref={posts} args={[undefined, undefined, sales.length * 4]} frustumCulled={false}>
+        <boxGeometry args={[h(0.06), h(0.4), h(0.06)]} />
+        <meshStandardMaterial color="#5a4634" roughness={0.78} />
+      </instancedMesh>
+      <instancedMesh ref={rails} args={[undefined, undefined, sales.length * 4]} frustumCulled={false}>
+        <boxGeometry args={[TILE, h(0.035), h(0.03)]} />
+        <meshStandardMaterial color="#6b5344" roughness={0.72} />
       </instancedMesh>
     </group>
   );

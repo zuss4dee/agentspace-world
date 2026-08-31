@@ -314,13 +314,24 @@ export function TrafficLayer() {
       {CARS.map((car, i) => (
         <group key={i} raycast={() => undefined}>
           <mesh position={[0, h(0.08), 0]} castShadow>
-            <boxGeometry args={[h(0.22), h(0.1), h(0.42)]} />
-            <meshStandardMaterial color={car.color} metalness={0.3} roughness={0.45} />
+            <boxGeometry args={[h(0.2), h(0.08), h(0.38)]} />
+            <meshStandardMaterial color={car.color} metalness={0.42} roughness={0.38} />
           </mesh>
-          <mesh position={[0, h(0.16), h(-0.04)]} castShadow>
-            <boxGeometry args={[h(0.18), h(0.1), h(0.22)]} />
-            <meshStandardMaterial color="#1c1917" metalness={0.15} roughness={0.35} />
+          <mesh position={[0, h(0.14), h(-0.02)]} castShadow>
+            <boxGeometry args={[h(0.16), h(0.08), h(0.18)]} />
+            <meshPhysicalMaterial color="#1a1816" metalness={0.3} roughness={0.12} transparent opacity={0.7} />
           </mesh>
+          {[
+            [-h(0.08), h(0.12)],
+            [h(0.08), h(0.12)],
+            [-h(0.08), h(-0.12)],
+            [h(0.08), h(-0.12)],
+          ].map(([x, z], wi) => (
+            <mesh key={wi} position={[x, h(0.04), z]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[h(0.035), h(0.035), h(0.04), 8]} />
+              <meshStandardMaterial color="#1c1917" roughness={0.5} />
+            </mesh>
+          ))}
         </group>
       ))}
     </group>

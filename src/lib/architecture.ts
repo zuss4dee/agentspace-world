@@ -1,5 +1,7 @@
 import type { Building, BuildingStyle } from "./types";
 
+export { CITY_KIT, registerKit, kitForFamily } from "./city-kit";
+
 /** Reusable architectural families for the miniature city. */
 export type ArchFamily =
   | "office"
