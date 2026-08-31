@@ -2,32 +2,23 @@
 
 import type { ThreeEvent } from "@react-three/fiber";
 import { WORLD_BUILDINGS } from "@/lib/campus";
-import { LOT_DEPTH, LOT_FILL, familyForBuilding } from "@/lib/architecture";
-import { ArchitectureMass, FacadeOffice } from "@/components/world/gl/architecture";
-import { buildingHeight, TILE, h as px, wx, wz } from "@/lib/coords";
+import { BuildingFromSpec } from "@/components/world/gl/architecture";
+import { DISTRICT_SPECS } from "@/lib/district-specs";
+import { TILE, h as px, wx, wz } from "@/lib/coords";
 import type { Building } from "@/lib/types";
 import { useWorld } from "@/components/world/world-store";
+import { specFromBuilding } from "@/lib/building-ai";
 
-export { FacadeOffice };
+export { FacadeOffice } from "@/components/world/gl/architecture";
 
 function BuildingBody({ b, selected, occupied }: { b: Building; selected: boolean; occupied: boolean }) {
-  const w = b.size.x * TILE * LOT_FILL;
-  const d = b.size.y * TILE * LOT_DEPTH;
-  const height = buildingHeight(b.height);
-  return (
-    <ArchitectureMass
-      family={familyForBuilding(b)}
-      w={w}
-      d={d}
-      height={height}
-      wall={b.wall}
-      roof={b.roof}
-      accent={b.accent}
-      wallDark={b.wallDark}
-      selected={selected}
-      occupied={occupied}
-    />
-  );
+  const { buildingSpecs, draftSpec } = useWorld();
+  const spec =
+    (draftSpec && draftSpec.id === b.id ? draftSpec : null) ??
+    buildingSpecs[b.id] ??
+    DISTRICT_SPECS[b.id] ??
+    specFromBuilding(b);
+  return <BuildingFromSpec spec={spec} selected={selected} occupied={occupied} />;
 }
 
 export function BuildingsLayer() {

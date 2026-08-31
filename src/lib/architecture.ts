@@ -1,21 +1,9 @@
 import type { Building, BuildingStyle } from "./types";
+import type { ArchFamily } from "./building-spec";
 
-export { CITY_KIT, registerKit, kitForFamily } from "./city-kit";
-
-/** Reusable architectural families for the miniature city. */
-export type ArchFamily =
-  | "office"
-  | "startup"
-  | "townhouse"
-  | "apartment"
-  | "warehouse"
-  | "studio"
-  | "research"
-  | "civic"
-  | "cafe"
-  | "retail"
-  | "industrial"
-  | "hq";
+export type { ArchFamily } from "./building-spec";
+export { CITY_KIT, registerKit, kitForFamily, modulesForSlot, registerPack, GRAMMAR_MODULES } from "./city-kit";
+export { BUILDING_SPEC_SCHEMA, BUILDING_SPEC_VERSION } from "./building-spec";
 
 export type WindowKind = "punch" | "strip" | "curtain" | "storefront" | "none";
 

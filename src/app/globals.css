@@ -1889,6 +1889,124 @@
   color: #eee;
   font-size: 11px;
 }
+.ns-studio-toggle {
+  pointer-events: auto;
+  position: absolute;
+  top: 220px;
+  right: 64px;
+  z-index: 40;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 2px solid #111;
+  background: #111;
+  color: #f5f5f5;
+  box-shadow: 4px 4px 0 #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.ns-studio-toggle:hover {
+  background: #fff;
+  color: #111;
+}
+.ns-studio {
+  pointer-events: auto;
+  position: absolute;
+  top: 220px;
+  right: 64px;
+  z-index: 41;
+  width: min(272px, calc(100vw - 88px));
+  max-height: min(62vh, 520px);
+  overflow: auto;
+}
+.ns-studio .ns-card {
+  background: #111;
+  color: #f5f5f5;
+  border: 2px solid #111;
+  box-shadow: 4px 4px 0 #fff;
+  border-radius: 16px;
+  padding: 10px 12px 12px;
+}
+.ns-studio-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ns-studio-modes,
+.ns-studio-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.ns-studio .ns-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1.5px solid #333;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-studio .ns-chip[data-on="1"] {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+}
+.ns-studio-slot {
+  margin-top: 8px;
+}
+.ns-studio-foot {
+  margin: 10px 0 0;
+  color: #888;
+  font-size: 11px;
+}
+.ns-studio-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+.ns-studio-ai input,
+.ns-studio-ai select {
+  background: #1a1a1a;
+  color: #f5f5f5;
+  border: 1.5px solid #333;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+.ns-studio .ns-game-btn {
+  background: #fff;
+  color: #111;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-studio .ns-ghost {
+  margin-top: 8px;
+  width: 100%;
+  border: 1.5px solid #444;
+  border-radius: 10px;
+}
+@media (width >= 640px) {
+  .ns-studio-toggle,
+  .ns-studio {
+    top: 260px;
+  }
+}
 .ns-bid {
   transform: rotate(-0.4deg);
 }

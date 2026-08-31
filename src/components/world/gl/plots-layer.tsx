@@ -26,7 +26,9 @@ import {
   type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
-import { FacadeOffice } from "@/components/world/gl/buildings";
+import { BuildingFromSpec } from "@/components/world/gl/architecture";
+import { specFromUse } from "@/lib/building-ai";
+import { paletteForUse } from "@/lib/building-grammar";
 import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
 import { useWorld } from "@/components/world/world-store";
 
@@ -38,22 +40,7 @@ const C = {
 };
 
 function officePalette(useId: string) {
-  switch (useId) {
-    case "hq":
-    case "office":
-    case "lab":
-      return { wall: "#d4dbe4", roof: "#3f4654", accent: "#c45c3a" };
-    case "warehouse":
-      return { wall: "#c4ae7a", roof: "#57534e", accent: "#d4a017" };
-    case "studio":
-      return { wall: "#d8a8bc", roof: "#6b3048", accent: "#fb7185" };
-    case "shop":
-      return { wall: "#e8d2b8", roof: "#6b3a28", accent: "#f59e0b" };
-    case "house":
-      return { wall: "#ead9c4", roof: "#7a4a32", accent: "#b45309" };
-    default:
-      return { wall: "#d8d0c4", roof: "#4a453e", accent: "#8a8178" };
-  }
+  return paletteForUse(useId);
 }
 
 export function PlotsLayer() {
@@ -273,6 +260,7 @@ export function BuildingGhost() {
     landSlice,
     setBuildingPlace,
     topView,
+    draftSpec,
   } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const plot = getPlot(selectedPlotId);
@@ -355,13 +343,13 @@ export function BuildingGhost() {
         <>
           <SitLandmark fp={fp} />
           <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
-            <FacadeOffice
-              w={fp.w * TILE * LOT_FILL}
-              d={fp.h * TILE * LOT_DEPTH}
-              height={h(fp.height)}
+            <BuildingFromSpec
+              spec={
+                draftSpec && draftSpec.id === plot.id
+                  ? { ...draftSpec, height: h(fp.height), footprint: { ...draftSpec.footprint, w: fp.w * TILE * LOT_FILL, d: fp.h * TILE * LOT_DEPTH, tilesW: fp.w, tilesH: fp.h } }
+                  : specFromUse(plot.id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id))
+              }
               opacity={0.9}
-              useId={use.id}
-              {...officePalette(use.id)}
             />
           </group>
           {!topView ? (
@@ -430,7 +418,7 @@ function SitLandmark({
 }
 
 export function ClaimedMarks() {
-  const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses } = useWorld();
+  const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs } = useWorld();
   return (
     <group>
       {claimedPlotIds.map((id) => {
@@ -461,12 +449,11 @@ export function ClaimedMarks() {
               <>
                 <SitLandmark fp={fp} />
                 <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
-                  <FacadeOffice
-                    w={fp.w * TILE * LOT_FILL}
-                    d={fp.h * TILE * LOT_DEPTH}
-                    height={h(fp.height)}
-                    useId={use.id}
-                    {...officePalette(use.id)}
+                  <BuildingFromSpec
+                    spec={
+                      buildingSpecs[id] ??
+                      specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id))
+                    }
                   />
                 </group>
               </>

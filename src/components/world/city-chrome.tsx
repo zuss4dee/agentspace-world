@@ -5,6 +5,7 @@ import { Activity, ArrowDownToLine, Compass, Keyboard, Map, MapPin, Minus, Plus 
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
+import { BuildingStudio } from "@/components/world/building-studio";
 import { useWorld } from "@/components/world/world-store";
 import {
   BEACON_NEXT_BID,
@@ -260,6 +261,8 @@ export function CityChrome() {
           </div>
         </div>
       </aside>
+
+      <BuildingStudio />
 
       <div className="ns-zoom">
         <button type="button" aria-label="Zoom in" onClick={() => zoomBy(true)}>

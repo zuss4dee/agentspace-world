@@ -30,6 +30,7 @@ import {
   PLOTS,
   LAND_USES,
   buildingSize,
+  buildingFootprint,
   centerPlace,
   claimIdFor,
   plotRect,
@@ -39,7 +40,14 @@ import {
   type TileRect,
 } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
+import { DISTRICT_SPECS } from "@/lib/district-specs";
+import { specFromUse } from "@/lib/building-ai";
+import { paletteForUse } from "@/lib/building-grammar";
+import type { BuildingSpec } from "@/lib/building-spec";
+import { h } from "@/lib/coords";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
+
+export type StudioMode = "quick" | "customise" | "creator";
 
 type WorldApi = {
   world: WorldSnapshot;
@@ -111,6 +119,15 @@ type WorldApi = {
   placeBeaconBid: (cents: number) => void;
   beaconOpen: boolean;
   setBeaconOpen: (v: boolean) => void;
+  buildingSpecs: Record<string, BuildingSpec>;
+  draftSpec: BuildingSpec | null;
+  upsertBuildingSpec: (spec: BuildingSpec) => void;
+  studioOpen: boolean;
+  setStudioOpen: (v: boolean) => void;
+  studioMode: StudioMode;
+  setStudioMode: (m: StudioMode) => void;
+  saveCreatorPack: (packId: string) => void;
+  creatorPacks: string[];
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -141,6 +158,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [buildingPlace, setBuildingPlace] = useState<LotPlace>({ ox: 0, oy: 0 });
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
+  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() => ({ ...DISTRICT_SPECS }));
+  const [draftSpec, setDraftSpec] = useState<BuildingSpec | null>(null);
+  const [studioOpen, setStudioOpen] = useState(false);
+  const [studioMode, setStudioMode] = useState<StudioMode>("quick");
+  const [creatorPacks, setCreatorPacks] = useState<string[]>([]);
   const [mapOverview, setMapOverview] = useState(false);
   const [topView, setTopView] = useState(false);
   const pausedRef = useRef(paused);
@@ -340,12 +362,13 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setSelectedPlotId(p?.id ?? null);
       setSelectedPlotIds(p ? [p.id] : []);
       setLandSlice(p ? plotRect(p) : null);
+      setDraftSpec((prev) => buildingSpecs[id] ?? DISTRICT_SPECS[id] ?? prev);
     } else {
       setSelectedPlotId(null);
       setSelectedPlotIds([]);
       setLandSlice(null);
     }
-  }, []);
+  }, [buildingSpecs]);
 
   const focusPlotPreview = useCallback((id: string) => {
     const p = getPlot(id);
@@ -369,9 +392,18 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       const use = LAND_USES.find((u) => u.id === nextUse) ?? LAND_USES[0]!;
       const size = buildingSize(land, use, 0);
       setBuildingPlace(size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
+      const fp = buildingFootprint(land, use, 0, size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
+      const bid = p.buildingId;
+      setDraftSpec(
+        buildingSpecs[p.id] ??
+          (bid ? buildingSpecs[bid] ?? DISTRICT_SPECS[bid] : undefined) ??
+          (fp
+            ? specFromUse(p.id, nextUse, fp.w, fp.h, h(fp.height), paletteForUse(nextUse))
+            : null),
+      );
       return nextUse;
     });
-  }, [claimedPlotIds]);
+  }, [claimedPlotIds, buildingSpecs]);
 
   const selectPlot = useCallback((id: string | null, opts?: { additive?: boolean }) => {
     if (opts?.additive && id) {
@@ -518,8 +550,25 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setSelectedPlotIds([]);
     setSelectedPlotId(null);
     setLandSlice(null);
+    setBuildingSpecs((prev) => {
+      const next = { ...prev };
+      for (const row of pending) {
+        const id = row.id;
+        const useId = row.useId ?? previewUseId;
+        const pal = paletteForUse(useId);
+        const base = getPlot(id);
+        if (draftSpec && pending[0] && id === pending[0].id) {
+          next[id] = { ...draftSpec, id };
+        } else if (base) {
+          const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+          const fp = buildingFootprint(base, use, row.extra, row.place);
+          if (fp) next[id] = specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal);
+        }
+      }
+      return next;
+    });
     return { ok: true, count: pending.length };
-  }, [claimedPlotIds, claimedExtras, selectedPlotId, landSlice]);
+  }, [claimedPlotIds, claimedExtras, selectedPlotId, landSlice, previewUseId, draftSpec]);
 
   const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string, slice?: TileRect | null) => {
     return claimPlots([id], extra, place, useId, slice ?? landSlice).ok;
@@ -527,6 +576,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   const placeBeaconBid = useCallback((cents: number) => {
     setBeaconBidCents(cents);
+  }, []);
+
+  const upsertBuildingSpec = useCallback((spec: BuildingSpec) => {
+    setBuildingSpecs((prev) => ({ ...prev, [spec.id]: spec }));
+    setDraftSpec(spec);
+  }, []);
+
+  const saveCreatorPack = useCallback((packId: string) => {
+    setCreatorPacks((prev) => (prev.includes(packId) ? prev : [...prev, packId]));
   }, []);
 
   const focusPoi = useCallback((id: string) => {
@@ -658,6 +716,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       placeBeaconBid,
       beaconOpen,
       setBeaconOpen,
+      buildingSpecs,
+      draftSpec,
+      upsertBuildingSpec,
+      studioOpen,
+      setStudioOpen,
+      studioMode,
+      setStudioMode,
+      saveCreatorPack,
+      creatorPacks,
     }),
     [
       world,
@@ -706,6 +773,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,
+      buildingSpecs,
+      draftSpec,
+      upsertBuildingSpec,
+      studioOpen,
+      studioMode,
+      creatorPacks,
     ],
   );
 

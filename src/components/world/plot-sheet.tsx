@@ -17,6 +17,7 @@ import {
   fitPlace,
   formatSqFt,
   matchingAnchor,
+  measureTiles,
   placeFromAnchor,
   plotArea,
   portionChoices,
@@ -160,7 +161,7 @@ export function PlotSheet({
             </button>
           </div>
           <p className="ns-plot-copy">{sizeLine}</p>
-          {listed ? <p className="ns-plot-hint">Shift or Ctrl-click to add lots.</p> : null}
+          {listed ? <p className="ns-plot-hint">Shift or Ctrl-click to add lots. Studio (left of zoom) edits the building spec.</p> : null}
 
           {listed ? (
             <>

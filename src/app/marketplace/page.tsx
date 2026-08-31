@@ -37,8 +37,9 @@ export default function MarketplacePage() {
           Buildings, chairs, skies, outfits.
         </h1>
         <p className="text-muted-foreground text-pretty">
-          The engine stays open source. Cosmetics are how creators get paid. Checkout
-          here is a local mock — when you buy furniture it actually appears on the grass.
+          The engine stays open source. Building grammar packs plug into{" "}
+          <code>registerPack</code> / <code>CITY_KIT.modules</code> — same BuildingSpec
+          the city renderer instances. Furniture still drops on the grass.
         </p>
       </header>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

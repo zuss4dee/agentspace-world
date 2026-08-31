@@ -1,0 +1,71 @@
+{
+  "$id": "agentspace.building-spec.v1",
+  "title": "BuildingSpec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "family", "style", "massing", "version", "floors", "height", "footprint", "materials", "signage", "modules"],
+  "properties": {
+    "id": { "type": "string" },
+    "companyId": { "type": "string" },
+    "family": {
+      "type": "string",
+      "enum": ["office", "startup", "townhouse", "apartment", "warehouse", "studio", "research", "civic", "cafe", "retail", "industrial", "hq"]
+    },
+    "style": { "type": "string" },
+    "massing": {
+      "type": "string",
+      "enum": ["block", "podium-tower", "wing", "gable-row", "colonnade", "shopfront", "loading", "sawtooth", "northlight", "balcony-stack", "ribbon"]
+    },
+    "version": { "type": "integer", "minimum": 1 },
+    "floors": { "type": "integer", "minimum": 1, "maximum": 12 },
+    "height": { "type": "number" },
+    "footprint": {
+      "type": "object",
+      "required": ["w", "d", "setback", "tilesW", "tilesH"],
+      "properties": {
+        "w": { "type": "number" },
+        "d": { "type": "number" },
+        "setback": { "type": "number" },
+        "tilesW": { "type": "number" },
+        "tilesH": { "type": "number" }
+      }
+    },
+    "materials": {
+      "type": "object",
+      "required": ["wall", "wallDark", "roof", "accent", "glass", "mullion", "plinth"],
+      "properties": {
+        "wall": { "type": "string" },
+        "wallDark": { "type": "string" },
+        "roof": { "type": "string" },
+        "accent": { "type": "string" },
+        "glass": { "type": "string" },
+        "mullion": { "type": "string" },
+        "plinth": { "type": "string" }
+      }
+    },
+    "signage": {
+      "type": "object",
+      "required": ["text", "color"],
+      "properties": {
+        "text": { "type": "string" },
+        "color": { "type": "string" }
+      }
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slot", "kitId", "variant"],
+        "properties": {
+          "slot": {
+            "type": "string",
+            "enum": ["foundation", "floor", "wall", "window", "roof", "entrance", "balcony", "signage", "landscaping", "lighting", "interior"]
+          },
+          "kitId": { "type": "string" },
+          "variant": { "type": "string" }
+        }
+      }
+    },
+    "packId": { "type": "string" }
+  }
+}

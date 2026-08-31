@@ -3,7 +3,19 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { TILE, h } from "@/lib/coords";
-import { familyForUse, specFor, type ArchFamily, type WindowKind } from "@/lib/architecture";
+import { familyForUse } from "@/lib/architecture";
+import { emptySpec, presetByFamily, applyPreset } from "@/lib/building-grammar";
+import {
+  balconyKindOf,
+  entranceKindOf,
+  landscapeKindOf,
+  lightingKindOf,
+  roofKindOf,
+  wallKindOf,
+  windowKindOf,
+  type BuildingSpec,
+} from "@/lib/building-spec";
+import type { ArchFamily, WindowKind } from "@/lib/architecture";
 import { useCityMaps } from "@/components/world/gl/surface-maps";
 
 type MassProps = {
@@ -29,9 +41,14 @@ function useRepeat(tex: THREE.Texture, sx: number, sy: number) {
   }, [tex, sx, sy]);
 }
 
-function hash(i: number) {
-  const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453;
-  return x - Math.floor(x);
+function hash(i: number, seed = "") {
+  let h = 2166136261;
+  const s = `${seed}:${i}`;
+  for (let n = 0; n < s.length; n++) {
+    h ^= s.charCodeAt(n);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967296;
 }
 
 type Win = { x: number; y: number; z: number; sx: number; sy: number; sz: number; rx: number; lit: boolean };
@@ -44,6 +61,7 @@ function windowLayout(
   rows: number,
   kind: WindowKind,
   occupied: boolean,
+  seed: string,
 ): Win[] {
   if (kind === "none" || kind === "curtain") return [];
   const list: Win[] = [];
@@ -81,7 +99,7 @@ function windowLayout(
         const u = count === 1 ? 0 : -face.span / 2 + margin + (c * (face.span - margin * 2)) / Math.max(1, count - 1);
         const y = TILE * 0.55 + (r * (height - TILE * 0.95)) / Math.max(1, rows - 1 || 1);
         const p = face.place(u, y);
-        list.push({ ...p, lit: occupied && hash(i++) > 0.38 });
+        list.push({ ...p, lit: occupied && hash(i++, seed) > 0.38 });
       }
     }
   }
@@ -99,6 +117,7 @@ function PunchWindows({
   mullion,
   opacity,
   occupied,
+  seed,
 }: {
   w: number;
   d: number;
@@ -110,6 +129,7 @@ function PunchWindows({
   mullion: string;
   opacity: number;
   occupied: boolean;
+  seed: string;
 }) {
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const glassRef = useRef<THREE.InstancedMesh>(null);
@@ -117,8 +137,8 @@ function PunchWindows({
   const revealRef = useRef<THREE.InstancedMesh>(null);
   const sillRef = useRef<THREE.InstancedMesh>(null);
   const layout = useMemo(
-    () => windowLayout(w, d, height, cols, rows, kind, occupied),
-    [w, d, height, cols, rows, kind, occupied],
+    () => windowLayout(w, d, height, cols, rows, kind, occupied, seed),
+    [w, d, height, cols, rows, kind, occupied, seed],
   );
 
   useLayoutEffect(() => {
@@ -197,6 +217,7 @@ function CurtainWall({
   mullion,
   opacity,
   occupied,
+  seed,
 }: {
   w: number;
   d: number;
@@ -206,6 +227,7 @@ function CurtainWall({
   mullion: string;
   opacity: number;
   occupied: boolean;
+  seed: string;
 }) {
   const trans = opacity < 0.99;
   const rows = Math.max(2, floors);
@@ -221,7 +243,7 @@ function CurtainWall({
     const cellH = height / rows;
     let i = 0;
     const add = (x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
-      list.push({ x, y, z, sx, sy, sz, lit: occupied && hash(i++) > 0.5 });
+      list.push({ x, y, z, sx, sy, sz, lit: occupied && hash(i++, seed) > 0.5 });
     };
     for (let r = 0; r < rows; r++) {
       const y = cellH * (r + 0.5);
@@ -237,7 +259,7 @@ function CurtainWall({
       }
     }
     return list;
-  }, [w, d, height, rows, colsW, colsD, occupied]);
+  }, [w, d, height, rows, colsW, colsD, occupied, seed]);
 
   useLayoutEffect(() => {
     const m = paneRef.current;
@@ -429,16 +451,35 @@ function Hvac({ x, z, y, opacity }: { x: number; z: number; y: number; opacity: 
   );
 }
 
-function LotGrounds({ w, d, opacity }: { w: number; d: number; opacity: number }) {
+function LotGrounds({
+  w,
+  d,
+  opacity,
+  kind,
+}: {
+  w: number;
+  d: number;
+  opacity: number;
+  kind: ReturnType<typeof landscapeKindOf>;
+}) {
   const maps = useCityMaps();
   const grass = useRepeat(maps.grass, 3, 3);
   const conc = useRepeat(maps.concrete, 2.2, 1.4);
   const trans = opacity < 0.99;
+  if (kind === "none") return null;
+  const lawn = kind === "lawn" || kind === "hedge";
+  const plaza = kind === "plaza";
   return (
     <group>
       <mesh position={[0, h(0.018), 0]} receiveShadow>
         <boxGeometry args={[w * 1.42, h(0.04), d * 1.48]} />
-        <meshStandardMaterial color="#5f7548" map={grass} roughness={0.95} transparent={trans} opacity={opacity} />
+        <meshStandardMaterial
+          color={plaza ? "#b7b0a2" : "#5f7548"}
+          map={plaza ? conc : grass}
+          roughness={0.95}
+          transparent={trans}
+          opacity={opacity}
+        />
       </mesh>
       <mesh position={[0, h(0.03), d * 0.42]} receiveShadow>
         <boxGeometry args={[w * 0.55, h(0.05), d * 0.42]} />
@@ -448,12 +489,14 @@ function LotGrounds({ w, d, opacity }: { w: number; d: number; opacity: number }
         <boxGeometry args={[TILE * 0.42, h(0.04), d * 0.38]} />
         <meshStandardMaterial color="#c4bdb0" roughness={0.84} transparent={trans} opacity={opacity} />
       </mesh>
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * w * 0.58, h(0.1), d * 0.12]} castShadow>
-          <boxGeometry args={[TILE * 0.12, TILE * 0.16, d * 0.72]} />
-          <meshStandardMaterial color="#3a5c32" roughness={0.9} />
-        </mesh>
-      ))}
+      {kind === "hedge" || lawn
+        ? [-1, 1].map((s) => (
+            <mesh key={s} position={[s * w * 0.58, h(0.1), d * 0.12]} castShadow>
+              <boxGeometry args={[TILE * 0.12, TILE * 0.16, d * 0.72]} />
+              <meshStandardMaterial color="#3a5c32" roughness={0.9} />
+            </mesh>
+          ))
+        : null}
     </group>
   );
 }
@@ -471,99 +514,191 @@ function Awning({ w, d, color, opacity }: { w: number; d: number; color: string;
   );
 }
 
-export function ArchitectureMass({
-  family,
+function RoofBySpec({
+  kind,
+  w,
+  d,
+  y,
+  rise,
+  color,
+  opacity,
+  map,
+}: {
+  kind: ReturnType<typeof roofKindOf>;
+  w: number;
+  d: number;
+  y: number;
+  rise: number;
+  color: string;
+  opacity: number;
+  map?: THREE.Texture;
+}) {
+  if (kind === "gable" || kind === "hip-civic") return <GableRoof w={w} d={d} y={y} rise={rise} color={color} opacity={opacity} map={map} />;
+  if (kind === "shed") return <ShedRoof w={w} d={d} y={y} rise={rise} color={color} opacity={opacity} />;
+  return (
+    <group>
+      <Parapet w={w} d={d} y={y} color={color} opacity={opacity} />
+      <mesh position={[0, y + TILE * 0.02, 0]}>
+        <boxGeometry args={[w * 0.92, TILE * 0.08, d * 0.7]} />
+        <meshStandardMaterial color={color} map={map} roughness={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function SignBySpec({
+  kind,
+  text,
+  color,
   w,
   d,
   height,
-  wall,
-  roof,
-  accent,
-  wallDark,
+  opacity,
+}: {
+  kind: string;
+  text: string;
+  color: string;
+  w: number;
+  d: number;
+  height: number;
+  opacity: number;
+}) {
+  if (kind === "none" || !text) return null;
+  if (kind === "roof-bar") {
+    return (
+      <mesh position={[0, height + TILE * 0.04, d * 0.12]}>
+        <boxGeometry args={[w * 0.42, TILE * 0.07, TILE * 0.16]} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.22} transparent={opacity < 0.99} opacity={opacity} />
+      </mesh>
+    );
+  }
+  if (kind === "blade") {
+    return (
+      <mesh position={[w * 0.42, TILE * 0.7, d / 2 + TILE * 0.08]} rotation={[0, 0.2, 0]} castShadow>
+        <boxGeometry args={[TILE * 0.08, TILE * 0.28, TILE * 0.22]} />
+        <meshStandardMaterial color={color} roughness={0.45} />
+      </mesh>
+    );
+  }
+  return (
+    <mesh position={[0, TILE * 1.05, d / 2 + TILE * 0.06]}>
+      <boxGeometry args={[Math.min(w * 0.55, TILE * 1.4), TILE * 0.12, TILE * 0.06]} />
+      <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />
+    </mesh>
+  );
+}
+
+export function BuildingFromSpec({
+  spec,
   opacity = 1,
   selected,
   occupied = false,
-}: MassProps) {
+}: {
+  spec: BuildingSpec;
+  opacity?: number;
+  selected?: boolean;
+  occupied?: boolean;
+}) {
   const maps = useCityMaps();
-  const spec = specFor(family, w, d, height);
+  const w = spec.footprint.w;
+  const d = spec.footprint.d;
+  const height = spec.height;
+  const massing = spec.massing;
   const trans = opacity < 0.99;
-  const bodyW = w * (1 - spec.setback);
-  const bodyD = d * (1 - spec.setback);
+  const bodyW = w * (1 - spec.footprint.setback);
+  const bodyD = d * (1 - spec.footprint.setback);
+  const wall = spec.materials.wall;
+  const roof = spec.materials.roof;
+  const accent = spec.materials.accent;
+  const wallDark = spec.materials.wallDark;
   const wallColor = selected ? "#ead9c8" : wall;
-  const brick = family === "townhouse" || family === "cafe" || family === "industrial" || family === "retail";
-  const concrete = family === "civic" || family === "warehouse" || family === "office" || family === "apartment" || family === "research";
+  const wallKind = wallKindOf(spec);
+  const winKind = windowKindOf(spec);
+  const roofKind = roofKindOf(spec);
+  const entrance = entranceKindOf(spec);
+  const balcony = balconyKindOf(spec);
+  const landscape = landscapeKindOf(spec);
+  const lighting = lightingKindOf(spec);
+  const lit = occupied && lighting !== "none";
   const brickMap = useRepeat(maps.brick, Math.max(2.4, w / 22), Math.max(2.4, height / 18));
   const concMap = useRepeat(maps.concrete, Math.max(1.6, w / 30), Math.max(1.6, height / 26));
   const roofMap = useRepeat(maps.roof, 2.8, 2.8);
   const metalMap = useRepeat(maps.metal, 3.2, 2.2);
-  const bodyMap = brick ? brickMap : concrete ? concMap : undefined;
+  const bodyMap = wallKind === "brick" ? brickMap : wallKind === "metal" ? metalMap : wallKind === "concrete" ? concMap : undefined;
   const floors = spec.floors;
+  const seed = spec.id;
+  const cols = Math.max(2, Math.min(8, Math.round(Math.max(w, d) / 14)));
 
   return (
     <group>
-      <LotGrounds w={w} d={d} opacity={opacity} />
+      <LotGrounds w={w} d={d} opacity={opacity} kind={landscape} />
       <mesh position={[0, TILE * 0.08, 0]} receiveShadow>
         <boxGeometry args={[bodyW * 1.04, TILE * 0.14, bodyD * 1.04]} />
-        <meshStandardMaterial color={spec.plinth} roughness={0.5} metalness={0.22} map={concMap} transparent={trans} opacity={opacity} />
+        <meshStandardMaterial color={spec.materials.plinth} roughness={0.5} metalness={0.22} map={concMap} transparent={trans} opacity={opacity} />
       </mesh>
 
-      {family === "hq" ? (
+      {massing === "podium-tower" ? (
         <group>
           <mesh position={[0, height * 0.16, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW * 1.06, height * 0.28, bodyD * 1.08]} />
             <meshStandardMaterial color={wallDark ?? "#3a404c"} roughness={0.42} metalness={0.28} map={concMap} transparent={trans} opacity={opacity} />
           </mesh>
           <group position={[0, height * 0.28, 0]}>
-            <CurtainWall
-              w={bodyW * 0.86}
-              d={bodyD * 0.78}
-              height={height * 0.7}
-              floors={Math.max(3, floors)}
-              glass={spec.glass}
-              mullion={spec.mullion}
-              opacity={opacity}
-              occupied={occupied}
-            />
+            {winKind === "curtain" ? (
+              <CurtainWall
+                w={bodyW * 0.86}
+                d={bodyD * 0.78}
+                height={height * 0.7}
+                floors={Math.max(3, floors)}
+                glass={spec.materials.glass}
+                mullion={spec.materials.mullion}
+                opacity={opacity}
+                occupied={lit}
+                seed={seed}
+              />
+            ) : (
+              <mesh position={[0, height * 0.35, 0]} castShadow receiveShadow>
+                <boxGeometry args={[bodyW * 0.86, height * 0.7, bodyD * 0.78]} />
+                <meshStandardMaterial color={wallColor} map={bodyMap} roughness={0.48} metalness={0.16} transparent={trans} opacity={opacity} />
+              </mesh>
+            )}
           </group>
           <mesh position={[bodyW * 0.46, height * 0.52, 0]} castShadow>
             <boxGeometry args={[TILE * 0.08, height * 0.72, bodyD * 0.18]} />
             <meshStandardMaterial color={accent} roughness={0.32} metalness={0.2} transparent={trans} opacity={opacity} />
           </mesh>
-          <Parapet w={bodyW * 0.86} d={bodyD * 0.78} y={height * 0.98} color={roof} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW * 0.86} d={bodyD * 0.78} y={height * 0.98} rise={TILE * 0.4} color={roof} opacity={opacity} map={roofMap} />
           <Hvac x={bodyW * 0.18} z={-bodyD * 0.12} y={height + TILE * 0.12} opacity={opacity} />
-          <Canopy w={w} d={d} y={TILE * 0.92} color="#1e2228" opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
         </group>
-      ) : family === "startup" ? (
+      ) : massing === "wing" ? (
         <group>
           <mesh position={[-bodyW * 0.18, height * 0.38, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW * 0.62, height * 0.68, bodyD]} />
             <meshStandardMaterial color={wallColor} roughness={0.55} metalness={0.06} transparent={trans} opacity={opacity} />
           </mesh>
           <group position={[bodyW * 0.22, TILE * 0.12, bodyD * 0.04]}>
-            <CurtainWall
-              w={bodyW * 0.58}
-              d={bodyD * 0.72}
-              height={height * 0.78}
-              floors={Math.max(2, floors - 1)}
-              glass={spec.glass}
-              mullion={spec.mullion}
-              opacity={opacity}
-              occupied={occupied}
-            />
+            {winKind === "curtain" ? (
+              <CurtainWall
+                w={bodyW * 0.58}
+                d={bodyD * 0.72}
+                height={height * 0.78}
+                floors={Math.max(2, floors - 1)}
+                glass={spec.materials.glass}
+                mullion={spec.materials.mullion}
+                opacity={opacity}
+                occupied={lit}
+                seed={seed}
+              />
+            ) : (
+              <mesh position={[0, height * 0.36, 0]} castShadow>
+                <boxGeometry args={[bodyW * 0.58, height * 0.72, bodyD * 0.72]} />
+                <meshStandardMaterial color={wallColor} map={bodyMap} roughness={0.5} />
+              </mesh>
+            )}
           </group>
-          <mesh position={[0, height * 0.92, 0]}>
-            <boxGeometry args={[bodyW * 0.96, TILE * 0.08, bodyD * 0.96]} />
-            <meshStandardMaterial color={roof} roughness={0.35} metalness={0.4} map={metalMap} transparent={trans} opacity={opacity} />
-          </mesh>
-          <mesh position={[0, height + TILE * 0.02, bodyD * 0.18]}>
-            <boxGeometry args={[bodyW * 0.4, TILE * 0.06, bodyD * 0.22]} />
-            <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={0.2} transparent={trans} opacity={opacity} />
-          </mesh>
-          <Canopy w={w * 0.7} d={d} y={TILE * 0.88} color={accent} opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW * 0.96} d={bodyD * 0.96} y={height * 0.92} rise={TILE * 0.28} color={roof} opacity={opacity} map={metalMap} />
         </group>
-      ) : family === "townhouse" ? (
+      ) : massing === "gable-row" ? (
         <group>
           <mesh position={[0, height * 0.34, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.58, bodyD]} />
@@ -575,18 +710,9 @@ export function ArchitectureMass({
               <meshStandardMaterial color="#efe6d8" roughness={0.7} />
             </mesh>
           ))}
-          <GableRoof w={bodyW} d={bodyD} y={height * 0.62} rise={height * 0.32} color={roof} opacity={opacity} map={roofMap} />
-          <mesh position={[bodyW * 0.28, height * 0.86, -bodyD * 0.08]} castShadow>
-            <boxGeometry args={[TILE * 0.14, height * 0.28, TILE * 0.14]} />
-            <meshStandardMaterial color={roof} roughness={0.65} />
-          </mesh>
-          <mesh position={[0, TILE * 0.16, bodyD / 2 + TILE * 0.14]} receiveShadow>
-            <boxGeometry args={[TILE * 0.62, TILE * 0.08, TILE * 0.32]} />
-            <meshStandardMaterial color="#cbb89a" roughness={0.78} />
-          </mesh>
-          <Steps d={d} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.62} rise={height * 0.32} color={roof} opacity={opacity} map={roofMap} />
         </group>
-      ) : family === "civic" ? (
+      ) : massing === "colonnade" ? (
         <group>
           <mesh position={[0, TILE * 0.12, 0]} receiveShadow>
             <boxGeometry args={[bodyW * 1.12, TILE * 0.2, bodyD * 1.12]} />
@@ -615,138 +741,122 @@ export function ArchitectureMass({
             <boxGeometry args={[bodyW * 0.72, height * 0.32, bodyD * 0.68]} />
             <meshStandardMaterial color={wallColor} map={concMap} roughness={0.58} transparent={trans} opacity={opacity} />
           </mesh>
-          <GableRoof w={bodyW * 0.92} d={bodyD * 0.92} y={height * 0.42} rise={TILE * 0.55} color={roof} opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW * 0.92} d={bodyD * 0.92} y={height * 0.42} rise={TILE * 0.55} color={roof} opacity={opacity} map={roofMap} />
         </group>
-      ) : family === "cafe" || family === "retail" ? (
+      ) : massing === "shopfront" ? (
         <group>
           <mesh position={[0, height * 0.36, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.64, bodyD]} />
             <meshStandardMaterial color={wallColor} map={brickMap} roughness={0.8} metalness={0.04} transparent={trans} opacity={opacity} />
           </mesh>
-          <mesh position={[0, TILE * 0.4, bodyD / 2 - TILE * 0.04]}>
-            <boxGeometry args={[bodyW * 0.78, TILE * 0.62, TILE * 0.1]} />
-            <meshStandardMaterial color="#4a4640" roughness={0.55} />
-          </mesh>
-          <mesh position={[0, TILE * 0.42, bodyD / 2 + TILE * 0.01]}>
-            <boxGeometry args={[bodyW * 0.7, TILE * 0.5, TILE * 0.05]} />
-            <meshPhysicalMaterial
-              color={spec.glass}
-              roughness={0.08}
-              metalness={0.2}
-              clearcoat={0.5}
-              transparent
-              opacity={0.72}
-              emissive={occupied ? "#f2e0b8" : "#000"}
-              emissiveIntensity={occupied ? 0.2 : 0}
-            />
-          </mesh>
-          <Awning w={bodyW} d={d} color={accent} opacity={opacity} />
-          <ShedRoof w={bodyW} d={bodyD} y={height * 0.68} rise={TILE * 0.28} color={roof} opacity={opacity} />
-          {family === "cafe" ? (
-            <mesh position={[-bodyW * 0.28, TILE * 0.18, bodyD / 2 + TILE * 0.22]} castShadow>
-              <cylinderGeometry args={[TILE * 0.08, TILE * 0.09, TILE * 0.08, 8]} />
-              <meshStandardMaterial color="#6b5344" roughness={0.7} />
-            </mesh>
-          ) : (
-            <mesh position={[bodyW * 0.42, TILE * 0.7, bodyD / 2 + TILE * 0.08]} rotation={[0, 0.2, 0]} castShadow>
-              <boxGeometry args={[TILE * 0.08, TILE * 0.28, TILE * 0.22]} />
-              <meshStandardMaterial color={accent} roughness={0.45} />
-            </mesh>
-          )}
-          <Steps d={d} opacity={opacity} />
+          {winKind === "storefront" || winKind === "curtain" ? (
+            <>
+              <mesh position={[0, TILE * 0.4, bodyD / 2 - TILE * 0.04]}>
+                <boxGeometry args={[bodyW * 0.78, TILE * 0.62, TILE * 0.1]} />
+                <meshStandardMaterial color="#4a4640" roughness={0.55} />
+              </mesh>
+              <mesh position={[0, TILE * 0.42, bodyD / 2 + TILE * 0.01]}>
+                <boxGeometry args={[bodyW * 0.7, TILE * 0.5, TILE * 0.05]} />
+                <meshPhysicalMaterial
+                  color={spec.materials.glass}
+                  roughness={0.08}
+                  metalness={0.2}
+                  clearcoat={0.5}
+                  transparent
+                  opacity={0.72}
+                  emissive={lit ? "#f2e0b8" : "#000"}
+                  emissiveIntensity={lit ? 0.2 : 0}
+                />
+              </mesh>
+            </>
+          ) : null}
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.68} rise={TILE * 0.28} color={roof} opacity={opacity} map={roofMap} />
         </group>
-      ) : family === "warehouse" || family === "industrial" ? (
+      ) : massing === "loading" || massing === "sawtooth" ? (
         <group>
           <mesh position={[0, height * 0.34, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.62, bodyD]} />
             <meshStandardMaterial
               color={wallColor}
-              map={family === "industrial" ? brickMap : metalMap}
+              map={wallKind === "brick" ? brickMap : metalMap}
               roughness={0.72}
-              metalness={family === "warehouse" ? 0.38 : 0.08}
+              metalness={wallKind === "metal" ? 0.38 : 0.08}
               transparent={trans}
               opacity={opacity}
             />
           </mesh>
-          {family === "industrial"
+          {massing === "sawtooth"
             ? [-0.33, 0, 0.33].map((ox, i) => (
                 <group key={i} position={[ox * bodyW, 0, 0]}>
-                  <ShedRoof
-                    w={bodyW * 0.32}
-                    d={bodyD * 0.9}
-                    y={height * 0.64}
-                    rise={TILE * 0.32}
-                    color={roof}
-                    opacity={opacity}
-                  />
+                  <ShedRoof w={bodyW * 0.32} d={bodyD * 0.9} y={height * 0.64} rise={TILE * 0.32} color={roof} opacity={opacity} />
                 </group>
               ))
             : (
-              <mesh position={[0, height * 0.72, 0]}>
-                <boxGeometry args={[bodyW * 1.04, TILE * 0.12, bodyD * 1.04]} />
-                <meshStandardMaterial color={roof} map={roofMap} roughness={0.5} metalness={0.28} />
-              </mesh>
+              <RoofBySpec kind={roofKind} w={bodyW * 1.04} d={bodyD * 1.04} y={height * 0.72} rise={TILE * 0.22} color={roof} opacity={opacity} map={roofMap} />
             )}
-          <mesh position={[bodyW * 0.18, TILE * 0.38, bodyD / 2 + TILE * 0.02]} castShadow>
-            <boxGeometry args={[TILE * 0.95, TILE * 0.62, TILE * 0.1]} />
-            <meshStandardMaterial color="#3a4048" roughness={0.48} metalness={0.35} />
-          </mesh>
-          <mesh position={[bodyW * 0.18, TILE * 0.78, bodyD / 2 + TILE * 0.16]} rotation={[-0.08, 0, 0]}>
-            <boxGeometry args={[TILE * 1.05, TILE * 0.06, TILE * 0.36]} />
-            <meshStandardMaterial color="#2a2e34" metalness={0.4} roughness={0.4} />
-          </mesh>
+          {entrance === "loading" ? (
+            <>
+              <mesh position={[bodyW * 0.18, TILE * 0.38, bodyD / 2 + TILE * 0.02]} castShadow>
+                <boxGeometry args={[TILE * 0.95, TILE * 0.62, TILE * 0.1]} />
+                <meshStandardMaterial color="#3a4048" roughness={0.48} metalness={0.35} />
+              </mesh>
+              <mesh position={[bodyW * 0.18, TILE * 0.78, bodyD / 2 + TILE * 0.16]} rotation={[-0.08, 0, 0]}>
+                <boxGeometry args={[TILE * 1.05, TILE * 0.06, TILE * 0.36]} />
+                <meshStandardMaterial color="#2a2e34" metalness={0.4} roughness={0.4} />
+              </mesh>
+            </>
+          ) : null}
           <mesh position={[bodyW * 0.36, height * 0.88, -bodyD * 0.16]} castShadow>
             <cylinderGeometry args={[TILE * 0.1, TILE * 0.14, height * 0.4, 10]} />
             <meshStandardMaterial color="#6b7280" metalness={0.5} roughness={0.35} />
           </mesh>
         </group>
-      ) : family === "studio" ? (
+      ) : massing === "northlight" ? (
         <group>
           <mesh position={[0, height * 0.34, -bodyD * 0.06]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.62, bodyD * 0.88]} />
-            <meshStandardMaterial color={wallColor} roughness={0.62} metalness={0.08} transparent={trans} opacity={opacity} />
+            <meshStandardMaterial color={wallColor} roughness={0.62} metalness={0.08} map={bodyMap} transparent={trans} opacity={opacity} />
           </mesh>
-          <ShedRoof w={bodyW} d={bodyD} y={height * 0.64} rise={height * 0.22} color={roof} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.64} rise={height * 0.22} color={roof} opacity={opacity} map={roofMap} />
           <mesh position={[0, height * 0.42, bodyD / 2 - TILE * 0.02]}>
             <boxGeometry args={[bodyW * 0.62, height * 0.38, TILE * 0.08]} />
             <meshStandardMaterial color="#4a4440" roughness={0.48} />
           </mesh>
           <mesh position={[0, height * 0.44, bodyD / 2 + TILE * 0.02]}>
             <boxGeometry args={[bodyW * 0.54, height * 0.3, TILE * 0.05]} />
-            <meshPhysicalMaterial color={spec.glass} roughness={0.08} metalness={0.2} clearcoat={0.5} transparent opacity={0.7} />
+            <meshPhysicalMaterial color={spec.materials.glass} roughness={0.08} metalness={0.2} clearcoat={0.5} transparent opacity={0.7} />
           </mesh>
-          <Canopy w={w * 0.6} d={d} y={TILE * 0.86} color="#2a2428" opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
         </group>
-      ) : family === "apartment" ? (
+      ) : massing === "balcony-stack" ? (
         <group>
           <mesh position={[0, height * 0.42, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.78, bodyD]} />
             <meshStandardMaterial color={wallColor} map={concMap} roughness={0.58} metalness={0.08} transparent={trans} opacity={opacity} />
           </mesh>
-          {Array.from({ length: floors }).map((_, i) => (
-            <mesh key={i} position={[0, TILE * 0.5 + (i * height * 0.7) / Math.max(1, floors), bodyD / 2 + TILE * 0.1]}>
-              <boxGeometry args={[bodyW * 0.84, TILE * 0.04, TILE * 0.2]} />
-              <meshStandardMaterial color="#e4ddd2" roughness={0.7} />
-            </mesh>
-          ))}
-          <Parapet w={bodyW} d={bodyD} y={height * 0.84} color={roof} opacity={opacity} />
+          {balcony !== "none"
+            ? Array.from({ length: floors }).map((_, i) => (
+                <mesh key={i} position={[0, TILE * 0.5 + (i * height * 0.7) / Math.max(1, floors), bodyD / 2 + TILE * 0.1]}>
+                  <boxGeometry args={[bodyW * 0.84, TILE * 0.04, TILE * 0.2]} />
+                  <meshStandardMaterial color="#e4ddd2" roughness={0.7} />
+                </mesh>
+              ))
+            : null}
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.84} rise={TILE * 0.22} color={roof} opacity={opacity} map={roofMap} />
         </group>
-      ) : family === "research" ? (
+      ) : massing === "ribbon" ? (
         <group>
           <mesh position={[0, height * 0.4, 0]} castShadow receiveShadow>
             <boxGeometry args={[bodyW, height * 0.74, bodyD]} />
             <meshStandardMaterial color={wallColor} map={concMap} roughness={0.48} metalness={0.12} transparent={trans} opacity={opacity} />
           </mesh>
-          <mesh position={[0, height * 0.86, 0]}>
-            <boxGeometry args={[bodyW * 0.72, height * 0.18, bodyD * 0.55]} />
-            <meshStandardMaterial color={wallDark ?? "#9aadb8"} roughness={0.35} metalness={0.3} transparent={trans} opacity={opacity} />
-          </mesh>
-          <Parapet w={bodyW} d={bodyD} y={height * 0.8} color={roof} opacity={opacity} />
+          {balcony === "terrace" ? (
+            <mesh position={[0, height * 0.86, 0]}>
+              <boxGeometry args={[bodyW * 0.72, height * 0.18, bodyD * 0.55]} />
+              <meshStandardMaterial color={wallDark ?? "#9aadb8"} roughness={0.35} metalness={0.3} transparent={trans} opacity={opacity} />
+            </mesh>
+          ) : null}
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.8} rise={TILE * 0.2} color={roof} opacity={opacity} map={roofMap} />
           <Hvac x={-bodyW * 0.16} z={bodyD * 0.1} y={height * 0.98} opacity={opacity} />
-          <Canopy w={w} d={d} y={TILE * 0.9} color="#d8dde2" opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
         </group>
       ) : (
         <group>
@@ -767,33 +877,53 @@ export function ArchitectureMass({
               <meshStandardMaterial color="#d4cfc4" roughness={0.5} metalness={0.12} />
             </mesh>
           ))}
-          <Parapet w={bodyW} d={bodyD} y={height * 0.8} color={roof} opacity={opacity} />
-          <mesh position={[0, height * 0.86, 0]}>
-            <boxGeometry args={[bodyW * 0.7, TILE * 0.1, bodyD * 0.55]} />
-            <meshStandardMaterial color={roof} map={roofMap} roughness={0.5} />
-          </mesh>
-          <Canopy w={w} d={d} y={TILE * 0.88} color="#2c3036" opacity={opacity} />
-          <Steps d={d} opacity={opacity} />
+          <RoofBySpec kind={roofKind} w={bodyW} d={bodyD} y={height * 0.8} rise={TILE * 0.28} color={roof} opacity={opacity} map={roofMap} />
         </group>
       )}
 
-      {spec.windowKind === "punch" || spec.windowKind === "strip" ? (
+      {winKind === "punch" || winKind === "strip" ? (
         <PunchWindows
           w={bodyW}
           d={bodyD}
           height={height * 0.78}
-          cols={spec.windowCols}
-          rows={Math.max(1, spec.windowRows)}
-          kind={spec.windowKind}
-          glass={spec.glass}
-          mullion={spec.mullion}
+          cols={cols}
+          rows={Math.max(1, floors)}
+          kind={winKind}
+          glass={spec.materials.glass}
+          mullion={spec.materials.mullion}
           opacity={opacity}
-          occupied={occupied}
+          occupied={lit}
+          seed={seed}
         />
       ) : null}
-      {family !== "civic" ? <Door d={d} accent={accent} opacity={opacity} wide={family === "cafe" || family === "retail" || family === "hq"} occupied={occupied} /> : null}
+
+      {entrance === "awning" ? <Awning w={bodyW} d={d} color={accent} opacity={opacity} /> : null}
+      {entrance === "canopy" ? <Canopy w={w} d={d} y={TILE * 0.9} color={lighting === "cool" ? "#d8dde2" : "#2c3036"} opacity={opacity} /> : null}
+      {entrance !== "loading" && massing !== "colonnade" ? (
+        <Door d={d} accent={accent} opacity={opacity} wide={entrance === "wide" || entrance === "awning"} occupied={lit} />
+      ) : null}
+      {entrance !== "loading" ? <Steps d={d} opacity={opacity} /> : null}
+      <SignBySpec kind={spec.modules.find((m) => m.slot === "signage")?.variant ?? "none"} text={spec.signage.text} color={spec.signage.color} w={bodyW} d={d} height={height} opacity={opacity} />
     </group>
   );
+}
+
+export function ArchitectureMass({
+  family,
+  w,
+  d,
+  height,
+  wall,
+  roof,
+  accent,
+  wallDark,
+  opacity = 1,
+  selected,
+  occupied = false,
+}: MassProps) {
+  const spec = applyPreset(emptySpec(`mass.${family}`, family, w, d, height, Math.max(2, Math.round(w / TILE)), Math.max(2, Math.round(d / TILE))), presetByFamily(family));
+  spec.materials = { ...spec.materials, wall, roof, accent, wallDark: wallDark ?? spec.materials.wallDark };
+  return <BuildingFromSpec spec={spec} opacity={opacity} selected={selected} occupied={occupied} />;
 }
 
 export function FacadeOffice({
