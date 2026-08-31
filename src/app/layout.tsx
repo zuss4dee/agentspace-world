@@ -29,7 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       className={`dark ${geistSans.variable} ${geistMono.variable} ${fraunces.variable} h-full antialiased`}
-      style={{ background: "#0a0d14" }}
+      style={{ background: "#0a0a0a" }}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <AppShell>{children}</AppShell>

@@ -40,6 +40,10 @@ Hold **Shift** and drag to look any direction. The same list is kept in `src/lib
 - **Whole city** (map icon) — pull back over the campus
 - **Compass** — reset the angle
 
+## Look
+
+Black chrome on the map (top bar, zoom stack). Every popup, menu, toast, and directory card is a white sticker: ink border, offset shadow, a little tilt. No accent colors in the HUD.
+
 ## Run locally
 
 ```bash

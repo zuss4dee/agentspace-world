@@ -9,7 +9,7 @@ import { PLOTS } from "@/lib/plots";
 
 const WorldCanvas = dynamic(() => import("@/components/world/world-canvas").then((m) => m.WorldCanvas), {
   ssr: false,
-  loading: () => <div className="size-full bg-[#0a0d14]" />,
+  loading: () => <div className="size-full bg-[#0a0a0a]" />,
 });
 
 export function HabitatView({

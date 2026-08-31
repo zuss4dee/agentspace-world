@@ -121,7 +121,7 @@ export function CityChrome() {
       <aside className="ns-activity" aria-label="Latest Activity">
         <div className="ns-card ns-pad">
           <div className="ns-card-kicker">
-            <Activity className="size-3.5 text-emerald-300" />
+            <Activity className="size-3.5" />
             <p>Latest Activity</p>
           </div>
           <div className="ns-activity-list">
@@ -186,7 +186,7 @@ export function CityChrome() {
                 </span>
                 <span className="ns-avail-nums">
                   <strong>{row.key === "ultimate" ? 0 : counts[row.key]?.toLocaleString()}</strong>
-                  <em style={{ color: ZONE_THEME[row.key].color }}>{row.priceLabel}</em>
+                  <em>{row.priceLabel}</em>
                 </span>
               </button>
             ))}
@@ -257,7 +257,7 @@ export function CityChrome() {
         <aside className="ns-keys" aria-label="Shortcuts">
           <div className="ns-card ns-pad">
             <div className="ns-card-kicker">
-              <Keyboard className="size-3.5 text-lime-300" />
+              <Keyboard className="size-3.5" />
               <p>Shortcuts</p>
             </div>
             <ul className="ns-keys-list">

@@ -37,28 +37,20 @@ export function PlotSheet({
     <div className="ns-plot-sheet" data-zone={plot.zone}>
       <div className={`ns-card ns-card-zone-${plot.zone}`}>
         {owned && company ? (
-          <div className="ns-plot-hero" style={{ background: theme.imgGradient, borderColor: theme.border }}>
-            <div className="ns-plot-glow" style={{ background: `radial-gradient(ellipse at 50% 100%, ${theme.glow} 0%, transparent 70%)` }} />
-            <p className="ns-plot-hero-brand" style={{ color: theme.color, textShadow: `0 0 16px ${theme.glow}` }}>
-              {company.name}
-            </p>
+          <div className="ns-plot-hero">
+            <p className="ns-plot-hero-brand">{company.name}</p>
           </div>
         ) : park ? (
-          <div className="ns-plot-hero" style={{ background: theme.imgGradient, borderColor: theme.border }}>
-            <p className="ns-plot-price" style={{ color: "#86eac8" }}>
-              Protected
-            </p>
+          <div className="ns-plot-hero">
+            <p className="ns-plot-price">Protected</p>
             <p className="ns-plot-onetime">not for sale</p>
           </div>
         ) : (
-          <div className="ns-plot-hero" style={{ background: theme.imgGradient, borderColor: theme.border }}>
-            <div className="ns-plot-glow" style={{ background: `radial-gradient(ellipse at 50% 100%, ${theme.glow} 0%, transparent 65%)` }} />
-            <div className="ns-plot-mark" style={{ background: theme.bg, border: `1px solid ${theme.glow}`, boxShadow: `0 0 20px ${theme.glow}` }}>
-              <Landmark className="size-6" style={{ color: theme.color }} />
+          <div className="ns-plot-hero">
+            <div className="ns-plot-mark">
+              <Landmark className="size-6" />
             </div>
-            <p className="ns-plot-price" style={{ color: theme.color, textShadow: `0 0 14px ${theme.glow}` }}>
-              {claimed ? "Taken" : theme.price}
-            </p>
+            <p className="ns-plot-price">{claimed ? "Taken" : ZONE_THEME[plot.zone].price}</p>
             {!claimed ? <p className="ns-plot-onetime">one-time</p> : null}
           </div>
         )}
@@ -88,15 +80,15 @@ export function PlotSheet({
                   : theme.description}
           </p>
           <div className="ns-plot-badges">
-            <span className={`ns-badge ns-badge-${plot.zone}`}>{theme.label}</span>
+            <span className="ns-badge">{theme.label}</span>
             {owned && inside.length ? <span className="ns-badge">{inside.length} on site</span> : null}
           </div>
           {listed ? (
             <ul className="ns-plot-perks">
-                  {["Workplace appears on the public map", "Listed in the business directory", "Clickable link for visitors"].map((line) => (
+              {["Workplace appears on the public map", "Listed in the business directory", "Clickable link for visitors"].map((line) => (
                 <li key={line}>
-                  <span className="ns-perk-tick" style={{ background: theme.glow }}>
-                    <Check className="size-2.5" style={{ color: theme.color }} />
+                  <span className="ns-perk-tick">
+                    <Check className="size-2.5" />
                   </span>
                   {line}
                 </li>

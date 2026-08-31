@@ -14,13 +14,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <TooltipProvider>
         {habitat ? (
           pathname === "/directory" ? (
-            <div className="flex min-h-dvh flex-col overflow-auto bg-[#0a0d14]">{children}</div>
+            <div className="flex min-h-dvh flex-col overflow-auto bg-[#0a0a0a]">{children}</div>
           ) : (
-            <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0d14]">{children}</div>
+            <div className="flex h-dvh flex-col overflow-hidden bg-[#0a0a0a]">{children}</div>
           )
         ) : (
-          <div className="flex min-h-dvh flex-col bg-background">
-            <header className="sticky top-0 z-20 border-b bg-background/90 backdrop-blur">
+          <div className="flex min-h-dvh flex-col bg-[#0a0a0a] text-white">
+            <header className="ns-site-bar sticky top-0 z-20">
               <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
                 <Link href="/" className="text-sm tracking-wide">
                   ← Campus

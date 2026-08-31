@@ -65,8 +65,8 @@ function DirectoryCard({ row }: { row: DirectoryEntry }) {
   const zoneLabel = ZONE_TABLE.find((z) => z.key === row.zone)?.zone ?? theme.label;
   return (
     <article className="ns-dir-card">
-      <div className="ns-dir-thumb" style={{ background: theme.imgGradient }}>
-        <span style={{ color: theme.color }}>{row.name.slice(0, 1)}</span>
+      <div className="ns-dir-thumb">
+        <span>{row.name.slice(0, 1)}</span>
       </div>
       <div className="ns-dir-body">
         <h2>{row.name}</h2>
