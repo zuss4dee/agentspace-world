@@ -351,8 +351,9 @@ export function ExplorerCamera() {
         fog.near = 34;
         fog.far = 108;
       } else {
-        fog.near = 16;
-        fog.far = 38;
+        const d = camera.position.distanceTo(t);
+        fog.near = Math.max(14, d * 0.7);
+        fog.far = Math.max(36, d * 2.15);
       }
     }
 
