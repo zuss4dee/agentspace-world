@@ -1,4 +1,5 @@
 import { MIN_VIEW_DIST, MAX_VIEW_DIST, TILE, wx, wz } from "./coords";
+import { landBounds } from "./plots";
 
 export type WorldSectionId = "starter" | "tech" | "creative" | "business" | "public";
 
@@ -67,10 +68,11 @@ export function sectionAt(x: number, y: number) {
 export function cameraPanLimits(viewDist = MIN_VIEW_DIST, overview = false) {
   const t = Math.min(1, Math.max(0, (viewDist - MIN_VIEW_DIST) / (MAX_VIEW_DIST - MIN_VIEW_DIST)));
   const inset = overview ? 2.2 * TILE : (1.5 + t * 8) * TILE;
+  const land = landBounds();
   return {
     minX: wx(SECTION_ONE.x) + inset,
-    maxX: wx(SECTION_ONE.x + SECTION_ONE.w) - inset,
+    maxX: wx(Math.max(SECTION_ONE.x + SECTION_ONE.w, land.x1)) - inset,
     minZ: wz(SECTION_ONE.y) + inset,
-    maxZ: wz(SECTION_ONE.y + SECTION_ONE.h) - inset,
+    maxZ: wz(Math.max(SECTION_ONE.y + SECTION_ONE.h, land.y1)) - inset,
   };
 }

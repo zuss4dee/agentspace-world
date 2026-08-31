@@ -5,7 +5,7 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { HabitatHud } from "@/components/world/habitat-hud";
 import { useWorld } from "@/components/world/world-store";
-import { PLOTS } from "@/lib/plots";
+import { getPlot } from "@/lib/plots";
 
 const WorldCanvas = dynamic(() => import("@/components/world/world-canvas").then((m) => m.WorldCanvas), {
   ssr: false,
@@ -27,7 +27,7 @@ export function HabitatView({
   useEffect(() => {
     const plotId = params.get("plot");
     if (plotId) {
-      const p = PLOTS.find((item) => item.id === plotId);
+      const p = getPlot(plotId);
       if (p) {
         selectPlot(p.id);
         focusCoord(p.x + p.w / 2, p.y + p.h / 2, 1.1);

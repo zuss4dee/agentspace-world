@@ -362,11 +362,11 @@ export function ExplorerCamera() {
     if (fog instanceof THREE.Fog) {
       if (mapOverview || (topRef.current && !interiorId)) {
         fog.near = 34;
-        fog.far = 108;
+        fog.far = 420;
       } else {
         const d = camera.position.distanceTo(t);
         fog.near = Math.max(14, d * 0.7);
-        fog.far = Math.max(36, d * 2.15);
+        fog.far = Math.max(220, d * 2.15);
       }
     }
 

@@ -21,7 +21,7 @@ import {
 } from "@/lib/simulation";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
-import { PLOTS } from "@/lib/plots";
+import { getPlot, MAX_CLAIMS, coverageOfClaims, expandBlocked, usesForPlot, PLOTS } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
@@ -71,7 +71,12 @@ type WorldApi = {
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
   claimedPlotIds: string[];
-  claimPlot: (id: string) => boolean;
+  claimedExtras: Record<string, number>;
+  claimPlot: (id: string, extra?: number) => boolean;
+  previewUseId: string;
+  setPreviewUseId: (id: string) => void;
+  plotExpand: number;
+  setPlotExpand: (n: number) => void;
   beaconBidCents: number;
   placeBeaconBid: (cents: number) => void;
   beaconOpen: boolean;
@@ -96,6 +101,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [zoomPulse, setZoomPulse] = useState({ id: 0, inward: true });
   const [interiorId, setInteriorId] = useState<string | null>(null);
   const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
+  const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>({});
+  const [previewUseId, setPreviewUseId] = useState("office");
+  const [plotExpand, setPlotExpand] = useState(0);
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
   const [mapOverview, setMapOverview] = useState(false);
@@ -300,15 +308,20 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   const selectPlot = useCallback((id: string | null) => {
     setSelectedPlotId(id);
+    setPlotExpand(0);
     if (!id) {
       setSelectedBuildingId(null);
       return;
     }
-    const p = PLOTS.find((item) => item.id === id);
+    const p = getPlot(id);
     setSelectedAgentId(null);
     setFollowAgent(false);
     setSelectedBuildingId(p?.buildingId ?? null);
-    if (p) setSelectedDistrictId(p.districtId);
+    if (p) {
+      setSelectedDistrictId(p.districtId);
+      const uses = usesForPlot(p, 0);
+      setPreviewUseId((cur) => (uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk")));
+    }
   }, []);
 
   const selectDistrict = useCallback((id: string | null) => {
@@ -355,12 +368,22 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraTick((t) => t + 1);
   }, []);
 
-  const claimPlot = useCallback((id: string) => {
-    const p = PLOTS.find((item) => item.id === id);
+  const claimPlot = useCallback((id: string, extra = 0) => {
+    const p = getPlot(id);
     if (!p || p.kind !== "sale") return false;
-    setClaimedPlotIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
-    return true;
-  }, []);
+    const occupied = coverageOfClaims(claimedPlotIds, claimedExtras, id);
+    if (expandBlocked(p, extra, occupied)) return false;
+    let ok = false;
+    setClaimedPlotIds((prev) => {
+      if (prev.includes(id) || prev.length >= MAX_CLAIMS) return prev;
+      ok = true;
+      return [...prev, id];
+    });
+    if (ok) {
+      setClaimedExtras((prev) => ({ ...prev, [id]: extra }));
+    }
+    return ok;
+  }, [claimedPlotIds, claimedExtras]);
 
   const placeBeaconBid = useCallback((cents: number) => {
     setBeaconBidCents(cents);
@@ -477,7 +500,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       enterBuilding,
       exitInterior,
       claimedPlotIds,
+      claimedExtras,
       claimPlot,
+      previewUseId,
+      setPreviewUseId,
+      plotExpand,
+      setPlotExpand,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,
@@ -517,7 +545,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       enterBuilding,
       exitInterior,
       claimedPlotIds,
+      claimedExtras,
       claimPlot,
+      previewUseId,
+      plotExpand,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,

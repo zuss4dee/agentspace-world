@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber"
 import * as THREE from "three";
 import { BeaconMarker } from "@/components/world/gl/beacon-marker";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
-import { PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
+import { BuildingGhost, ClaimedMarks, LatticeField, PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
@@ -14,7 +14,7 @@ import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/ter
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { TILE, fromWorld, wx, wz } from "@/lib/coords";
-import { plotAt } from "@/lib/plots";
+import { landBounds, plotAt } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
 function LightFollow() {
@@ -80,6 +80,11 @@ function ExteriorScene() {
     if (sectionAt(g.x, g.y)?.locked) return;
     focusCoord(g.x, g.y, 1.15);
   };
+  const land = landBounds();
+  const planeW = Math.max(GRID, land.x1) * TILE;
+  const planeD = Math.max(GRID, land.y1) * TILE;
+  const planeX = wx(Math.max(GRID, land.x1) / 2);
+  const planeZ = wz(Math.max(GRID, land.y1) / 2);
   return (
     <>
       <color attach="background" args={["#8eb8d6"]} />
@@ -90,11 +95,11 @@ function ExteriorScene() {
       <ExplorerCamera />
       <mesh
         rotation-x={-Math.PI / 2}
-        position={[0, 0.01, 0]}
+        position={[planeX, 0.01, planeZ]}
         onClick={onMiss}
         onDoubleClick={onDouble}
       >
-        <planeGeometry args={[GRID * TILE, GRID * TILE]} />
+        <planeGeometry args={[planeW, planeD]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
       <group>
@@ -106,8 +111,11 @@ function ExteriorScene() {
       <TreeField />
       <BushField />
       <Lamps />
+      <LatticeField />
       <PlotsLayer />
       <SaleStakes />
+      <ClaimedMarks />
+      <BuildingGhost />
       <BuildingsLayer />
       <BeaconMarker />
       <TrafficLayer />
@@ -131,7 +139,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [wx(28.5) + 9, 12, wz(8) + 9], fov: 42, near: 0.3, far: 160 }
+          : { position: [wx(28.5) + 9, 12, wz(8) + 9], fov: 42, near: 0.3, far: 4200 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"

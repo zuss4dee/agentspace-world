@@ -1,28 +1,52 @@
 "use client";
 
-import { Check, Landmark, X } from "lucide-react";
+import {
+  Check,
+  Landmark,
+  Minus,
+  Plus,
+  X,
+} from "lucide-react";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { companyForBuilding, formatUsd, isCivicBuilding } from "@/lib/companies";
 import { ZONE_THEME } from "@/lib/city-shop";
-import { districtForPlot, plotArea, usesForPlot, type Plot } from "@/lib/plots";
+import {
+  MAX_EXPAND,
+  districtForPlot,
+  expandPrice,
+  expandedRect,
+  plotArea,
+  usesForPlot,
+  type Plot,
+} from "@/lib/plots";
 import type { Agent } from "@/lib/types";
 
 export function PlotSheet({
   plot,
   claimed,
   agents,
+  previewUseId,
+  extra,
+  maxExtra,
   onClose,
   onBuy,
   onEnter,
   onBid,
+  onPreviewUse,
+  onExtra,
 }: {
   plot: Plot;
   claimed: boolean;
   agents: Agent[];
+  previewUseId: string;
+  extra: number;
+  maxExtra: number;
   onClose: () => void;
   onBuy: () => void;
   onEnter: (buildingId: string) => void;
   onBid: () => void;
+  onPreviewUse: (id: string) => void;
+  onExtra: (n: number) => void;
 }) {
   const theme = ZONE_THEME[plot.zone];
   const building = plot.buildingId ? LOT_BUILDINGS.find((b) => b.id === plot.buildingId) : undefined;
@@ -32,10 +56,12 @@ export function PlotSheet({
   const inside = building ? agents.filter((a) => a.buildingId === building.id) : [];
   const owned = Boolean(building) && !claimed && plot.kind === "owned";
   const listed = !park && !civic && plot.kind === "sale" && !claimed;
-  const area = plotArea(plot);
+  const grown = expandedRect(plot, extra);
+  const area = plotArea({ ...plot, w: grown.w, h: grown.h });
   const district = districtForPlot(plot);
-  const uses = usesForPlot(plot);
+  const uses = usesForPlot(plot, extra);
   const cells = Math.min(area.tiles, 36);
+  const price = listed ? expandPrice(plot, extra) : plot.price;
 
   return (
     <div className="ns-plot-sheet" data-zone={plot.zone}>
@@ -54,7 +80,7 @@ export function PlotSheet({
         ) : listed ? (
           <div className="ns-plot-hero">
             <p className="ns-plot-kicker">For sale</p>
-            <p className="ns-plot-price">{formatUsd(plot.price)}</p>
+            <p className="ns-plot-price">{formatUsd(price)}</p>
             <p className="ns-plot-onetime">one-time · session listing · nothing billed</p>
           </div>
         ) : (
@@ -94,7 +120,7 @@ export function PlotSheet({
 
           <div
             className="ns-footprint"
-            style={{ gridTemplateColumns: `repeat(${plot.w}, 1fr)` }}
+            style={{ gridTemplateColumns: `repeat(${grown.w}, 1fr)` }}
             aria-label={`Footprint ${area.footprint} tiles`}
           >
             {Array.from({ length: cells }, (_, i) => (
@@ -115,8 +141,8 @@ export function PlotSheet({
             <div>
               <dt>Price</dt>
               <dd>
-                {formatUsd(plot.price)}
-                <span>one-time</span>
+                {formatUsd(price)}
+                <span>{extra ? `base ${formatUsd(plot.price)} plus expand` : "one-time"}</span>
               </dd>
             </div>
             <div>
@@ -131,7 +157,7 @@ export function PlotSheet({
               <dd>
                 {listed ? "For sale" : claimed ? "Claimed" : owned ? "Occupied" : park ? "Protected" : plot.kind}
                 <span>
-                  {plot.w} street front × {plot.h} deep
+                  {grown.w} street front × {grown.h} deep
                 </span>
               </dd>
             </div>
@@ -139,13 +165,53 @@ export function PlotSheet({
 
           {listed ? (
             <>
+              <div className="ns-expand">
+                <p>Expand the lot</p>
+                <div className="ns-expand-row">
+                  <button
+                    type="button"
+                    className="ns-icon-btn"
+                    aria-label="Shrink"
+                    disabled={extra <= 0}
+                    onClick={() => onExtra(Math.max(0, extra - 1))}
+                  >
+                    <Minus className="size-4" />
+                  </button>
+                  <strong>
+                    +{extra} tile{extra === 1 ? "" : "s"}
+                  </strong>
+                  <button
+                    type="button"
+                    className="ns-icon-btn"
+                    aria-label="Expand"
+                    disabled={extra >= maxExtra}
+                    onClick={() => onExtra(Math.min(maxExtra, extra + 1))}
+                  >
+                    <Plus className="size-4" />
+                  </button>
+                </div>
+                <span>
+                  Grows east and south on the map. Cap +{MAX_EXPAND} tiles
+                  {maxExtra < MAX_EXPAND ? ` · this pad only allows +${maxExtra}` : ""}. Neighbours you cover come with
+                  the claim.
+                </span>
+              </div>
               <div className="ns-plot-uses">
-                <p>This lot can take</p>
+                <p>Building on this lot — shown on the map</p>
                 <ul>
                   {uses.map((u) => (
                     <li key={u.id}>
-                      <strong>{u.name}</strong>
-                      <span>{u.blurb}</span>
+                      <button
+                        type="button"
+                        className="ns-use-btn"
+                        data-on={previewUseId === u.id ? "1" : "0"}
+                        onClick={() => onPreviewUse(u.id)}
+                      >
+                        <strong>{u.name}</strong>
+                        <span>
+                          {u.minW}×{u.minH} tiles · {u.blurb}
+                        </span>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -178,7 +244,7 @@ export function PlotSheet({
               </button>
             ) : listed ? (
               <button type="button" className="ns-game-btn" onClick={onBuy}>
-                Claim this plot · {formatUsd(plot.price)}
+                Claim this plot · {formatUsd(price)}
               </button>
             ) : building ? (
               <button type="button" className="ns-game-btn" onClick={() => onEnter(building.id)}>

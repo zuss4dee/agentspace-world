@@ -14,7 +14,7 @@ import {
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { PLOTS, plotArea, plotsForSale, type PlotZone } from "@/lib/plots";
+import { coverageOfClaims, expandPrice, getPlot, LAND_ORIGIN, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -24,7 +24,12 @@ export function CityChrome() {
     selectedPlotId,
     selectPlot,
     claimedPlotIds,
+    claimedExtras,
     claimPlot,
+    previewUseId,
+    setPreviewUseId,
+    plotExpand,
+    setPlotExpand,
     focusCoord,
     setCameraScale,
     cameraScale,
@@ -46,12 +51,17 @@ export function CityChrome() {
   const [walkingIn, setWalkingIn] = useState(false);
   const [band, setBand] = useState<"all" | PlotZone>("all");
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
-  const listings = useMemo(() => {
-    const rows = plotsForSale(claimed);
-    return band === "all" ? rows : rows.filter((p) => p.zone === band);
-  }, [claimed, band]);
+  const occupied = useMemo(
+    () => coverageOfClaims(claimedPlotIds, claimedExtras),
+    [claimedPlotIds, claimedExtras],
+  );
+  const listings = useMemo(() => listSalePlots(claimedPlotIds, band, 36, occupied), [claimedPlotIds, band, occupied]);
+  const openLots = useMemo(() => openSaleCount(claimedPlotIds), [claimedPlotIds]);
   const activity = useMemo(() => shopActivity(), []);
-  const picked = selectedPlotId ? PLOTS.find((p) => p.id === selectedPlotId) : undefined;
+  const picked = getPlot(selectedPlotId);
+  const maxExtra = picked && picked.kind === "sale" && !claimed.has(picked.id)
+    ? maxExpandFor(picked, coverageOfClaims(claimedPlotIds, claimedExtras, picked.id))
+    : 0;
 
   const active = world.agents.filter((a) => a.mapId === "lot").length;
 
@@ -136,7 +146,7 @@ export function CityChrome() {
                   className="ns-icon-btn"
                   aria-label={`View ${row.brandName} on the map`}
                   onClick={() => {
-                    const p = PLOTS.find((item) => item.id === row.plotId);
+                    const p = getPlot(row.plotId);
                     if (!p) return;
                     selectPlot(p.id);
                     focusCoord(p.x + p.w / 2, p.y + p.h / 2, 1.05);
@@ -154,9 +164,24 @@ export function CityChrome() {
         <div className="ns-card ns-pad">
           <div className="ns-avail-head">
             <p>Land for sale</p>
-            <span>{listings.length} lots</span>
+            <span>
+              {claimedPlotIds.length}/{MAX_CLAIMS} held
+            </span>
           </div>
-          <p className="ns-avail-hint">White pads with black flags are empty lots. Click one to read the listing.</p>
+          <p className="ns-avail-hint">
+            {openLots.toLocaleString()} lots open · {SALE_STOCK.toLocaleString()} in the south field at opening. White
+            pads are empty. You can claim up to {MAX_CLAIMS} this session.
+          </p>
+          <button
+            type="button"
+            className="ns-avail-jump"
+            onClick={() => {
+              selectPlot("l-0");
+              focusCoord(LAND_ORIGIN.x + 8, LAND_ORIGIN.y + 6, 0.78);
+            }}
+          >
+            Fly to the south field
+          </button>
           <div className="ns-avail-filters">
             <button type="button" data-on={band === "all" ? "1" : "0"} onClick={() => setBand("all")}>
               All
@@ -294,11 +319,28 @@ export function CityChrome() {
           plot={picked}
           claimed={claimed.has(picked.id)}
           agents={world.agents}
+          previewUseId={previewUseId}
+          extra={Math.min(plotExpand, maxExtra)}
+          maxExtra={maxExtra}
+          onPreviewUse={setPreviewUseId}
+          onExtra={(n) => {
+            setPlotExpand(n);
+            if (!picked) return;
+            const uses = usesForPlot(picked, n);
+            if (!uses.some((u) => u.id === previewUseId)) setPreviewUseId(uses[0]?.id ?? "kiosk");
+          }}
           onClose={() => selectPlot(null)}
           onBuy={() => {
-            const ok = claimPlot(picked.id);
-            if (ok) toast.success(`Plot secured · ${formatUsd(picked.price)}. Local listing only — no charge.`);
-            else toast.error("That plot is not for sale.");
+            const extra = Math.min(plotExpand, maxExtra);
+            const ok = claimPlot(picked.id, extra);
+            const price = expandPrice(picked, extra);
+            if (ok)
+              toast.success(
+                `Plot secured · ${formatUsd(price)}${extra ? ` · +${extra} expand` : ""}. ${claimedPlotIds.length + 1}/${MAX_CLAIMS} this session.`,
+              );
+            else if (claimedPlotIds.length >= MAX_CLAIMS)
+              toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
+            else toast.error("That expand hits a road, a neighbour you do not own, or the lot cap.");
           }}
           onEnter={enterBuilding}
           onBid={() => setBeaconOpen(true)}
