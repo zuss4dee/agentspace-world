@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
+import { Html, Line } from "@react-three/drei";
 import * as THREE from "three";
 import {
   CITY_PLOTS,
@@ -11,22 +11,22 @@ import {
   buildingFootprint,
   coverageOfClaims,
   expandedRect,
+  formatSqFt,
   getPlot,
   landBounds,
   latticePlot,
   maxExpandFor,
-  plotArea,
+  placeAtCell,
+  tilesToSqFt,
 } from "@/lib/plots";
 import { TILE, wx, wz } from "@/lib/coords";
 import { useWorld } from "@/components/world/world-store";
-import { formatUsd } from "@/lib/companies";
 
 const C = {
   sale: new THREE.Color("#f4f4f0"),
   saleEdge: new THREE.Color("#111111"),
   owned: new THREE.Color("#9a9a9a"),
   taken: new THREE.Color("#c8c8c8"),
-  selected: new THREE.Color("#111111"),
 };
 
 export function PlotsLayer() {
@@ -48,23 +48,23 @@ export function PlotsLayer() {
       const taken = claimed.has(p.id);
       const forSale = p.kind === "sale" && !taken;
       const selected = selectedPlotId === p.id;
+      const hidePad = selected && forSale;
 
       dummy.position.set(cx, forSale ? 0.07 : 0.035, cz);
-      dummy.scale.set(p.w * TILE * 0.9, 1, p.h * TILE * 0.9);
+      dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.9, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.9);
       dummy.updateMatrix();
       pad.setMatrixAt(i, dummy.matrix);
 
       dummy.position.set(cx, forSale ? 0.04 : 0.02, cz);
-      dummy.scale.set(p.w * TILE * 0.98, 1, p.h * TILE * 0.98);
+      dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.98, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.98);
       dummy.updateMatrix();
       edge.setMatrixAt(i, dummy.matrix);
 
-      if (selected && forSale) color.copy(C.selected);
-      else if (forSale) color.copy(C.sale);
+      if (forSale) color.copy(C.sale);
       else if (taken) color.copy(C.taken);
       else color.copy(C.owned);
       pad.setColorAt(i, color);
-      color.copy(selected && forSale ? C.sale : C.saleEdge);
+      color.copy(C.saleEdge);
       edge.setColorAt(i, color);
     });
     pad.instanceMatrix.needsUpdate = true;
@@ -147,18 +147,16 @@ export function SaleStakes() {
   const poles = useRef<THREE.InstancedMesh>(null);
   const flags = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const { claimedPlotIds, selectedPlotId, topView } = useWorld();
+  const { claimedPlotIds, selectedPlotId } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const sales = useMemo(() => CITY_PLOTS.filter((p) => p.kind === "sale"), []);
-  const picked = getPlot(selectedPlotId);
-  const pickedOpen = picked && picked.kind === "sale" && !claimed.has(picked.id);
 
   useLayoutEffect(() => {
     const pole = poles.current;
     const flag = flags.current;
     if (!pole || !flag) return;
     sales.forEach((p, i) => {
-      const hide = claimed.has(p.id);
+      const hide = claimed.has(p.id) || selectedPlotId === p.id;
       const x = wx(p.x + p.w / 2) + p.w * TILE * 0.32;
       const z = wz(p.y + p.h / 2) + p.h * TILE * 0.32;
       dummy.position.set(x, 0.55, z);
@@ -171,7 +169,7 @@ export function SaleStakes() {
     });
     pole.instanceMatrix.needsUpdate = true;
     flag.instanceMatrix.needsUpdate = true;
-  }, [dummy, claimed, sales]);
+  }, [dummy, claimed, sales, selectedPlotId]);
 
   if (sales.length === 0) return null;
 
@@ -185,25 +183,21 @@ export function SaleStakes() {
         <boxGeometry args={[0.38, 0.2, 0.04]} />
         <meshStandardMaterial color="#ffffff" roughness={0.45} />
       </instancedMesh>
-      {pickedOpen && !topView ? (
-        <Html
-          position={[wx(picked.x + picked.w / 2), 1.55, wz(picked.y + picked.h / 2)]}
-          center
-          distanceFactor={14}
-          occlude={false}
-          pointerEvents="none"
-        >
-          <div className="ns-sale-pin">
-            For sale · {formatUsd(picked.price)} · {plotArea(picked).footprint} tiles
-          </div>
-        </Html>
-      ) : null}
     </group>
   );
 }
 
 export function BuildingGhost() {
-  const { selectedPlotId, previewUseId, claimedPlotIds, claimedExtras, plotExpand } = useWorld();
+  const {
+    selectedPlotId,
+    previewUseId,
+    claimedPlotIds,
+    claimedExtras,
+    plotExpand,
+    buildingPlace,
+    setBuildingPlace,
+    topView,
+  } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const plot = getPlot(selectedPlotId);
   if (!plot || plot.kind !== "sale" || claimed.has(plot.id)) return null;
@@ -213,37 +207,93 @@ export function BuildingGhost() {
   );
   const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
   const land = expandedRect(plot, extra);
-  const fp = buildingFootprint(plot, use, extra);
-  const padW = land.w * TILE * 0.96;
-  const padD = land.h * TILE * 0.96;
+  const fp = buildingFootprint(plot, use, extra, buildingPlace);
+  const landSq = tilesToSqFt(land.w, land.h);
+  const bldgSq = fp ? tilesToSqFt(fp.w, fp.h) : 0;
+  const y0 = 0.22;
+  const x0 = wx(land.x);
+  const z0 = wz(land.y);
+  const x1 = wx(land.x + land.w);
+  const z1 = wz(land.y + land.h);
+  const fence: [number, number, number][] = [
+    [x0, y0, z0],
+    [x1, y0, z0],
+    [x1, y0, z1],
+    [x0, y0, z1],
+    [x0, y0, z0],
+  ];
 
   return (
     <group>
-      <mesh position={[wx(land.x + land.w / 2), 0.12, wz(land.y + land.h / 2)]}>
-        <boxGeometry args={[padW, 0.08, padD]} />
-        <meshStandardMaterial color="#111111" roughness={0.5} />
-      </mesh>
+      <Line points={fence} color="#111111" lineWidth={2.4} />
+      {Array.from({ length: land.w * land.h }, (_, i) => {
+        const col = i % land.w;
+        const row = Math.floor(i / land.w);
+        const under =
+          fp && col >= fp.ox && col < fp.ox + fp.w && row >= fp.oy && row < fp.oy + fp.h;
+        if (under) return null;
+        return (
+          <mesh
+            key={i}
+            position={[wx(land.x + col + 0.5), 0.09, wz(land.y + row + 0.5)]}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!fp) return;
+              setBuildingPlace(placeAtCell(land.w, land.h, fp.w, fp.h, col, row));
+            }}
+          >
+            <boxGeometry args={[TILE * 0.9, 0.05, TILE * 0.9]} />
+            <meshStandardMaterial color="#f4f4f0" roughness={0.7} />
+          </mesh>
+        );
+      })}
       {fp ? (
         <>
-          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.16, wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.82, fp.height, fp.h * TILE * 0.82]} />
-            <meshStandardMaterial color="#ffffff" transparent opacity={0.82} roughness={0.35} />
+          {Array.from({ length: fp.w * fp.h }, (_, i) => {
+            const col = i % fp.w;
+            const row = Math.floor(i / fp.w);
+            return (
+              <mesh
+                key={`b-${i}`}
+                position={[wx(fp.x + col + 0.5), 0.12, wz(fp.y + row + 0.5)]}
+              >
+                <boxGeometry args={[TILE * 0.9, 0.08, TILE * 0.9]} />
+                <meshStandardMaterial color="#111111" roughness={0.45} />
+              </mesh>
+            );
+          })}
+          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.18, wz(fp.y + fp.h / 2)]}>
+            <boxGeometry args={[fp.w * TILE * 0.78, fp.height, fp.h * TILE * 0.78]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.32} />
           </mesh>
-          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.16, wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.82 + 0.04, fp.height + 0.04, fp.h * TILE * 0.82 + 0.04]} />
+          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.18, wz(fp.y + fp.h / 2)]}>
+            <boxGeometry args={[fp.w * TILE * 0.78 + 0.05, fp.height + 0.05, fp.h * TILE * 0.78 + 0.05]} />
             <meshStandardMaterial color="#111111" wireframe />
           </mesh>
-          <Html
-            position={[wx(fp.x + fp.w / 2), fp.height + 0.55, wz(fp.y + fp.h / 2)]}
-            center
-            distanceFactor={16}
-            occlude={false}
-            pointerEvents="none"
-          >
-            <div className="ns-sale-pin">
-              {use.name} · {fp.w}×{fp.h} on {land.w}×{land.h} land
-            </div>
-          </Html>
+          {!topView ? (
+            <>
+              <Html
+                position={[wx(land.x + land.w / 2), 0.55, wz(land.y + land.h) + 0.15]}
+                center
+                distanceFactor={18}
+                occlude={false}
+                pointerEvents="none"
+              >
+                <div className="ns-sale-pin ns-sale-pin-lot">Land you buy · {formatSqFt(landSq)}</div>
+              </Html>
+              <Html
+                position={[wx(fp.x + fp.w / 2), fp.height + 0.7, wz(fp.y + fp.h / 2)]}
+                center
+                distanceFactor={16}
+                occlude={false}
+                pointerEvents="none"
+              >
+                <div className="ns-sale-pin">
+                  {use.name} · {formatSqFt(bldgSq)}
+                </div>
+              </Html>
+            </>
+          ) : null}
         </>
       ) : null}
     </group>
@@ -251,18 +301,40 @@ export function BuildingGhost() {
 }
 
 export function ClaimedMarks() {
-  const { claimedPlotIds, claimedExtras } = useWorld();
+  const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses } = useWorld();
   return (
     <group>
       {claimedPlotIds.map((id) => {
         const p = getPlot(id);
         if (!p) return null;
-        const r = expandedRect(p, claimedExtras[id] ?? 0);
+        const extra = claimedExtras[id] ?? 0;
+        const r = expandedRect(p, extra);
+        const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES[0]!;
+        const fp = buildingFootprint(p, use, extra, claimedPlaces[id]);
+        const x0 = wx(r.x);
+        const z0 = wz(r.y);
+        const x1 = wx(r.x + r.w);
+        const z1 = wz(r.y + r.h);
         return (
-          <mesh key={id} position={[wx(r.x + r.w / 2), 0.11, wz(r.y + r.h / 2)]}>
-            <boxGeometry args={[r.w * TILE * 0.9, 0.12, r.h * TILE * 0.9]} />
-            <meshStandardMaterial color="#bdbdbd" roughness={0.85} />
-          </mesh>
+          <group key={id}>
+            <Line
+              points={[
+                [x0, 0.2, z0],
+                [x1, 0.2, z0],
+                [x1, 0.2, z1],
+                [x0, 0.2, z1],
+                [x0, 0.2, z0],
+              ]}
+              color="#111111"
+              lineWidth={1.6}
+            />
+            {fp ? (
+              <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.16, wz(fp.y + fp.h / 2)]}>
+                <boxGeometry args={[fp.w * TILE * 0.78, fp.height, fp.h * TILE * 0.78]} />
+                <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
+              </mesh>
+            ) : null}
+          </group>
         );
       })}
     </group>

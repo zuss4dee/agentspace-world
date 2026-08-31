@@ -247,6 +247,16 @@ export const PLOT_BANDS = [
 ];
 
 export const TILE_METERS = 8;
+/** Street tile in feet (8 m). Lot copy uses square feet, not square metres. */
+export const TILE_FEET = 26;
+
+export function formatSqFt(n: number) {
+  return `${Math.round(n).toLocaleString()} sq ft`;
+}
+
+export function tilesToSqFt(w: number, h: number) {
+  return w * h * TILE_FEET * TILE_FEET;
+}
 
 /** Extra tiles you may add onto a lot (grows east and south). */
 export const MAX_EXPAND = 4;
@@ -370,18 +380,105 @@ export function maxExpandFor(p: Plot, occupied: Set<string>) {
   return 0;
 }
 
-export function buildingFootprint(p: Plot, use: LandUse, extra = 0) {
+export type LotPlace = { ox: number; oy: number };
+
+export const PLACE_ANCHORS = [
+  { id: "nw", label: "NW", hint: "North-west corner", fx: 0, fy: 0 },
+  { id: "n", label: "N", hint: "North edge", fx: 0.5, fy: 0 },
+  { id: "ne", label: "NE", hint: "North-east corner", fx: 1, fy: 0 },
+  { id: "w", label: "W", hint: "West edge", fx: 0, fy: 0.5 },
+  { id: "c", label: "Mid", hint: "Middle of the lot", fx: 0.5, fy: 0.5 },
+  { id: "e", label: "E", hint: "East edge", fx: 1, fy: 0.5 },
+  { id: "sw", label: "SW", hint: "South-west corner", fx: 0, fy: 1 },
+  { id: "s", label: "S", hint: "South edge", fx: 0.5, fy: 1 },
+  { id: "se", label: "SE", hint: "South-east corner", fx: 1, fy: 1 },
+] as const;
+
+export type PlaceAnchorId = (typeof PLACE_ANCHORS)[number]["id"];
+
+export function clampLotPlace(landW: number, landH: number, bw: number, bh: number, place: LotPlace): LotPlace {
+  const maxX = Math.max(0, landW - bw);
+  const maxY = Math.max(0, landH - bh);
+  return {
+    ox: Math.max(0, Math.min(maxX, Math.floor(place.ox))),
+    oy: Math.max(0, Math.min(maxY, Math.floor(place.oy))),
+  };
+}
+
+export function centerPlace(landW: number, landH: number, bw: number, bh: number): LotPlace {
+  return clampLotPlace(landW, landH, bw, bh, {
+    ox: Math.floor((landW - bw) / 2),
+    oy: Math.floor((landH - bh) / 2),
+  });
+}
+
+export function placeFromAnchor(
+  landW: number,
+  landH: number,
+  bw: number,
+  bh: number,
+  fx: number,
+  fy: number,
+): LotPlace {
+  const maxX = Math.max(0, landW - bw);
+  const maxY = Math.max(0, landH - bh);
+  return { ox: Math.round(fx * maxX), oy: Math.round(fy * maxY) };
+}
+
+export function placeAtCell(landW: number, landH: number, bw: number, bh: number, col: number, row: number): LotPlace {
+  return clampLotPlace(landW, landH, bw, bh, {
+    ox: col - Math.floor(bw / 2),
+    oy: row - Math.floor(bh / 2),
+  });
+}
+
+export function matchingAnchor(place: LotPlace, landW: number, landH: number, bw: number, bh: number): PlaceAnchorId | null {
+  for (const a of PLACE_ANCHORS) {
+    const p = placeFromAnchor(landW, landH, bw, bh, a.fx, a.fy);
+    if (p.ox === place.ox && p.oy === place.oy) return a.id;
+  }
+  return null;
+}
+
+export function buildingSize(p: Plot, use: LandUse, extra = 0) {
   const r = expandedRect(p, extra);
   if (r.w < use.minW || r.h < use.minH) return null;
-  return { x: r.x, y: r.y, w: Math.min(r.w, use.minW), h: Math.min(r.h, use.minH), height: use.height };
+  return { w: Math.min(r.w, use.minW), h: Math.min(r.h, use.minH) };
+}
+
+export function fitPlace(p: Plot, use: LandUse, extra: number, place: LotPlace): LotPlace {
+  const r = expandedRect(p, extra);
+  const size = buildingSize(p, use, extra);
+  if (!size) return place;
+  return clampLotPlace(r.w, r.h, size.w, size.h, place);
+}
+
+export function buildingFootprint(p: Plot, use: LandUse, extra = 0, place?: LotPlace) {
+  const r = expandedRect(p, extra);
+  const size = buildingSize(p, use, extra);
+  if (!size) return null;
+  const pos = clampLotPlace(r.w, r.h, size.w, size.h, place ?? centerPlace(r.w, r.h, size.w, size.h));
+  return {
+    x: r.x + pos.ox,
+    y: r.y + pos.oy,
+    w: size.w,
+    h: size.h,
+    height: use.height,
+    ox: pos.ox,
+    oy: pos.oy,
+  };
 }
 
 export function plotArea(p: Plot) {
   const tiles = p.w * p.h;
+  const sqft = tilesToSqFt(p.w, p.h);
   return {
     tiles,
+    sqft,
     meters: tiles * TILE_METERS * TILE_METERS,
     footprint: `${p.w} × ${p.h}`,
+    frontFt: p.w * TILE_FEET,
+    deepFt: p.h * TILE_FEET,
   };
 }
 

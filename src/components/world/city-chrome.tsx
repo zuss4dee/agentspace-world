@@ -14,7 +14,7 @@ import {
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { coverageOfClaims, expandPrice, getPlot, LAND_ORIGIN, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
+import { coverageOfClaims, expandPrice, fitPlace, formatSqFt, getPlot, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, SALE_STOCK, usesForPlot, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 
@@ -26,10 +26,12 @@ export function CityChrome() {
     claimedPlotIds,
     claimedExtras,
     claimPlot,
-    previewUseId,
-    setPreviewUseId,
     plotExpand,
     setPlotExpand,
+    buildingPlace,
+    setBuildingPlace,
+    previewUseId,
+    setPreviewUseId,
     focusCoord,
     setCameraScale,
     cameraScale,
@@ -216,7 +218,7 @@ export function CityChrome() {
                     <span className="ns-avail-lot">
                       <strong>{p.groupLabel}</strong>
                       <em>
-                        {area.footprint} · {ZONE_THEME[p.zone].label}
+                        {formatSqFt(area.sqft)} · {ZONE_THEME[p.zone].label}
                       </em>
                     </span>
                   </span>
@@ -322,17 +324,27 @@ export function CityChrome() {
           previewUseId={previewUseId}
           extra={Math.min(plotExpand, maxExtra)}
           maxExtra={maxExtra}
-          onPreviewUse={setPreviewUseId}
+          place={buildingPlace}
+          onPreviewUse={(id) => {
+            setPreviewUseId(id);
+            if (!picked) return;
+            const use = LAND_USES.find((u) => u.id === id);
+            if (use) setBuildingPlace(fitPlace(picked, use, Math.min(plotExpand, maxExtra), buildingPlace));
+          }}
           onExtra={(n) => {
             setPlotExpand(n);
             if (!picked) return;
             const uses = usesForPlot(picked, n);
-            if (!uses.some((u) => u.id === previewUseId)) setPreviewUseId(uses[0]?.id ?? "kiosk");
+            const nextId = uses.some((u) => u.id === previewUseId) ? previewUseId : (uses[0]?.id ?? "kiosk");
+            if (nextId !== previewUseId) setPreviewUseId(nextId);
+            const use = LAND_USES.find((u) => u.id === nextId);
+            if (use) setBuildingPlace(fitPlace(picked, use, n, buildingPlace));
           }}
+          onPlace={setBuildingPlace}
           onClose={() => selectPlot(null)}
           onBuy={() => {
             const extra = Math.min(plotExpand, maxExtra);
-            const ok = claimPlot(picked.id, extra);
+            const ok = claimPlot(picked.id, extra, buildingPlace, previewUseId);
             const price = expandPrice(picked, extra);
             if (ok)
               toast.success(

@@ -21,7 +21,19 @@ import {
 } from "@/lib/simulation";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
-import { getPlot, MAX_CLAIMS, coverageOfClaims, expandBlocked, usesForPlot, PLOTS } from "@/lib/plots";
+import {
+  getPlot,
+  MAX_CLAIMS,
+  coverageOfClaims,
+  expandBlocked,
+  usesForPlot,
+  PLOTS,
+  LAND_USES,
+  buildingSize,
+  centerPlace,
+  expandedRect,
+  type LotPlace,
+} from "@/lib/plots";
 import { poiById } from "@/lib/pois";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
@@ -72,11 +84,15 @@ type WorldApi = {
   exitInterior: () => void;
   claimedPlotIds: string[];
   claimedExtras: Record<string, number>;
-  claimPlot: (id: string, extra?: number) => boolean;
+  claimedPlaces: Record<string, LotPlace>;
+  claimedUses: Record<string, string>;
+  claimPlot: (id: string, extra?: number, place?: LotPlace, useId?: string) => boolean;
   previewUseId: string;
   setPreviewUseId: (id: string) => void;
   plotExpand: number;
   setPlotExpand: (n: number) => void;
+  buildingPlace: LotPlace;
+  setBuildingPlace: (p: LotPlace) => void;
   beaconBidCents: number;
   placeBeaconBid: (cents: number) => void;
   beaconOpen: boolean;
@@ -102,8 +118,11 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [interiorId, setInteriorId] = useState<string | null>(null);
   const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
   const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>({});
+  const [claimedPlaces, setClaimedPlaces] = useState<Record<string, LotPlace>>({});
+  const [claimedUses, setClaimedUses] = useState<Record<string, string>>({});
   const [previewUseId, setPreviewUseId] = useState("office");
   const [plotExpand, setPlotExpand] = useState(0);
+  const [buildingPlace, setBuildingPlace] = useState<LotPlace>({ ox: 0, oy: 0 });
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
   const [mapOverview, setMapOverview] = useState(false);
@@ -311,6 +330,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setPlotExpand(0);
     if (!id) {
       setSelectedBuildingId(null);
+      setBuildingPlace({ ox: 0, oy: 0 });
       return;
     }
     const p = getPlot(id);
@@ -319,8 +339,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setSelectedBuildingId(p?.buildingId ?? null);
     if (p) {
       setSelectedDistrictId(p.districtId);
-      const uses = usesForPlot(p, 0);
-      setPreviewUseId((cur) => (uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk")));
+      setPreviewUseId((cur) => {
+        const uses = usesForPlot(p, 0);
+        const nextUse = uses.some((u) => u.id === cur) ? cur : (uses[0]?.id ?? "kiosk");
+        const use = LAND_USES.find((u) => u.id === nextUse) ?? LAND_USES[0]!;
+        const size = buildingSize(p, use, 0);
+        const r = expandedRect(p, 0);
+        setBuildingPlace(size ? centerPlace(r.w, r.h, size.w, size.h) : { ox: 0, oy: 0 });
+        return nextUse;
+      });
     }
   }, []);
 
@@ -368,7 +395,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraTick((t) => t + 1);
   }, []);
 
-  const claimPlot = useCallback((id: string, extra = 0) => {
+  const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string) => {
     const p = getPlot(id);
     if (!p || p.kind !== "sale") return false;
     const occupied = coverageOfClaims(claimedPlotIds, claimedExtras, id);
@@ -381,6 +408,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     });
     if (ok) {
       setClaimedExtras((prev) => ({ ...prev, [id]: extra }));
+      if (place) setClaimedPlaces((prev) => ({ ...prev, [id]: place }));
+      if (useId) setClaimedUses((prev) => ({ ...prev, [id]: useId }));
     }
     return ok;
   }, [claimedPlotIds, claimedExtras]);
@@ -501,11 +530,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       exitInterior,
       claimedPlotIds,
       claimedExtras,
+      claimedPlaces,
+      claimedUses,
       claimPlot,
       previewUseId,
       setPreviewUseId,
       plotExpand,
       setPlotExpand,
+      buildingPlace,
+      setBuildingPlace,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,
@@ -546,9 +579,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       exitInterior,
       claimedPlotIds,
       claimedExtras,
+      claimedPlaces,
+      claimedUses,
       claimPlot,
       previewUseId,
       plotExpand,
+      buildingPlace,
       beaconBidCents,
       placeBeaconBid,
       beaconOpen,

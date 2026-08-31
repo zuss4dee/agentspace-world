@@ -2,6 +2,10 @@
 
 import {
   Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
   Landmark,
   Minus,
   Plus,
@@ -11,12 +15,23 @@ import { LOT_BUILDINGS } from "@/lib/campus";
 import { companyForBuilding, formatUsd, isCivicBuilding } from "@/lib/companies";
 import { ZONE_THEME } from "@/lib/city-shop";
 import {
+  LAND_USES,
   MAX_EXPAND,
+  PLACE_ANCHORS,
+  TILE_FEET,
+  buildingSize,
   districtForPlot,
   expandPrice,
   expandedRect,
+  fitPlace,
+  formatSqFt,
+  matchingAnchor,
+  placeAtCell,
+  placeFromAnchor,
   plotArea,
+  tilesToSqFt,
   usesForPlot,
+  type LotPlace,
   type Plot,
 } from "@/lib/plots";
 import type { Agent } from "@/lib/types";
@@ -28,12 +43,14 @@ export function PlotSheet({
   previewUseId,
   extra,
   maxExtra,
+  place,
   onClose,
   onBuy,
   onEnter,
   onBid,
   onPreviewUse,
   onExtra,
+  onPlace,
 }: {
   plot: Plot;
   claimed: boolean;
@@ -41,12 +58,14 @@ export function PlotSheet({
   previewUseId: string;
   extra: number;
   maxExtra: number;
+  place: LotPlace;
   onClose: () => void;
   onBuy: () => void;
   onEnter: (buildingId: string) => void;
   onBid: () => void;
   onPreviewUse: (id: string) => void;
   onExtra: (n: number) => void;
+  onPlace: (p: LotPlace) => void;
 }) {
   const theme = ZONE_THEME[plot.zone];
   const building = plot.buildingId ? LOT_BUILDINGS.find((b) => b.id === plot.buildingId) : undefined;
@@ -60,8 +79,14 @@ export function PlotSheet({
   const area = plotArea({ ...plot, w: grown.w, h: grown.h });
   const district = districtForPlot(plot);
   const uses = usesForPlot(plot, extra);
-  const cells = Math.min(area.tiles, 36);
   const price = listed ? expandPrice(plot, extra) : plot.price;
+  const use = LAND_USES.find((u) => u.id === previewUseId) ?? uses[0];
+  const size = use ? buildingSize(plot, use, extra) : null;
+  const pos = use && size ? fitPlace(plot, use, extra, place) : place;
+  const maxOx = size ? Math.max(0, grown.w - size.w) : 0;
+  const maxOy = size ? Math.max(0, grown.h - size.h) : 0;
+  const activeAnchor = size ? matchingAnchor(pos, grown.w, grown.h, size.w, size.h) : null;
+  const bldgSqft = size ? tilesToSqFt(size.w, size.h) : 0;
 
   return (
     <div className="ns-plot-sheet" data-zone={plot.zone}>
@@ -118,23 +143,13 @@ export function PlotSheet({
                   : (district?.blurb ?? theme.description)}
           </p>
 
-          <div
-            className="ns-footprint"
-            style={{ gridTemplateColumns: `repeat(${grown.w}, 1fr)` }}
-            aria-label={`Footprint ${area.footprint} tiles`}
-          >
-            {Array.from({ length: cells }, (_, i) => (
-              <i key={i} />
-            ))}
-          </div>
-
           <dl className="ns-plot-facts">
             <div>
-              <dt>Size</dt>
+              <dt>Lot</dt>
               <dd>
-                {area.footprint} tiles
+                {formatSqFt(area.sqft)}
                 <span>
-                  {area.tiles} tiles · {area.meters.toLocaleString()} m²
+                  {area.frontFt} ft front × {area.deepFt} ft deep
                 </span>
               </dd>
             </div>
@@ -153,12 +168,10 @@ export function PlotSheet({
               </dd>
             </div>
             <div>
-              <dt>Status</dt>
+              <dt>Grid</dt>
               <dd>
-                {listed ? "For sale" : claimed ? "Claimed" : owned ? "Occupied" : park ? "Protected" : plot.kind}
-                <span>
-                  {grown.w} street front × {grown.h} deep
-                </span>
+                {area.footprint} tiles
+                <span>each tile {TILE_FEET} × {TILE_FEET} ft</span>
               </dd>
             </div>
           </dl>
@@ -178,7 +191,7 @@ export function PlotSheet({
                     <Minus className="size-4" />
                   </button>
                   <strong>
-                    +{extra} tile{extra === 1 ? "" : "s"}
+                    +{extra} tile{extra === 1 ? "" : "s"} · {formatSqFt(area.sqft)}
                   </strong>
                   <button
                     type="button"
@@ -197,7 +210,7 @@ export function PlotSheet({
                 </span>
               </div>
               <div className="ns-plot-uses">
-                <p>Building on this lot — shown on the map</p>
+                <p>Building — shown on the map</p>
                 <ul>
                   {uses.map((u) => (
                     <li key={u.id}>
@@ -209,13 +222,116 @@ export function PlotSheet({
                       >
                         <strong>{u.name}</strong>
                         <span>
-                          {u.minW}×{u.minH} tiles · {u.blurb}
+                          {formatSqFt(tilesToSqFt(u.minW, u.minH))} · {u.minW}×{u.minH} tiles · {u.blurb}
                         </span>
                       </button>
                     </li>
                   ))}
                 </ul>
               </div>
+              {size && use ? (
+                <div className="ns-place">
+                  <p>Place the building on the lot</p>
+                  <p className="ns-place-lead">
+                    You buy the whole lot — {formatSqFt(area.sqft)} of yard. The {use.name.toLowerCase()} is only{" "}
+                    {formatSqFt(bldgSqft)}. Light tiles are empty land you own. Dark tiles are the building. Same layout
+                    as the map: click a tile, use Mid / edge / corner, or slide.
+                  </p>
+                  <div className="ns-place-legend">
+                    <span>
+                      <i className="ns-swatch ns-swatch-yard" /> Yard you own
+                    </span>
+                    <span>
+                      <i className="ns-swatch ns-swatch-bldg" /> Building
+                    </span>
+                  </div>
+                  <div className="ns-place-body">
+                    <div className="ns-site-wrap">
+                      <span className="ns-site-n">N</span>
+                      <div
+                        className="ns-site-plan"
+                        style={{ gridTemplateColumns: `repeat(${grown.w}, 1fr)` }}
+                        role="grid"
+                        aria-label="Site plan. Light is yard. Dark is the building. Click to move it."
+                      >
+                      {Array.from({ length: grown.w * grown.h }, (_, i) => {
+                        const col = i % grown.w;
+                        const row = Math.floor(i / grown.w);
+                        const on =
+                          col >= pos.ox && col < pos.ox + size.w && row >= pos.oy && row < pos.oy + size.h;
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            role="gridcell"
+                            aria-label={`Tile ${col + 1},${row + 1}${on ? ", under the building" : ""}`}
+                            data-on={on ? "1" : "0"}
+                            onClick={() => onPlace(placeAtCell(grown.w, grown.h, size.w, size.h, col, row))}
+                          />
+                        );
+                      })}
+                      </div>
+                    </div>
+                    <div className="ns-place-tools">
+                      <div className="ns-place-grid" role="group" aria-label="Preset positions">
+                        {PLACE_ANCHORS.map((a) => (
+                          <button
+                            key={a.id}
+                            type="button"
+                            title={a.hint}
+                            aria-label={a.hint}
+                            data-on={activeAnchor === a.id ? "1" : "0"}
+                            onClick={() => onPlace(placeFromAnchor(grown.w, grown.h, size.w, size.h, a.fx, a.fy))}
+                          >
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="ns-nudge" role="group" aria-label="Nudge building">
+                        <span />
+                        <button
+                          type="button"
+                          aria-label="Nudge north"
+                          disabled={pos.oy <= 0}
+                          onClick={() => onPlace({ ox: pos.ox, oy: pos.oy - 1 })}
+                        >
+                          <ChevronUp className="size-4" />
+                        </button>
+                        <span />
+                        <button
+                          type="button"
+                          aria-label="Nudge west"
+                          disabled={pos.ox <= 0}
+                          onClick={() => onPlace({ ox: pos.ox - 1, oy: pos.oy })}
+                        >
+                          <ChevronLeft className="size-4" />
+                        </button>
+                        <button type="button" className="ns-nudge-mid" disabled>
+                          Slide
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Nudge east"
+                          disabled={pos.ox >= maxOx}
+                          onClick={() => onPlace({ ox: pos.ox + 1, oy: pos.oy })}
+                        >
+                          <ChevronRight className="size-4" />
+                        </button>
+                        <span />
+                        <button
+                          type="button"
+                          aria-label="Nudge south"
+                          disabled={pos.oy >= maxOy}
+                          onClick={() => onPlace({ ox: pos.ox, oy: pos.oy + 1 })}
+                        >
+                          <ChevronDown className="size-4" />
+                        </button>
+                        <span />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
               <ul className="ns-plot-perks">
                 {["Workplace appears on the public map", "Listed in the business directory", "Clickable lot for visitors"].map(
                   (line) => (
@@ -233,7 +349,7 @@ export function PlotSheet({
 
           <div className="ns-plot-badges">
             <span className="ns-badge">{theme.label}</span>
-            <span className="ns-badge ns-badge-ghost">{area.footprint}</span>
+            <span className="ns-badge ns-badge-ghost">{formatSqFt(area.sqft)}</span>
             {owned && inside.length ? <span className="ns-badge">{inside.length} on site</span> : null}
           </div>
 
