@@ -10,10 +10,15 @@ export const COMPANIES: Record<string, Company> = {
     name: "Northshore",
     does: "Runs the open city: HQ, labs, and the streets agents walk.",
   },
+  echt: {
+    id: "echt",
+    name: "Echt",
+    does: "A startup on Northshore. Ships product from Echt House — desks downstairs, founder room on the glass.",
+  },
   seed: {
     id: "seed",
     name: "Seed",
-    does: "Startup campaigns, hot desks, and the cafe that onboards walk-ins.",
+    does: "The cafe that onboards walk-ins next door to Echt.",
   },
   signal: {
     id: "signal",
@@ -59,9 +64,9 @@ export const BUILDING_OWNER: Record<string, string> = {
   hq: "northshore",
   finance: "northshore",
   hall: "civic",
-  loft: "seed",
+  loft: "echt",
   "seed-cafe": "seed",
-  incubator: "seed",
+  incubator: "echt",
   studio: "signal",
   gallery: "athena",
   cottage: "signal",

@@ -71,6 +71,44 @@ function Windows({ w, h, d }: { w: number; h: number; d: number }) {
   );
 }
 
+function EchtHouse({ selected, w, h, d }: { selected: boolean; w: number; h: number; d: number }) {
+  const lime = selected ? "#f7fee7" : "#ecfccb";
+  return (
+    <group>
+      <mesh position={[0, 0.16, 0]} receiveShadow>
+        <boxGeometry args={[w * 1.08, 0.32, d * 1.08]} />
+        <meshStandardMaterial color="#111827" roughness={0.4} metalness={0.35} />
+      </mesh>
+      <mesh position={[0, h * 0.42, 0]} castShadow receiveShadow>
+        <boxGeometry args={[w, h * 0.78, d]} />
+        <meshStandardMaterial color={lime} roughness={0.18} metalness={0.42} />
+      </mesh>
+      <mesh position={[0, h * 0.92, -d * 0.12]} castShadow>
+        <boxGeometry args={[w * 0.62, h * 0.38, d * 0.42]} />
+        <meshStandardMaterial color="#1f2937" roughness={0.3} metalness={0.5} />
+      </mesh>
+      <mesh position={[0, h * 1.08, d * 0.28]} castShadow>
+        <boxGeometry args={[w * 0.9, 0.12, d * 0.28]} />
+        <meshStandardMaterial color="#84cc16" emissive="#65a30d" emissiveIntensity={0.35} />
+      </mesh>
+      {[-0.28, 0, 0.28].map((x) => (
+        <mesh key={x} position={[x * w, h * 0.55, d / 2 + 0.04]}>
+          <boxGeometry args={[w * 0.18, h * 0.22, 0.06]} />
+          <meshStandardMaterial color="#d9f99d" emissive="#84cc16" emissiveIntensity={0.2} roughness={0.12} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.55, d / 2 + 0.05]}>
+        <boxGeometry args={[1.15, 0.28, 0.08]} />
+        <meshStandardMaterial color="#111827" />
+      </mesh>
+      <mesh position={[0, 0.55, d / 2 + 0.1]}>
+        <boxGeometry args={[0.95, 0.14, 0.04]} />
+        <meshStandardMaterial color="#84cc16" emissive="#84cc16" emissiveIntensity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
 function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
   const w = b.size.x * TILE * 0.92;
   const d = b.size.y * TILE * 0.92;
@@ -78,6 +116,10 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
   const mat = wallMat(b.style);
   const roof = b.roof;
   const style = b.style;
+
+  if (b.id === "incubator") {
+    return <EchtHouse selected={selected} w={w} h={h} d={d} />;
+  }
 
   const extras = (
     <>

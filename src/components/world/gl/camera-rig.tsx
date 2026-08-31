@@ -1,27 +1,30 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { MapControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
 import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, wx, wz } from "@/lib/coords";
 import { cameraPanLimits } from "@/lib/world-sections";
 
-type ControlsApi = {
-  target: THREE.Vector3;
-  update: () => void;
-  enabled: boolean;
-};
-
 const keys = new Set<string>();
+const _forward = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _up = new THREE.Vector3(0, 1, 0);
 
 export function ExplorerCamera() {
-  const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick } = useWorld();
-  const controls = useRef<ControlsApi | null>(null);
+  const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick, setFollowAgent } =
+    useWorld();
   const camera = useThree((s) => s.camera);
-  const applyDist = useRef(false);
+  const gl = useThree((s) => s.gl);
+  const target = useRef(new THREE.Vector3(wx(28.5), 0.2, wz(8)));
+  const applyDist = useRef(true);
   const lastTick = useRef(cameraTick);
+  const dragging = useRef(false);
+  const last = useRef({ x: 0, y: 0 });
+  const followRef = useRef(followAgent);
+  followRef.current = followAgent;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -42,103 +45,148 @@ export function ExplorerCamera() {
     };
   }, []);
 
+  useEffect(() => {
+    const el = gl.domElement;
+    el.style.touchAction = "none";
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 0 && e.pointerType !== "touch") return;
+      dragging.current = true;
+      last.current = { x: e.clientX, y: e.clientY };
+      applyDist.current = false;
+      if (followRef.current) setFollowAgent(false);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = e.clientX - last.current.x;
+      const dy = e.clientY - last.current.y;
+      last.current = { x: e.clientX, y: e.clientY };
+      camera.getWorldDirection(_forward);
+      _forward.y = 0;
+      if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
+      _forward.normalize();
+      _right.crossVectors(_forward, _up).normalize();
+      const dist = camera.position.distanceTo(target.current);
+      const speed = dist * 0.0024;
+      const panX = -dx * speed;
+      const panZ = dy * speed;
+      _right.multiplyScalar(panX);
+      _forward.multiplyScalar(panZ);
+      target.current.add(_right).add(_forward);
+      camera.position.add(_right).add(_forward);
+    };
+    const onUp = () => {
+      dragging.current = false;
+    };
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      applyDist.current = false;
+      const dist = camera.position.distanceTo(target.current);
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, MAX_VIEW_DIST);
+      _dir.copy(camera.position).sub(target.current);
+      if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
+      _dir.normalize().multiplyScalar(next);
+      camera.position.copy(target.current).add(_dir);
+    };
+    const onContext = (e: Event) => e.preventDefault();
+    el.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("contextmenu", onContext);
+    return () => {
+      el.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("contextmenu", onContext);
+    };
+  }, [camera, gl, setFollowAgent]);
+
   useFrame((_, dt) => {
-    const c = controls.current;
-    if (!c) return;
+    const t = target.current;
     if (cameraTick !== lastTick.current) {
       lastTick.current = cameraTick;
       applyDist.current = true;
     }
 
-    if (followAgent && selectedAgentId) {
+    if (followAgent && selectedAgentId && !dragging.current) {
       const a = liveRef.current.agents.find((ag) => ag.id === selectedAgentId);
       if (a) {
         const k = Math.min(1, dt * 5);
-        c.target.x += (wx(a.x) - c.target.x) * k;
-        c.target.z += (wz(a.y) - c.target.z) * k;
+        t.x += (wx(a.x) - t.x) * k;
+        t.z += (wz(a.y) - t.z) * k;
       }
-    } else if (applyDist.current && cameraFocus) {
+    } else if (applyDist.current && cameraFocus && !dragging.current) {
       const k = Math.min(1, dt * 4.2);
-      c.target.x += (wx(cameraFocus.x) - c.target.x) * k;
-      c.target.z += (wz(cameraFocus.y) - c.target.z) * k;
+      t.x += (wx(cameraFocus.x) - t.x) * k;
+      t.z += (wz(cameraFocus.y) - t.z) * k;
     }
 
-    const forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    forward.y = 0;
-    if (forward.lengthSq() < 0.0001) forward.set(0, 0, -1);
-    forward.normalize();
-    const right = new THREE.Vector3().crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    camera.getWorldDirection(_forward);
+    _forward.y = 0;
+    if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
+    _forward.normalize();
+    _right.crossVectors(_forward, _up).normalize();
     const pan = 48 * dt;
-    if (keys.has("w") || keys.has("arrowup")) c.target.addScaledVector(forward, pan);
-    if (keys.has("s") || keys.has("arrowdown")) c.target.addScaledVector(forward, -pan);
-    if (keys.has("d") || keys.has("arrowright")) c.target.addScaledVector(right, pan);
-    if (keys.has("a") || keys.has("arrowleft")) c.target.addScaledVector(right, -pan);
+    if (keys.has("w") || keys.has("arrowup")) {
+      t.addScaledVector(_forward, pan);
+      camera.position.addScaledVector(_forward, pan);
+    }
+    if (keys.has("s") || keys.has("arrowdown")) {
+      t.addScaledVector(_forward, -pan);
+      camera.position.addScaledVector(_forward, -pan);
+    }
+    if (keys.has("d") || keys.has("arrowright")) {
+      t.addScaledVector(_right, pan);
+      camera.position.addScaledVector(_right, pan);
+    }
+    if (keys.has("a") || keys.has("arrowleft")) {
+      t.addScaledVector(_right, -pan);
+      camera.position.addScaledVector(_right, -pan);
+    }
 
-    c.target.y = interiorId ? 1.15 : 0.2;
+    t.y = interiorId ? 1.15 : 0.2;
 
     if (!interiorId) {
-      const d = camera.position.distanceTo(c.target);
+      const d = camera.position.distanceTo(t);
       const lim = cameraPanLimits(d);
-      c.target.x = THREE.MathUtils.clamp(c.target.x, lim.minX, lim.maxX);
-      c.target.z = THREE.MathUtils.clamp(c.target.z, lim.minZ, lim.maxZ);
+      const nx = THREE.MathUtils.clamp(t.x, lim.minX, lim.maxX);
+      const nz = THREE.MathUtils.clamp(t.z, lim.minZ, lim.maxZ);
+      const dx = nx - t.x;
+      const dz = nz - t.z;
+      t.x = nx;
+      t.z = nz;
+      camera.position.x += dx;
+      camera.position.z += dz;
     }
 
-    if (applyDist.current || interiorId) {
+    if ((applyDist.current || interiorId) && !dragging.current) {
       const want = interiorId ? 7.2 : distFromScale(cameraScale);
-      const current = camera.position.distanceTo(c.target);
+      const current = camera.position.distanceTo(t);
       const next = current + (want - current) * Math.min(1, dt * 3.2);
-      const dir = camera.position.clone().sub(c.target);
-      if (dir.lengthSq() < 0.001) dir.set(14, 16, 14);
-      dir.normalize().multiplyScalar(next);
-      camera.position.copy(c.target).add(dir);
+      _dir.copy(camera.position).sub(t);
+      if (_dir.lengthSq() < 0.001) _dir.set(12, 14, 12);
+      _dir.normalize().multiplyScalar(next);
+      camera.position.copy(t).add(_dir);
       if (!interiorId && Math.abs(want - next) < 0.35) applyDist.current = false;
     }
 
     if (!interiorId) {
-      const d = camera.position.distanceTo(c.target);
+      const d = camera.position.distanceTo(t);
       const capped = THREE.MathUtils.clamp(d, MIN_VIEW_DIST, MAX_VIEW_DIST);
       if (Math.abs(capped - d) > 0.04) {
-        const dir = camera.position.clone().sub(c.target);
-        if (dir.lengthSq() < 0.001) dir.set(14, 16, 14);
-        dir.normalize().multiplyScalar(capped);
-        camera.position.copy(c.target).add(dir);
+        _dir.copy(camera.position).sub(t);
+        if (_dir.lengthSq() < 0.001) _dir.set(12, 14, 12);
+        _dir.normalize().multiplyScalar(capped);
+        camera.position.copy(t).add(_dir);
       }
     }
 
-    c.update();
+    camera.lookAt(t);
   });
 
-  return (
-    <MapControls
-      ref={controls as never}
-      makeDefault
-      enableDamping
-      dampingFactor={0.18}
-      enablePan
-      enableRotate
-      enableZoom
-      panSpeed={2.1}
-      rotateSpeed={0.7}
-      zoomSpeed={1.15}
-      minDistance={MIN_VIEW_DIST}
-      maxDistance={MAX_VIEW_DIST}
-      maxPolarAngle={interiorId ? Math.PI / 2.05 : 1.02}
-      minPolarAngle={interiorId ? 0.18 : 0.62}
-      screenSpacePanning
-      zoomToCursor={false}
-      mouseButtons={{
-        LEFT: THREE.MOUSE.PAN,
-        MIDDLE: THREE.MOUSE.DOLLY,
-        RIGHT: THREE.MOUSE.ROTATE,
-      }}
-      touches={{
-        ONE: THREE.TOUCH.PAN,
-        TWO: THREE.TOUCH.DOLLY_ROTATE,
-      }}
-      onStart={() => {
-        applyDist.current = false;
-      }}
-    />
-  );
+  return null;
 }

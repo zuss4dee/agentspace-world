@@ -13,7 +13,7 @@ import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/compon
 import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
-import { TILE, fromWorld } from "@/lib/coords";
+import { TILE, fromWorld, wx, wz } from "@/lib/coords";
 import { plotAt } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
 
@@ -131,7 +131,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [9, 12, 9], fov: 42, near: 0.3, far: 64 }
+          : { position: [wx(28.5) + 9, 12, wz(8) + 9], fov: 42, near: 0.3, far: 64 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"

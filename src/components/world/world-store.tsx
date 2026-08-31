@@ -77,7 +77,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [selectedPlotId, setSelectedPlotId] = useState<string | null>(null);
   const [selectedDistrictId, setSelectedDistrictId] = useState<string | null>(null);
   const [link, setLink] = useState<"connecting" | "live" | "offline">("connecting");
-  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 24, y: 22 });
+  const [cameraFocus, setCameraFocus] = useState<Vec2 | null>({ x: 28.5, y: 8 });
   const [followAgent, setFollowAgent] = useState(false);
   const [cameraScale, setCameraScaleState] = useState(0.72);
   const [cameraTick, setCameraTick] = useState(0);

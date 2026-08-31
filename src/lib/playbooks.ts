@@ -32,7 +32,8 @@ export const TASKS: Record<string, { task: string; thought: string; director: st
     { task: "Meet Jarvis in the hall", thought: "Runway is a creative constraint.", director: "Midas joined Jarvis in Board Hall." },
   ],
   cmo: [
-    { task: "Cut a campus loop from Seed Loft", thought: "The product is the skyline.", director: "Vega started a new campaign." },
+    { task: "Ship the week from Echt House", thought: "If it is not on the map, it is not a company.", director: "Vega ran the board from Echt House." },
+    { task: "Walk the studio next door", thought: "The loft is still Echt, just quieter.", director: "Vega entered Echt Studio." },
     { task: "Post visitor signs at Ember", thought: "Tourists should feel invited.", director: "Vega entered Ember Kitchen." },
   ],
   cto: [
