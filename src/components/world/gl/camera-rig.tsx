@@ -13,16 +13,28 @@ const _right = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
 const _sph = new THREE.Spherical();
+const GROUND_Y = 0.62;
 
-function orbitCamera(camera: THREE.Camera, target: THREE.Vector3, dx: number, dy: number) {
+function maxOrbitPhi(radius: number, targetY: number, minY: number) {
+  const cos = THREE.MathUtils.clamp((minY - targetY) / Math.max(radius, 0.25), -0.999, 0.999);
+  return Math.min(Math.PI / 2 - 0.05, Math.acos(cos));
+}
+
+function orbitCamera(camera: THREE.Camera, target: THREE.Vector3, dx: number, dy: number, minY = GROUND_Y) {
   _dir.copy(camera.position).sub(target);
   if (_dir.lengthSq() < 0.001) _dir.set(0.4, 12, 0.4);
   _sph.setFromVector3(_dir);
   _sph.theta -= dx;
-  _sph.phi = THREE.MathUtils.clamp(_sph.phi + dy, 0.08, Math.PI - 0.22);
+  const ceiling = maxOrbitPhi(_sph.radius, target.y, minY);
+  _sph.phi = THREE.MathUtils.clamp(_sph.phi + dy, 0.08, ceiling);
   _sph.makeSafe();
   camera.position.copy(target).add(_dir.setFromSpherical(_sph));
+  if (camera.position.y < minY) camera.position.y = minY;
   camera.up.set(0, 1, 0);
+}
+
+function keepAboveGround(camera: THREE.Camera, minY: number) {
+  if (camera.position.y < minY) camera.position.y = minY;
 }
 
 export function ExplorerCamera() {
@@ -75,6 +87,7 @@ export function ExplorerCamera() {
     if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
     _dir.normalize().multiplyScalar(next);
     camera.position.copy(target.current).add(_dir);
+    keepAboveGround(camera, GROUND_Y);
   };
   const dollyRef = useRef(dolly);
   dollyRef.current = dolly;
@@ -357,6 +370,9 @@ export function ExplorerCamera() {
       }
     }
 
+    if (!interiorId) keepAboveGround(camera, GROUND_Y);
+    else keepAboveGround(camera, 0.35);
+
     camera.lookAt(t);
 
     function beginFrameOrbit(dx: number, dy: number) {
@@ -370,7 +386,7 @@ export function ExplorerCamera() {
           camera.position.z = t.z + 0.45;
         }
       }
-      orbitCamera(camera, t, dx, dy);
+      orbitCamera(camera, t, dx, dy, interiorId ? 0.35 : GROUND_Y);
     }
   });
 
