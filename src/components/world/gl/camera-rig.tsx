@@ -13,7 +13,18 @@ const _right = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
 const _sph = new THREE.Spherical();
+const _step = new THREE.Vector3();
 const GROUND_Y = h(0.62);
+
+/** Drag used to apply dist*0.0024 immediately — about 2.5× too hot and snappy. */
+const DRAG_PAN = 0.0009;
+/** WASD used (48/1.2)*TILE*dt with no ease-out. */
+const KEY_PAN = (20 / 1.2) * TILE;
+const PAN_DAMP = 9.2;
+const ORBIT_THETA = 0.0034;
+const ORBIT_PHI = 0.0026;
+const ORBIT_DAMP = 11;
+const KEY_ORBIT = 1.05;
 
 function maxOrbitPhi(radius: number, targetY: number, minY: number) {
   const cos = THREE.MathUtils.clamp((minY - targetY) / Math.max(radius, h(0.25)), -0.999, 0.999);
@@ -63,6 +74,8 @@ export function ExplorerCamera() {
   const orbiting = useRef(false);
   const shiftHeld = useRef(false);
   const last = useRef({ x: 0, y: 0 });
+  const pendingPan = useRef(new THREE.Vector3());
+  const pendingOrbit = useRef({ theta: 0, phi: 0 });
   const followRef = useRef(followAgent);
   followRef.current = followAgent;
   const overviewRef = useRef(mapOverview);
@@ -104,10 +117,7 @@ export function ExplorerCamera() {
       }
     };
     const up = (e: KeyboardEvent) => {
-      if (e.key === "Shift") {
-        shiftHeld.current = false;
-        if (!dragging.current) orbiting.current = false;
-      }
+      if (e.key === "Shift") shiftHeld.current = false;
       keys.delete(e.key.toLowerCase());
     };
     const blur = () => {
@@ -156,18 +166,15 @@ export function ExplorerCamera() {
       last.current = { x: e.clientX, y: e.clientY };
       if (e.shiftKey || orbiting.current) {
         if (!orbiting.current) beginOrbit();
-        orbitCamera(camera, target.current, dx * 0.0055, dy * 0.0042);
+        pendingOrbit.current.theta += dx * ORBIT_THETA;
+        pendingOrbit.current.phi += dy * ORBIT_PHI;
         return;
       }
       const dist = camera.position.distanceTo(target.current);
-      const speed = dist * 0.0024;
+      const speed = dist * DRAG_PAN;
       if (topRef.current) {
-        const panX = -dx * speed;
-        const panZ = dy * speed;
-        target.current.x += panX;
-        target.current.z += panZ;
-        camera.position.x += panX;
-        camera.position.z += panZ;
+        pendingPan.current.x += -dx * speed;
+        pendingPan.current.z += dy * speed;
         return;
       }
       camera.getWorldDirection(_forward);
@@ -175,16 +182,11 @@ export function ExplorerCamera() {
       if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
       _forward.normalize();
       _right.crossVectors(_forward, _up).normalize();
-      const panX = -dx * speed;
-      const panZ = dy * speed;
-      _right.multiplyScalar(panX);
-      _forward.multiplyScalar(panZ);
-      target.current.add(_right).add(_forward);
-      camera.position.add(_right).add(_forward);
+      pendingPan.current.addScaledVector(_right, -dx * speed);
+      pendingPan.current.addScaledVector(_forward, dy * speed);
     };
     const onUp = () => {
       dragging.current = false;
-      orbiting.current = false;
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -233,63 +235,50 @@ export function ExplorerCamera() {
       t.z += (wz(cameraFocus.y) - t.z) * k;
     }
 
-    const turn = 1.55 * dt;
+    const turn = KEY_ORBIT * dt;
     if (shiftHeld.current && !interiorId) {
-      if (keys.has("arrowleft") || keys.has("a")) {
-        beginFrameOrbit(-turn, 0);
-      }
-      if (keys.has("arrowright") || keys.has("d")) {
-        beginFrameOrbit(turn, 0);
-      }
-      if (keys.has("arrowup") || keys.has("w")) {
-        beginFrameOrbit(0, -turn * 0.75);
-      }
-      if (keys.has("arrowdown") || keys.has("s")) {
-        beginFrameOrbit(0, turn * 0.75);
-      }
-    } else {
-      const pan = (48 / 1.2) * TILE * dt;
-      if (topRef.current && !interiorId) {
-        if (keys.has("w") || keys.has("arrowup")) {
-          t.z -= pan;
-          camera.position.z -= pan;
-        }
-        if (keys.has("s") || keys.has("arrowdown")) {
-          t.z += pan;
-          camera.position.z += pan;
-        }
-        if (keys.has("d") || keys.has("arrowright")) {
-          t.x += pan;
-          camera.position.x += pan;
-        }
-        if (keys.has("a") || keys.has("arrowleft")) {
-          t.x -= pan;
-          camera.position.x -= pan;
-        }
+      if (keys.has("arrowleft") || keys.has("a")) pendingOrbit.current.theta -= turn;
+      if (keys.has("arrowright") || keys.has("d")) pendingOrbit.current.theta += turn;
+      if (keys.has("arrowup") || keys.has("w")) pendingOrbit.current.phi -= turn * 0.75;
+      if (keys.has("arrowdown") || keys.has("s")) pendingOrbit.current.phi += turn * 0.75;
+    } else if (!interiorId) {
+      const pan = KEY_PAN * dt;
+      const wish = pendingPan.current;
+      if (topRef.current) {
+        if (keys.has("w") || keys.has("arrowup")) wish.z -= pan;
+        if (keys.has("s") || keys.has("arrowdown")) wish.z += pan;
+        if (keys.has("d") || keys.has("arrowright")) wish.x += pan;
+        if (keys.has("a") || keys.has("arrowleft")) wish.x -= pan;
       } else {
         camera.getWorldDirection(_forward);
         _forward.y = 0;
         if (_forward.lengthSq() < 1e-6) _forward.set(0, 0, -1);
         _forward.normalize();
         _right.crossVectors(_forward, _up).normalize();
-        if (keys.has("w") || keys.has("arrowup")) {
-          t.addScaledVector(_forward, pan);
-          camera.position.addScaledVector(_forward, pan);
-        }
-        if (keys.has("s") || keys.has("arrowdown")) {
-          t.addScaledVector(_forward, -pan);
-          camera.position.addScaledVector(_forward, -pan);
-        }
-        if (keys.has("d") || keys.has("arrowright")) {
-          t.addScaledVector(_right, pan);
-          camera.position.addScaledVector(_right, pan);
-        }
-        if (keys.has("a") || keys.has("arrowleft")) {
-          t.addScaledVector(_right, -pan);
-          camera.position.addScaledVector(_right, -pan);
-        }
+        if (keys.has("w") || keys.has("arrowup")) wish.addScaledVector(_forward, pan);
+        if (keys.has("s") || keys.has("arrowdown")) wish.addScaledVector(_forward, -pan);
+        if (keys.has("d") || keys.has("arrowright")) wish.addScaledVector(_right, pan);
+        if (keys.has("a") || keys.has("arrowleft")) wish.addScaledVector(_right, -pan);
       }
     }
+
+    const odamp = 1 - Math.exp(-ORBIT_DAMP * dt);
+    const o = pendingOrbit.current;
+    const dTheta = o.theta * odamp;
+    const dPhi = o.phi * odamp;
+    o.theta -= dTheta;
+    o.phi -= dPhi;
+    if (Math.abs(dTheta) + Math.abs(dPhi) > 1e-7) {
+      beginFrameOrbit(dTheta, dPhi);
+    } else if (!dragging.current && !shiftHeld.current) {
+      orbiting.current = false;
+    }
+
+    const pdamp = 1 - Math.exp(-PAN_DAMP * dt);
+    _step.copy(pendingPan.current).multiplyScalar(pdamp);
+    pendingPan.current.sub(_step);
+    t.add(_step);
+    camera.position.add(_step);
 
     t.y = interiorId ? h(1.15) : h(0.2);
 
@@ -304,6 +293,8 @@ export function ExplorerCamera() {
       t.z = nz;
       camera.position.x += dx;
       camera.position.z += dz;
+      if (dx !== 0) pendingPan.current.x = 0;
+      if (dz !== 0) pendingPan.current.z = 0;
       const fly = cameraFlyLimits(d, mapOverview);
       camera.position.x = THREE.MathUtils.clamp(camera.position.x, fly.minX, fly.maxX);
       camera.position.z = THREE.MathUtils.clamp(camera.position.z, fly.minZ, fly.maxZ);
