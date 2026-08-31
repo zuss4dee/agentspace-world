@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
-import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, wx, wz } from "@/lib/coords";
+import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, wx, wz } from "@/lib/coords";
 import { cameraPanLimits } from "@/lib/world-sections";
 
 const keys = new Set<string>();
@@ -14,10 +14,11 @@ const _dir = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
 
 export function ExplorerCamera() {
-  const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick, setFollowAgent } =
+  const { cameraFocus, cameraScale, followAgent, selectedAgentId, liveRef, interiorId, cameraTick, setFollowAgent, mapOverview, setMapOverview } =
     useWorld();
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
   const target = useRef(new THREE.Vector3(wx(28.5), 0.2, wz(8)));
   const applyDist = useRef(true);
   const lastTick = useRef(cameraTick);
@@ -25,6 +26,8 @@ export function ExplorerCamera() {
   const last = useRef({ x: 0, y: 0 });
   const followRef = useRef(followAgent);
   followRef.current = followAgent;
+  const overviewRef = useRef(mapOverview);
+  overviewRef.current = mapOverview;
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -82,7 +85,9 @@ export function ExplorerCamera() {
       applyDist.current = false;
       const dist = camera.position.distanceTo(target.current);
       const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, MAX_VIEW_DIST);
+      const cap = overviewRef.current ? OVERVIEW_DIST : MAX_VIEW_DIST;
+      const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
+      if (overviewRef.current && next <= MAX_VIEW_DIST + 0.4) setMapOverview(false);
       _dir.copy(camera.position).sub(target.current);
       if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
       _dir.normalize().multiplyScalar(next);
@@ -103,7 +108,7 @@ export function ExplorerCamera() {
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("contextmenu", onContext);
     };
-  }, [camera, gl, setFollowAgent]);
+  }, [camera, gl, setFollowAgent, setMapOverview]);
 
   useFrame((_, dt) => {
     const t = target.current;
@@ -152,7 +157,7 @@ export function ExplorerCamera() {
 
     if (!interiorId) {
       const d = camera.position.distanceTo(t);
-      const lim = cameraPanLimits(d);
+      const lim = cameraPanLimits(d, mapOverview);
       const nx = THREE.MathUtils.clamp(t.x, lim.minX, lim.maxX);
       const nz = THREE.MathUtils.clamp(t.z, lim.minZ, lim.maxZ);
       const dx = nx - t.x;
@@ -164,7 +169,7 @@ export function ExplorerCamera() {
     }
 
     if ((applyDist.current || interiorId) && !dragging.current) {
-      const want = interiorId ? 7.2 : distFromScale(cameraScale);
+      const want = interiorId ? 7.2 : mapOverview ? OVERVIEW_DIST : distFromScale(cameraScale);
       const current = camera.position.distanceTo(t);
       const next = current + (want - current) * Math.min(1, dt * 3.2);
       _dir.copy(camera.position).sub(t);
@@ -175,13 +180,25 @@ export function ExplorerCamera() {
     }
 
     if (!interiorId) {
+      const cap = mapOverview ? OVERVIEW_DIST : MAX_VIEW_DIST;
       const d = camera.position.distanceTo(t);
-      const capped = THREE.MathUtils.clamp(d, MIN_VIEW_DIST, MAX_VIEW_DIST);
+      const capped = THREE.MathUtils.clamp(d, MIN_VIEW_DIST, cap);
       if (Math.abs(capped - d) > 0.04) {
         _dir.copy(camera.position).sub(t);
         if (_dir.lengthSq() < 0.001) _dir.set(12, 14, 12);
         _dir.normalize().multiplyScalar(capped);
         camera.position.copy(t).add(_dir);
+      }
+    }
+
+    const fog = scene.fog;
+    if (fog instanceof THREE.Fog) {
+      if (mapOverview) {
+        fog.near = 34;
+        fog.far = 108;
+      } else {
+        fog.near = 16;
+        fog.far = 38;
       }
     }
 

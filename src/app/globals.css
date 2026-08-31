@@ -787,6 +787,10 @@
   height: 36px;
   border-radius: 6px;
 }
+.ns-zoom-map[data-on="1"] {
+  color: #d9f99d;
+  background: #84cc1624;
+}
 .ns-zoom button:hover,
 .ns-icon-btn:hover,
 .ns-join-chip button:hover,

@@ -21,6 +21,8 @@ export function buildingHeight(h: number) {
 
 export const MAX_VIEW_DIST = 17;
 export const MIN_VIEW_DIST = 5.2;
+/** Pull-back used by the Whole city button — most of the 64×64 campus, not the empty fringe. */
+export const OVERVIEW_DIST = 52;
 
 export function distFromScale(scale: number) {
   if (scale <= 0.42) return MAX_VIEW_DIST;

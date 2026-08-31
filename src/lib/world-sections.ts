@@ -64,9 +64,9 @@ export function sectionAt(x: number, y: number) {
   );
 }
 
-export function cameraPanLimits(viewDist = MIN_VIEW_DIST) {
+export function cameraPanLimits(viewDist = MIN_VIEW_DIST, overview = false) {
   const t = Math.min(1, Math.max(0, (viewDist - MIN_VIEW_DIST) / (MAX_VIEW_DIST - MIN_VIEW_DIST)));
-  const inset = (1.5 + t * 8) * TILE;
+  const inset = overview ? 2.2 * TILE : (1.5 + t * 8) * TILE;
   return {
     minX: wx(SECTION_ONE.x) + inset,
     maxX: wx(SECTION_ONE.x + SECTION_ONE.w) - inset,

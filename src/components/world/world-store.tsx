@@ -55,6 +55,9 @@ type WorldApi = {
   cameraScale: number;
   setCameraScale: (n: number) => void;
   cameraTick: number;
+  mapOverview: boolean;
+  showCityOverview: () => void;
+  setMapOverview: (v: boolean) => void;
   interiorId: string | null;
   enterBuilding: (id: string) => void;
   exitInterior: () => void;
@@ -85,6 +88,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
+  const [mapOverview, setMapOverview] = useState(false);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
@@ -344,6 +348,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCameraScale = useCallback((n: number) => {
+    setMapOverview(false);
     setCameraScaleState(Math.min(2.2, Math.max(0.42, n)));
     setCameraTick((t) => t + 1);
   }, []);
@@ -351,6 +356,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const focusBuilding = useCallback((id: string) => {
     const b = ALL_BUILDINGS.find((item) => item.id === id);
     if (!b) return;
+    setMapOverview(false);
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
     setCameraScaleState(1.12);
     setCameraTick((t) => t + 1);
@@ -363,6 +369,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setSelectedBuildingId(id);
     setSelectedAgentId(null);
     setFollowAgent(false);
+    setMapOverview(false);
     setCameraFocus({ x: b.origin.x + b.size.x / 2, y: b.origin.y + b.size.y / 2 });
     setCameraScaleState(1.85);
     setCameraTick((t) => t + 1);
@@ -388,14 +395,23 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const focusPoi = useCallback((id: string) => {
     const poi = poiById(id);
     if (!poi) return;
+    setMapOverview(false);
     setCameraFocus({ x: poi.x, y: poi.y });
     setCameraScaleState(id === "hearth" ? 0.55 : 0.72);
     setCameraTick((t) => t + 1);
   }, []);
 
   const focusCoord = useCallback((x: number, y: number, scale = 1.05) => {
+    setMapOverview(false);
     setCameraFocus({ x, y });
     setCameraScaleState(scale);
+    setCameraTick((t) => t + 1);
+  }, []);
+
+  const showCityOverview = useCallback(() => {
+    setFollowAgent(false);
+    setMapOverview(true);
+    setCameraFocus({ x: 32, y: 32 });
     setCameraTick((t) => t + 1);
   }, []);
 
@@ -428,6 +444,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       cameraScale,
       setCameraScale,
       cameraTick,
+      mapOverview,
+      showCityOverview,
+      setMapOverview,
       interiorId,
       enterBuilding,
       exitInterior,
@@ -462,6 +481,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       followAgent,
       cameraScale,
       cameraTick,
+      mapOverview,
+      showCityOverview,
       interiorId,
       enterBuilding,
       exitInterior,

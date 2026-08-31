@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Activity, Compass, MapPin, Minus, Plus } from "lucide-react";
+import { Activity, Compass, Map, MapPin, Minus, Plus } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
@@ -35,6 +35,9 @@ export function CityChrome() {
     beaconOpen,
     setBeaconOpen,
     focusPoi,
+    mapOverview,
+    showCityOverview,
+    setMapOverview,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
@@ -159,6 +162,23 @@ export function CityChrome() {
         </button>
         <button type="button" aria-label="Zoom out" onClick={() => setCameraScale(Math.max(0.42, cameraScale - 0.22))}>
           <Minus className="size-4" />
+        </button>
+        <button
+          type="button"
+          className="ns-zoom-map"
+          data-on={mapOverview ? "1" : "0"}
+          aria-pressed={mapOverview}
+          aria-label={mapOverview ? "Leave whole-city view" : "See the whole city"}
+          title={mapOverview ? "Street view" : "Whole city"}
+          onClick={() => {
+            if (mapOverview) {
+              focusPoi("civic");
+              return;
+            }
+            showCityOverview();
+          }}
+        >
+          <Map className="size-4" />
         </button>
         <button
           type="button"

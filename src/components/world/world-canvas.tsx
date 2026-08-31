@@ -131,7 +131,7 @@ export function WorldCanvas() {
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [wx(28.5) + 9, 12, wz(8) + 9], fov: 42, near: 0.3, far: 64 }
+          : { position: [wx(28.5) + 9, 12, wz(8) + 9], fov: 42, near: 0.3, far: 160 }
       }
       gl={{ antialias: true, powerPreference: "high-performance" }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"
