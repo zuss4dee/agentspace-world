@@ -1,5 +1,8 @@
-import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, ANCHOR_BUILDING_ID } from "./campus";
+import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, ANCHOR_BUILDING_ID, districtAt } from "./campus";
 import { hash2 } from "./noise";
+import { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, rectPx, tilesToSqFt } from "./units";
+
+export { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, tilesToSqFt };
 
 export type PlotKind = "sale" | "owned" | "park" | "civic";
 export type PlotZone = "ultimate" | "downtown" | "midtown" | "uptown" | "outskirts";
@@ -63,71 +66,97 @@ function blocked(x: number, y: number) {
   return t === "road" || t === "water" || ROAD_XS.includes(x) || ROAD_YS.includes(y);
 }
 
-function coversAnchor(ax: number, ay: number, aw: number, ah: number, x: number, y: number, w: number, h: number) {
-  return x < ax + aw && x + w > ax && y < ay + ah && y + h > ay;
+function isOwnableGreen(x: number, y: number) {
+  if (x < 0 || y < 0 || x >= GRID || y >= GRID) return false;
+  const t = TERRAIN[y]![x]!;
+  return t === "grass" || t === "park" || t === "dirt" || t === "lot";
 }
 
-function packFrom(used: boolean[][], x0: number, y0: number, maxW: number, maxH: number) {
-  if (used[y0]![x0] || blocked(x0, y0)) return null;
-  let w = 1;
-  while (x0 + w < GRID && w < maxW && !used[y0]![x0 + w] && !blocked(x0 + w, y0)) w++;
-  let h = 1;
-  grow: while (y0 + h < GRID && h < maxH) {
-    for (let x = x0; x < x0 + w; x++) {
-      if (used[y0 + h]![x] || blocked(x, y0 + h)) break grow;
-    }
-    h++;
+function bandSpans(roads: number[], n: number) {
+  const cuts = [...new Set([-1, ...roads, n])].sort((a, b) => a - b);
+  const out: { x: number; w: number }[] = [];
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const x0 = cuts[i]! + 1;
+    const x1 = cuts[i + 1]!;
+    if (x1 > x0) out.push({ x: x0, w: x1 - x0 });
   }
-  if (w < 3 || h < 3) return null;
-  return { w, h };
+  return out;
 }
 
 function makeCityPlots(): Plot[] {
   const plots: Plot[] = [];
-  const anchor = WORLD_BUILDINGS.find((b) => b.id === ANCHOR_BUILDING_ID)!;
   const used: boolean[][] = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => false));
 
-  plots.push({
-    id: `plot-b-${anchor.id}`,
-    x: anchor.origin.x,
-    y: anchor.origin.y,
-    w: anchor.size.x,
-    h: anchor.size.y,
-    kind: "owned",
-    districtId: anchor.districtId,
-    buildingId: anchor.id,
-    price: ZONE_PRICE.downtown,
-    zone: "downtown",
-    groupLabel: "Echt House",
-  });
-  for (let y = anchor.origin.y; y < anchor.origin.y + anchor.size.y; y++) {
-    for (let x = anchor.origin.x; x < anchor.origin.x + anchor.size.x; x++) used[y]![x] = true;
+  for (const b of WORLD_BUILDINGS) {
+    const zone = zoneFor(b.districtId);
+    plots.push({
+      id: `plot-b-${b.id}`,
+      x: b.origin.x,
+      y: b.origin.y,
+      w: b.size.x,
+      h: b.size.y,
+      kind: "owned",
+      districtId: b.districtId,
+      buildingId: b.id,
+      price: ZONE_PRICE[zone],
+      zone,
+      groupLabel: b.id === ANCHOR_BUILDING_ID ? "Echt House" : b.name,
+    });
+    for (let y = b.origin.y; y < b.origin.y + b.size.y; y++) {
+      for (let x = b.origin.x; x < b.origin.x + b.size.x; x++) {
+        if (x >= 0 && y >= 0 && x < GRID && y < GRID) used[y]![x] = true;
+      }
+    }
   }
 
   const lotN: Record<string, number> = {};
-  for (const d of DISTRICTS) {
-    for (let y = d.origin.y; y < d.origin.y + d.size.y; y++) {
-      for (let x = d.origin.x; x < d.origin.x + d.size.x; x++) {
-        const pack = packFrom(used, x, y, 6, 6);
-        if (!pack) continue;
-        if (coversAnchor(anchor.origin.x, anchor.origin.y, anchor.size.x, anchor.size.y, x, y, pack.w, pack.h)) continue;
-        const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
-        const zone = zoneFor(d.id);
-        plots.push({
-          id: `land-${d.id}-${n}`,
-          x,
-          y,
-          w: pack.w,
-          h: pack.h,
-          kind: "sale",
-          districtId: d.id,
-          price: ZONE_PRICE[zone],
-          zone,
-          groupLabel: `${d.label} · Lot ${n}`,
-        });
-        for (let yy = y; yy < y + pack.h; yy++) {
-          for (let xx = x; xx < x + pack.w; xx++) used[yy]![xx] = true;
+  for (const xb of bandSpans(ROAD_XS, GRID)) {
+    for (const yb of bandSpans(ROAD_YS, GRID)) {
+      let minX = GRID;
+      let minY = GRID;
+      let maxX = -1;
+      let maxY = -1;
+      let green = 0;
+      let cells = 0;
+      for (let y = yb.x; y < yb.x + yb.w; y++) {
+        for (let x = xb.x; x < xb.x + xb.w; x++) {
+          cells++;
+          if (used[y]![x] || blocked(x, y) || !isOwnableGreen(x, y)) continue;
+          green++;
+          if (x < minX) minX = x;
+          if (y < minY) minY = y;
+          if (x > maxX) maxX = x;
+          if (y > maxY) maxY = y;
         }
+      }
+      if (green < 9 || maxX < minX) continue;
+      const box = { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+      const built = WORLD_BUILDINGS.some((b) =>
+        box.x < b.origin.x + b.size.x &&
+        box.x + box.w > b.origin.x &&
+        box.y < b.origin.y + b.size.y &&
+        box.y + box.h > b.origin.y,
+      );
+      if (built) continue;
+      if (green / Math.max(1, cells) < 0.28) continue;
+      const d = districtAt(box.x + box.w / 2, box.y + box.h / 2) ?? DISTRICTS[0]!;
+      const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
+      const zone = zoneFor(d.id);
+      const price = Math.max(ZONE_PRICE[zone], Math.round((ZONE_PRICE[zone] * (box.w * box.h)) / 36));
+      plots.push({
+        id: `land-${d.id}-${n}`,
+        x: box.x,
+        y: box.y,
+        w: box.w,
+        h: box.h,
+        kind: "sale",
+        districtId: d.id,
+        price,
+        zone,
+        groupLabel: n === 1 ? d.label : `${d.label} · Field ${n}`,
+      });
+      for (let y = box.y; y < box.y + box.h; y++) {
+        for (let x = box.x; x < box.x + box.w; x++) used[y]![x] = true;
       }
     }
   }
@@ -246,22 +275,8 @@ export const PLOT_BANDS = [
   { id: "outskirts" as const, label: "Outskirts", blurb: "An accessible way to join the city." },
 ];
 
-export const TILE_METERS = 8;
-/** Street tile in feet (8 m). Lot copy uses square feet, not square metres. */
-export const TILE_FEET = 26;
-
-export function formatSqFt(n: number) {
-  return `${Math.round(n).toLocaleString()} sq ft`;
-}
-
-export function tilesToSqFt(w: number, h: number) {
-  return w * h * TILE_FEET * TILE_FEET;
-}
-
-/** Extra tiles you may add onto a lot (grows east and south). */
 export const MAX_EXPAND = 4;
-/** No lot may grow past this edge, even with expand. */
-export const MAX_LOT_EDGE = 12;
+export const MAX_LOT_EDGE = 16;
 
 export type LandUse = {
   id: string;
@@ -356,9 +371,9 @@ export function expandBlocked(p: Plot, extra: number, occupied: Set<string>) {
     }
   }
   for (const b of WORLD_BUILDINGS) {
-    if (b.id === ANCHOR_BUILDING_ID && rectsOverlap(r, { x: b.origin.x, y: b.origin.y, w: b.size.x, h: b.size.y })) {
-      if (!(p.x === b.origin.x && p.y === b.origin.y)) return true;
-    }
+    if (!rectsOverlap(r, { x: b.origin.x, y: b.origin.y, w: b.size.x, h: b.size.y })) continue;
+    if (p.buildingId === b.id) continue;
+    return true;
   }
   for (const other of CITY_PLOTS) {
     if (other.id === p.id) continue;
@@ -373,7 +388,7 @@ export function expandBlocked(p: Plot, extra: number, occupied: Set<string>) {
 }
 
 export function maxExpandFor(p: Plot, occupied: Set<string>) {
-  const growCap = Math.max(0, Math.min(MAX_EXPAND, MAX_LOT_EDGE - p.w, MAX_LOT_EDGE - p.h));
+  const growCap = Math.max(0, Math.min(MAX_EXPAND, MAX_LOT_EDGE - Math.min(p.w, p.h)));
   for (let e = growCap; e >= 0; e--) {
     if (!expandBlocked(p, e, occupied)) return e;
   }
@@ -471,15 +486,82 @@ export function buildingFootprint(p: Plot, use: LandUse, extra = 0, place?: LotP
 
 export function plotArea(p: Plot) {
   const tiles = p.w * p.h;
+  const px = rectPx(p.w, p.h);
   const sqft = tilesToSqFt(p.w, p.h);
   return {
     tiles,
     sqft,
+    px,
     meters: tiles * TILE_METERS * TILE_METERS,
     footprint: `${p.w} × ${p.h}`,
     frontFt: p.w * TILE_FEET,
     deepFt: p.h * TILE_FEET,
+    frontPx: px.w,
+    deepPx: px.h,
   };
+}
+
+export function footprintBlocks(
+  claimedIds: string[],
+  extras: Record<string, number>,
+  places: Record<string, LotPlace>,
+  uses: Record<string, string>,
+  preview: { id: string; extra: number; useId: string; place: LotPlace } | null,
+) {
+  const rects: { x: number; y: number; w: number; h: number }[] = WORLD_BUILDINGS.map((b) => ({
+    x: b.origin.x,
+    y: b.origin.y,
+    w: b.size.x,
+    h: b.size.y,
+  }));
+  for (const id of claimedIds) {
+    const p = getPlot(id);
+    if (!p) continue;
+    const use = LAND_USES.find((u) => u.id === uses[id]) ?? LAND_USES[0]!;
+    const fp = buildingFootprint(p, use, extras[id] ?? 0, places[id]);
+    if (fp) rects.push({ x: fp.x, y: fp.y, w: fp.w, h: fp.h });
+  }
+  if (preview && !claimedIds.includes(preview.id)) {
+    const p = getPlot(preview.id);
+    if (p?.kind === "sale") {
+      const use = LAND_USES.find((u) => u.id === preview.useId) ?? LAND_USES[0]!;
+      const fp = buildingFootprint(p, use, preview.extra, preview.place);
+      if (fp) rects.push({ x: fp.x, y: fp.y, w: fp.w, h: fp.h });
+    }
+  }
+  return rects;
+}
+
+export function nudgeOffBuilding(
+  x: number,
+  y: number,
+  rects: { x: number; y: number; w: number; h: number }[],
+) {
+  const hits = (px: number, py: number) =>
+    rects.some((r) => px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h);
+  if (!hits(x, y)) return { x, y };
+  const hit = rects.find((r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h);
+  if (!hit) return { x, y };
+  const around = [
+    { x: hit.x - 0.55, y },
+    { x: hit.x + hit.w + 0.55, y },
+    { x, y: hit.y - 0.55 },
+    { x, y: hit.y + hit.h + 0.55 },
+    { x: hit.x - 0.55, y: hit.y - 0.55 },
+    { x: hit.x + hit.w + 0.55, y: hit.y - 0.55 },
+    { x: hit.x - 0.55, y: hit.y + hit.h + 0.55 },
+    { x: hit.x + hit.w + 0.55, y: hit.y + hit.h + 0.55 },
+  ];
+  around.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+  for (const c of around) {
+    const ix = Math.floor(c.x);
+    const iy = Math.floor(c.y);
+    if (ix < 0 || iy < 0 || ix >= GRID || iy >= GRID) continue;
+    const t = TERRAIN[iy]![ix]!;
+    if (t === "road" || t === "water") continue;
+    if (!hits(c.x, c.y)) return c;
+  }
+  return null;
 }
 
 export function districtForPlot(p: Plot) {

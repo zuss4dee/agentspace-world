@@ -1266,8 +1266,8 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 148px;
+  gap: 6px;
+  max-height: 112px;
   overflow: auto;
 }
 .ns-plot-uses li {
@@ -1277,10 +1277,12 @@
 }
 .ns-use-btn {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   width: 100%;
-  padding: 8px 10px;
+  padding: 7px 10px;
   border: 1.5px solid #111;
   border-radius: 12px;
   background: #fafafa;
@@ -1288,6 +1290,13 @@
   text-align: left;
   font: inherit;
   cursor: pointer;
+}
+.ns-use-btn strong {
+  font-size: 13px;
+}
+.ns-use-btn span {
+  font-size: 11px;
+  color: #555;
 }
 .ns-use-btn[data-on="1"] {
   background: #111;

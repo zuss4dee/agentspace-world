@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
 import { LOT_BUILDINGS } from "@/lib/campus";
-import { buildingHeight, TILE, wx, wz } from "@/lib/coords";
+import { buildingHeight, TILE, h as px, wx, wz } from "@/lib/coords";
 import type { Building, BuildingStyle } from "@/lib/types";
 import { useWorld } from "@/components/world/world-store";
 
@@ -75,8 +75,8 @@ function EchtHouse({ selected, w, h, d }: { selected: boolean; w: number; h: num
   const lime = selected ? "#f7fee7" : "#ecfccb";
   return (
     <group>
-      <mesh position={[0, 0.16, 0]} receiveShadow>
-        <boxGeometry args={[w * 1.08, 0.32, d * 1.08]} />
+      <mesh position={[0, px(0.16), 0]} receiveShadow>
+        <boxGeometry args={[w * 1.08, px(0.32), d * 1.08]} />
         <meshStandardMaterial color="#111827" roughness={0.4} metalness={0.35} />
       </mesh>
       <mesh position={[0, h * 0.42, 0]} castShadow receiveShadow>
@@ -88,21 +88,21 @@ function EchtHouse({ selected, w, h, d }: { selected: boolean; w: number; h: num
         <meshStandardMaterial color="#1f2937" roughness={0.3} metalness={0.5} />
       </mesh>
       <mesh position={[0, h * 1.08, d * 0.28]} castShadow>
-        <boxGeometry args={[w * 0.9, 0.12, d * 0.28]} />
+        <boxGeometry args={[w * 0.9, px(0.12), d * 0.28]} />
         <meshStandardMaterial color="#84cc16" emissive="#65a30d" emissiveIntensity={0.35} />
       </mesh>
       {[-0.28, 0, 0.28].map((x) => (
-        <mesh key={x} position={[x * w, h * 0.55, d / 2 + 0.04]}>
-          <boxGeometry args={[w * 0.18, h * 0.22, 0.06]} />
+        <mesh key={x} position={[x * w, h * 0.55, d / 2 + px(0.04)]}>
+          <boxGeometry args={[w * 0.18, h * 0.22, px(0.06)]} />
           <meshStandardMaterial color="#d9f99d" emissive="#84cc16" emissiveIntensity={0.2} roughness={0.12} />
         </mesh>
       ))}
-      <mesh position={[0, 0.55, d / 2 + 0.05]}>
-        <boxGeometry args={[1.15, 0.28, 0.08]} />
+      <mesh position={[0, px(0.55), d / 2 + px(0.05)]}>
+        <boxGeometry args={[px(1.15), px(0.28), px(0.08)]} />
         <meshStandardMaterial color="#111827" />
       </mesh>
-      <mesh position={[0, 0.55, d / 2 + 0.1]}>
-        <boxGeometry args={[0.95, 0.14, 0.04]} />
+      <mesh position={[0, px(0.55), d / 2 + px(0.1)]}>
+        <boxGeometry args={[px(0.95), px(0.14), px(0.04)]} />
         <meshStandardMaterial color="#84cc16" emissive="#84cc16" emissiveIntensity={0.5} />
       </mesh>
     </group>
@@ -124,8 +124,8 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
   const extras = (
     <>
       <Windows w={w} h={h} d={d} />
-      <mesh position={[0, 0.18, d / 2 + 0.02]}>
-        <boxGeometry args={[0.38, 0.7, 0.08]} />
+      <mesh position={[0, px(0.18), d / 2 + px(0.02)]}>
+        <boxGeometry args={[px(0.38), px(0.7), px(0.08)]} />
         <meshStandardMaterial color={b.accent} />
       </mesh>
     </>
@@ -205,7 +205,7 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
           <meshStandardMaterial {...mat} />
         </mesh>
         <mesh position={[0, h * 0.82, d * 0.2]} rotation={[-0.4, 0, 0]} castShadow>
-          <boxGeometry args={[w * 1.05, 0.08, d * 0.45]} />
+          <boxGeometry args={[w * 1.05, px(0.08), d * 0.45]} />
           <meshStandardMaterial color={b.accent} />
         </mesh>
         {extras}
@@ -219,7 +219,7 @@ function BuildingBody({ b, selected }: { b: Building; selected: boolean }) {
         <meshStandardMaterial {...mat} color={selected ? "#f0ddcc" : mat.color} />
       </mesh>
       <mesh position={[0, h * 0.88, 0]}>
-        <boxGeometry args={[w * 1.02, 0.12, d * 1.02]} />
+        <boxGeometry args={[w * 1.02, px(0.12), d * 1.02]} />
         <meshStandardMaterial color={roof} roughness={0.6} />
       </mesh>
       {extras}
@@ -244,7 +244,7 @@ export function BuildingsLayer() {
           <group key={b.id} position={[cx, 0, cz]} onClick={onClick(b)}>
             <BuildingBody b={b} selected={selectedBuildingId === b.id} />
             {selectedBuildingId === b.id ? (
-              <mesh position={[0, 0.04, 0]} rotation-x={-Math.PI / 2}>
+              <mesh position={[0, px(0.04), 0]} rotation-x={-Math.PI / 2}>
                 <ringGeometry args={[Math.max(b.size.x, b.size.y) * TILE * 0.55, Math.max(b.size.x, b.size.y) * TILE * 0.7, 24]} />
                 <meshBasicMaterial color="#ed712e" transparent opacity={0.7} />
               </mesh>

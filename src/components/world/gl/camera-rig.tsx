@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
-import { distFromScale, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
+import { distFromScale, h, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, TILE, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
 import { cameraPanLimits } from "@/lib/world-sections";
 
 const keys = new Set<string>();
@@ -13,16 +13,16 @@ const _right = new THREE.Vector3();
 const _dir = new THREE.Vector3();
 const _up = new THREE.Vector3(0, 1, 0);
 const _sph = new THREE.Spherical();
-const GROUND_Y = 0.62;
+const GROUND_Y = h(0.62);
 
 function maxOrbitPhi(radius: number, targetY: number, minY: number) {
-  const cos = THREE.MathUtils.clamp((minY - targetY) / Math.max(radius, 0.25), -0.999, 0.999);
+  const cos = THREE.MathUtils.clamp((minY - targetY) / Math.max(radius, h(0.25)), -0.999, 0.999);
   return Math.min(Math.PI / 2 - 0.05, Math.acos(cos));
 }
 
 function orbitCamera(camera: THREE.Camera, target: THREE.Vector3, dx: number, dy: number, minY = GROUND_Y) {
   _dir.copy(camera.position).sub(target);
-  if (_dir.lengthSq() < 0.001) _dir.set(0.4, 12, 0.4);
+  if (_dir.lengthSq() < 0.001) _dir.set(h(0.4), h(12), h(0.4));
   _sph.setFromVector3(_dir);
   _sph.theta -= dx;
   const ceiling = maxOrbitPhi(_sph.radius, target.y, minY);
@@ -56,7 +56,7 @@ export function ExplorerCamera() {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
-  const target = useRef(new THREE.Vector3(wx(28.5), 0.2, wz(8)));
+  const target = useRef(new THREE.Vector3(wx(28.5), h(0.2), wz(8)));
   const applyDist = useRef(true);
   const lastTick = useRef(cameraTick);
   const dragging = useRef(false);
@@ -77,14 +77,14 @@ export function ExplorerCamera() {
     const dist = camera.position.distanceTo(target.current);
     const cap = overviewRef.current ? OVERVIEW_DIST : MAX_VIEW_DIST;
     const next = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
-    if (overviewRef.current && next <= MAX_VIEW_DIST + 0.4) setMapOverview(false);
+    if (overviewRef.current && next <= MAX_VIEW_DIST + h(0.4)) setMapOverview(false);
     if (topRef.current && !orbiting.current) {
       const height = THREE.MathUtils.clamp(dist * factor, MIN_VIEW_DIST, cap);
       camera.position.set(target.current.x, height, target.current.z);
       return;
     }
     _dir.copy(camera.position).sub(target.current);
-    if (_dir.lengthSq() < 1e-6) _dir.set(12, 14, 12);
+    if (_dir.lengthSq() < 1e-6) _dir.set(h(12), h(14), h(12));
     _dir.normalize().multiplyScalar(next);
     camera.position.copy(target.current).add(_dir);
     keepAboveGround(camera, GROUND_Y);
@@ -134,9 +134,9 @@ export function ExplorerCamera() {
         wasTop.current = false;
         setTopView(false);
         const t = target.current;
-        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < 0.35) {
-          camera.position.x = t.x + 0.45;
-          camera.position.z = t.z + 0.45;
+        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < h(0.35)) {
+          camera.position.x = t.x + h(0.45);
+          camera.position.z = t.z + h(0.45);
         }
         camera.up.set(0, 1, 0);
       }
@@ -248,7 +248,7 @@ export function ExplorerCamera() {
         beginFrameOrbit(0, turn * 0.75);
       }
     } else {
-      const pan = 48 * dt;
+      const pan = (48 / 1.2) * TILE * dt;
       if (topRef.current && !interiorId) {
         if (keys.has("w") || keys.has("arrowup")) {
           t.z -= pan;
@@ -291,7 +291,7 @@ export function ExplorerCamera() {
       }
     }
 
-    t.y = interiorId ? 1.15 : 0.2;
+    t.y = interiorId ? h(1.15) : h(0.2);
 
     if (!interiorId) {
       const d = camera.position.distanceTo(t);
@@ -306,7 +306,7 @@ export function ExplorerCamera() {
       camera.position.z += dz;
     }
 
-    const wantH = interiorId ? 7.2 : mapOverview ? OVERVIEW_DIST : distFromScale(cameraScale);
+    const wantH = interiorId ? h(7.2) : mapOverview ? OVERVIEW_DIST : distFromScale(cameraScale);
     const overhead = topRef.current && !interiorId && !orbiting.current;
 
     if (overhead && !wasTop.current) {
@@ -314,7 +314,7 @@ export function ExplorerCamera() {
       wasTop.current = true;
       applyDist.current = false;
     } else if (!overhead && wasTop.current && !orbiting.current) {
-      _dir.set(12, 14, 12).normalize().multiplyScalar(wantH);
+      _dir.set(h(12), h(14), h(12)).normalize().multiplyScalar(wantH);
       camera.position.copy(t).add(_dir);
       wasTop.current = false;
       applyDist.current = true;
@@ -337,21 +337,21 @@ export function ExplorerCamera() {
         const current = camera.position.distanceTo(t);
         const next = current + (wantH - current) * Math.min(1, dt * 3.2);
         _dir.copy(camera.position).sub(t);
-        if (_dir.lengthSq() < 0.001 || Math.abs(_dir.x) + Math.abs(_dir.z) < 0.35) {
-          _dir.set(12, 14, 12);
+        if (_dir.lengthSq() < 0.001 || Math.abs(_dir.x) + Math.abs(_dir.z) < h(0.35)) {
+          _dir.set(h(12), h(14), h(12));
         }
         _dir.normalize().multiplyScalar(next);
         camera.position.copy(t).add(_dir);
-        if (!interiorId && Math.abs(wantH - next) < 0.35) applyDist.current = false;
+        if (!interiorId && Math.abs(wantH - next) < h(0.35)) applyDist.current = false;
       }
 
       if (!interiorId) {
         const cap = mapOverview ? OVERVIEW_DIST : MAX_VIEW_DIST;
         const d = camera.position.distanceTo(t);
         const capped = THREE.MathUtils.clamp(d, MIN_VIEW_DIST, cap);
-        if (Math.abs(capped - d) > 0.04) {
+        if (Math.abs(capped - d) > h(0.04)) {
           _dir.copy(camera.position).sub(t);
-          if (_dir.lengthSq() < 0.001) _dir.set(12, 14, 12);
+          if (_dir.lengthSq() < 0.001) _dir.set(h(12), h(14), h(12));
           _dir.normalize().multiplyScalar(capped);
           camera.position.copy(t).add(_dir);
         }
@@ -361,17 +361,17 @@ export function ExplorerCamera() {
     const fog = scene.fog;
     if (fog instanceof THREE.Fog) {
       if (mapOverview || (topRef.current && !interiorId)) {
-        fog.near = 34;
-        fog.far = 420;
+        fog.near = h(34);
+        fog.far = h(420);
       } else {
         const d = camera.position.distanceTo(t);
-        fog.near = Math.max(14, d * 0.7);
-        fog.far = Math.max(220, d * 2.15);
+        fog.near = Math.max(h(14), d * 0.7);
+        fog.far = Math.max(h(220), d * 2.15);
       }
     }
 
     if (!interiorId) keepAboveGround(camera, GROUND_Y);
-    else keepAboveGround(camera, 0.35);
+    else keepAboveGround(camera, h(0.35));
 
     camera.lookAt(t);
 
@@ -381,12 +381,12 @@ export function ExplorerCamera() {
       if (topRef.current) {
         wasTop.current = false;
         setTopView(false);
-        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < 0.35) {
-          camera.position.x = t.x + 0.45;
-          camera.position.z = t.z + 0.45;
+        if (Math.abs(camera.position.x - t.x) + Math.abs(camera.position.z - t.z) < h(0.35)) {
+          camera.position.x = t.x + h(0.45);
+          camera.position.z = t.z + h(0.45);
         }
       }
-      orbitCamera(camera, t, dx, dy, interiorId ? 0.35 : GROUND_Y);
+      orbitCamera(camera, t, dx, dy, interiorId ? h(0.35) : GROUND_Y);
     }
   });
 

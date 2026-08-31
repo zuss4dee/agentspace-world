@@ -6,7 +6,8 @@ import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
 import { extraLamps, extraTraffic } from "@/lib/city-gen";
-import { TILE, wx, wz } from "@/lib/coords";
+import { TILE, h, wx, wz } from "@/lib/coords";
+import { footprintBlocks, nudgeOffBuilding } from "@/lib/plots";
 import { SCENERY, TRAFFIC } from "@/lib/scenery";
 import { useWorld } from "@/components/world/world-store";
 
@@ -16,35 +17,78 @@ export function TreeField() {
   const trunks = useRef<THREE.InstancedMesh>(null);
   const canopies = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
+  const {
+    claimedPlotIds,
+    claimedExtras,
+    claimedPlaces,
+    claimedUses,
+    selectedPlotId,
+    previewUseId,
+    plotExpand,
+    buildingPlace,
+  } = useWorld();
+  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
+  const blockers = useMemo(
+    () =>
+      footprintBlocks(
+        claimedPlotIds,
+        claimedExtras,
+        claimedPlaces,
+        claimedUses,
+        selectedPlotId && !claimed.has(selectedPlotId)
+          ? { id: selectedPlotId, extra: plotExpand, useId: previewUseId, place: buildingPlace }
+          : null,
+      ),
+    [
+      claimedPlotIds,
+      claimedExtras,
+      claimedPlaces,
+      claimedUses,
+      selectedPlotId,
+      plotExpand,
+      previewUseId,
+      buildingPlace,
+      claimed,
+    ],
+  );
 
   useLayoutEffect(() => {
     const t = trunks.current;
     const c = canopies.current;
     if (!t || !c) return;
     all.forEach((tree, i) => {
+      const moved = nudgeOffBuilding(tree.x, tree.y, blockers);
       const s = 0.65 + ((tree.x * 7 + tree.y) % 5) * 0.07;
-      dummy.position.set(wx(tree.x), 0.42 * s, wz(tree.y));
+      if (!moved) {
+        dummy.scale.set(0, 0, 0);
+        dummy.position.set(0, 0, 0);
+        dummy.updateMatrix();
+        t.setMatrixAt(i, dummy.matrix);
+        c.setMatrixAt(i, dummy.matrix);
+        return;
+      }
+      dummy.position.set(wx(moved.x), h(0.42) * s, wz(moved.y));
       dummy.scale.set(s, s, s);
       dummy.updateMatrix();
       t.setMatrixAt(i, dummy.matrix);
-      dummy.position.set(wx(tree.x), 1.12 * s, wz(tree.y));
+      dummy.position.set(wx(moved.x), h(1.12) * s, wz(moved.y));
       dummy.scale.set(tree.pine ? s * 0.9 : s, tree.pine ? s * 1.15 : s, tree.pine ? s * 0.9 : s);
       dummy.updateMatrix();
       c.setMatrixAt(i, dummy.matrix);
     });
     t.instanceMatrix.needsUpdate = true;
     c.instanceMatrix.needsUpdate = true;
-  }, [all, dummy]);
+  }, [all, dummy, blockers]);
 
   if (!all.length) return null;
   return (
     <group>
       <instancedMesh ref={trunks} args={[undefined, undefined, all.length]} castShadow>
-        <cylinderGeometry args={[0.05, 0.08, 0.9, 5]} />
+        <cylinderGeometry args={[h(0.05), h(0.08), h(0.9), 5]} />
         <meshStandardMaterial color="#5a3c28" />
       </instancedMesh>
       <instancedMesh ref={canopies} args={[undefined, undefined, all.length]} castShadow>
-        <sphereGeometry args={[0.52, 7, 5]} />
+        <sphereGeometry args={[h(0.52), 7, 5]} />
         <meshStandardMaterial color="#2f6d38" roughness={0.86} />
       </instancedMesh>
     </group>
@@ -56,8 +100,8 @@ export function BushField() {
   return (
     <group>
       {bushes.map((s) => (
-        <mesh key={s.id} position={[wx(s.x), 0.22, wz(s.y)]} castShadow>
-          <sphereGeometry args={[s.kind === "hedge" ? 0.32 : 0.22, 6, 5]} />
+        <mesh key={s.id} position={[wx(s.x), h(0.22), wz(s.y)]} castShadow>
+          <sphereGeometry args={[s.kind === "hedge" ? h(0.32) : h(0.22), 6, 5]} />
           <meshStandardMaterial color="#3d7a3a" roughness={0.9} />
         </mesh>
       ))}
@@ -78,13 +122,13 @@ export function AgentsLayer() {
       const child = g.children[i];
       const a = list[i];
       if (!child || !a) continue;
-      child.position.set(wx(a.x), far ? 0.2 : 0.12, wz(a.y));
+      child.position.set(wx(a.x), far ? h(0.2) : h(0.12), wz(a.y));
     }
   });
   return (
     <group ref={group}>
       {agents.map((a) => (
-        <group key={a.id} position={[wx(a.x), 0.12, wz(a.y)]}>
+        <group key={a.id} position={[wx(a.x), h(0.12), wz(a.y)]}>
           <mesh
             onClick={(e: ThreeEvent<MouseEvent>) => {
               e.stopPropagation();
@@ -93,7 +137,7 @@ export function AgentsLayer() {
               setCameraScale(1.75);
             }}
           >
-            <capsuleGeometry args={a.live ? [0.12, 0.1, 4, 8] : far ? [0.07, 0.04, 3, 6] : [0.085, 0.07, 4, 8]} />
+            <capsuleGeometry args={a.live ? [h(0.12), h(0.1), 4, 8] : far ? [h(0.07), h(0.04), 3, 6] : [h(0.085), h(0.07), 4, 8]} />
             <meshStandardMaterial
               color={a.color}
               emissive={selectedAgentId === a.id ? "#ed712e" : a.live ? a.color : a.color}
@@ -101,7 +145,7 @@ export function AgentsLayer() {
             />
           </mesh>
           {a.live && !topView ? (
-            <Html position={[0, 0.55, 0]} center distanceFactor={12} occlude={false} pointerEvents="none">
+            <Html position={[0, h(0.55), 0]} center distanceFactor={12} occlude={false} pointerEvents="none">
               <div className="ns-nametag">
                 <strong>{a.name}</strong>
                 {a.speech ? <em>{a.speech}</em> : null}
@@ -139,7 +183,7 @@ export function TrafficLayer() {
         return;
       }
       child.visible = true;
-      child.position.set(wx(x), 0.16, wz(y));
+      child.position.set(wx(x), h(0.24), wz(y));
       child.rotation.y = car.axis === "x" ? Math.PI / 2 : 0;
     });
   });
@@ -147,7 +191,7 @@ export function TrafficLayer() {
     <group ref={group}>
       {CARS.map((car, i) => (
         <mesh key={i} castShadow raycast={() => undefined}>
-          <boxGeometry args={[0.48, 0.18, 0.24]} />
+          <boxGeometry args={[h(0.48), h(0.18), h(0.24)]} />
           <meshStandardMaterial color={car.color} metalness={0.35} roughness={0.4} />
         </mesh>
       ))}

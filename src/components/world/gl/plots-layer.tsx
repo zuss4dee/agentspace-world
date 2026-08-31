@@ -19,11 +19,11 @@ import {
   placeAtCell,
   tilesToSqFt,
 } from "@/lib/plots";
-import { TILE, wx, wz } from "@/lib/coords";
+import { TILE, h, wx, wz } from "@/lib/coords";
 import { useWorld } from "@/components/world/world-store";
 
 const C = {
-  sale: new THREE.Color("#f4f4f0"),
+  sale: new THREE.Color("#3f7a44"),
   saleEdge: new THREE.Color("#111111"),
   owned: new THREE.Color("#9a9a9a"),
   taken: new THREE.Color("#c8c8c8"),
@@ -50,12 +50,12 @@ export function PlotsLayer() {
       const selected = selectedPlotId === p.id;
       const hidePad = selected && forSale;
 
-      dummy.position.set(cx, forSale ? 0.07 : 0.035, cz);
+      dummy.position.set(cx, forSale ? h(0.07) : h(0.035), cz);
       dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.9, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.9);
       dummy.updateMatrix();
       pad.setMatrixAt(i, dummy.matrix);
 
-      dummy.position.set(cx, forSale ? 0.04 : 0.02, cz);
+      dummy.position.set(cx, forSale ? h(0.04) : h(0.02), cz);
       dummy.scale.set(hidePad ? 0 : p.w * TILE * 0.98, hidePad ? 0 : 1, hidePad ? 0 : p.h * TILE * 0.98);
       dummy.updateMatrix();
       edge.setMatrixAt(i, dummy.matrix);
@@ -85,11 +85,11 @@ export function PlotsLayer() {
   return (
     <group>
       <instancedMesh ref={edges} args={[undefined, undefined, list.length]} receiveShadow>
-        <boxGeometry args={[1, 0.05, 1]} />
+        <boxGeometry args={[1, h(0.05), 1]} />
         <meshStandardMaterial roughness={0.9} metalness={0} />
       </instancedMesh>
       <instancedMesh ref={pads} args={[undefined, undefined, list.length]} onClick={onClick} receiveShadow>
-        <boxGeometry args={[1, 0.08, 1]} />
+        <boxGeometry args={[1, h(0.08), 1]} />
         <meshStandardMaterial roughness={0.72} metalness={0.02} />
       </instancedMesh>
     </group>
@@ -107,7 +107,7 @@ export function LatticeField() {
     if (!m) return;
     for (let i = 0; i < LAND_COUNT; i++) {
       const p = latticePlot(i);
-      dummy.position.set(wx(p.x + p.w / 2), 0.05, wz(p.y + p.h / 2));
+      dummy.position.set(wx(p.x + p.w / 2), h(0.05), wz(p.y + p.h / 2));
       dummy.scale.set(p.w * TILE * 0.86, 1, p.h * TILE * 0.86);
       dummy.updateMatrix();
       m.setMatrixAt(i, dummy.matrix);
@@ -131,13 +131,13 @@ export function LatticeField() {
 
   return (
     <group>
-      <mesh rotation-x={-Math.PI / 2} position={[cx, 0.02, cz]} receiveShadow>
+      <mesh rotation-x={-Math.PI / 2} position={[cx, h(0.02), cz]} receiveShadow>
         <planeGeometry args={[w, d]} />
         <meshStandardMaterial color="#111111" roughness={0.95} />
       </mesh>
       <instancedMesh ref={mesh} args={[undefined, undefined, LAND_COUNT]} onClick={onClick} receiveShadow>
-        <boxGeometry args={[1, 0.07, 1]} />
-        <meshStandardMaterial color="#f4f4f0" roughness={0.78} />
+        <boxGeometry args={[1, h(0.07), 1]} />
+        <meshStandardMaterial color="#3f7a44" roughness={0.78} />
       </instancedMesh>
     </group>
   );
@@ -159,11 +159,11 @@ export function SaleStakes() {
       const hide = claimed.has(p.id) || selectedPlotId === p.id;
       const x = wx(p.x + p.w / 2) + p.w * TILE * 0.32;
       const z = wz(p.y + p.h / 2) + p.h * TILE * 0.32;
-      dummy.position.set(x, 0.55, z);
+      dummy.position.set(x, h(0.55), z);
       dummy.scale.set(hide ? 0 : 1, hide ? 0 : 1, hide ? 0 : 1);
       dummy.updateMatrix();
       pole.setMatrixAt(i, dummy.matrix);
-      dummy.position.set(x + 0.16, 1.02, z);
+      dummy.position.set(x + h(0.16), h(1.02), z);
       dummy.updateMatrix();
       flag.setMatrixAt(i, dummy.matrix);
     });
@@ -176,11 +176,11 @@ export function SaleStakes() {
   return (
     <group>
       <instancedMesh ref={poles} args={[undefined, undefined, sales.length]} frustumCulled={false}>
-        <cylinderGeometry args={[0.028, 0.034, 1.1, 5]} />
+        <cylinderGeometry args={[h(0.028), h(0.034), h(1.1), 5]} />
         <meshStandardMaterial color="#111111" roughness={0.6} />
       </instancedMesh>
       <instancedMesh ref={flags} args={[undefined, undefined, sales.length]} frustumCulled={false}>
-        <boxGeometry args={[0.38, 0.2, 0.04]} />
+        <boxGeometry args={[h(0.38), h(0.2), h(0.04)]} />
         <meshStandardMaterial color="#ffffff" roughness={0.45} />
       </instancedMesh>
     </group>
@@ -210,7 +210,7 @@ export function BuildingGhost() {
   const fp = buildingFootprint(plot, use, extra, buildingPlace);
   const landSq = tilesToSqFt(land.w, land.h);
   const bldgSq = fp ? tilesToSqFt(fp.w, fp.h) : 0;
-  const y0 = 0.22;
+  const y0 = h(0.22);
   const x0 = wx(land.x);
   const z0 = wz(land.y);
   const x1 = wx(land.x + land.w);
@@ -235,15 +235,15 @@ export function BuildingGhost() {
         return (
           <mesh
             key={i}
-            position={[wx(land.x + col + 0.5), 0.09, wz(land.y + row + 0.5)]}
+            position={[wx(land.x + col + 0.5), h(0.09), wz(land.y + row + 0.5)]}
             onClick={(e) => {
               e.stopPropagation();
               if (!fp) return;
               setBuildingPlace(placeAtCell(land.w, land.h, fp.w, fp.h, col, row));
             }}
           >
-            <boxGeometry args={[TILE * 0.9, 0.05, TILE * 0.9]} />
-            <meshStandardMaterial color="#f4f4f0" roughness={0.7} />
+            <boxGeometry args={[TILE * 0.92, h(0.04), TILE * 0.92]} />
+            <meshStandardMaterial color="#3d7a42" roughness={0.85} />
           </mesh>
         );
       })}
@@ -255,25 +255,25 @@ export function BuildingGhost() {
             return (
               <mesh
                 key={`b-${i}`}
-                position={[wx(fp.x + col + 0.5), 0.12, wz(fp.y + row + 0.5)]}
+                position={[wx(fp.x + col + 0.5), h(0.12), wz(fp.y + row + 0.5)]}
               >
-                <boxGeometry args={[TILE * 0.9, 0.08, TILE * 0.9]} />
+                <boxGeometry args={[TILE * 0.9, h(0.08), TILE * 0.9]} />
                 <meshStandardMaterial color="#111111" roughness={0.45} />
               </mesh>
             );
           })}
-          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.18, wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.78, fp.height, fp.h * TILE * 0.78]} />
+          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
+            <boxGeometry args={[fp.w * TILE * 0.78, h(fp.height), fp.h * TILE * 0.78]} />
             <meshStandardMaterial color="#ffffff" roughness={0.32} />
           </mesh>
-          <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.18, wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE * 0.78 + 0.05, fp.height + 0.05, fp.h * TILE * 0.78 + 0.05]} />
+          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.18), wz(fp.y + fp.h / 2)]}>
+            <boxGeometry args={[fp.w * TILE * 0.78 + h(0.05), h(fp.height) + h(0.05), fp.h * TILE * 0.78 + h(0.05)]} />
             <meshStandardMaterial color="#111111" wireframe />
           </mesh>
           {!topView ? (
             <>
               <Html
-                position={[wx(land.x + land.w / 2), 0.55, wz(land.y + land.h) + 0.15]}
+                position={[wx(land.x + land.w / 2), h(0.55), wz(land.y + land.h) + h(0.15)]}
                 center
                 distanceFactor={18}
                 occlude={false}
@@ -282,7 +282,7 @@ export function BuildingGhost() {
                 <div className="ns-sale-pin ns-sale-pin-lot">Land you buy · {formatSqFt(landSq)}</div>
               </Html>
               <Html
-                position={[wx(fp.x + fp.w / 2), fp.height + 0.7, wz(fp.y + fp.h / 2)]}
+                position={[wx(fp.x + fp.w / 2), h(fp.height) + h(0.7), wz(fp.y + fp.h / 2)]}
                 center
                 distanceFactor={16}
                 occlude={false}
@@ -319,18 +319,18 @@ export function ClaimedMarks() {
           <group key={id}>
             <Line
               points={[
-                [x0, 0.2, z0],
-                [x1, 0.2, z0],
-                [x1, 0.2, z1],
-                [x0, 0.2, z1],
-                [x0, 0.2, z0],
+                [x0, h(0.2), z0],
+                [x1, h(0.2), z0],
+                [x1, h(0.2), z1],
+                [x0, h(0.2), z1],
+                [x0, h(0.2), z0],
               ]}
               color="#111111"
               lineWidth={1.6}
             />
             {fp ? (
-              <mesh position={[wx(fp.x + fp.w / 2), fp.height / 2 + 0.16, wz(fp.y + fp.h / 2)]}>
-                <boxGeometry args={[fp.w * TILE * 0.78, fp.height, fp.h * TILE * 0.78]} />
+              <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.16), wz(fp.y + fp.h / 2)]}>
+                <boxGeometry args={[fp.w * TILE * 0.78, h(fp.height), fp.h * TILE * 0.78]} />
                 <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
               </mesh>
             ) : null}

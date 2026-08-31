@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import * as THREE from "three";
 import { GRID, ROAD_XS, ROAD_YS, TERRAIN, groundZ } from "@/lib/campus";
-import { TILE, WORLD_SPAN, wx, wz } from "@/lib/coords";
+import { TILE, WORLD_SPAN, h, wx, wz } from "@/lib/coords";
 import { fbm } from "@/lib/noise";
 import { sectionAt } from "@/lib/world-sections";
 
@@ -68,10 +68,10 @@ export function TerrainMesh() {
       const gx = x / TILE + GRID / 2;
       const gy = z / TILE + GRID / 2;
       const inside = gx >= 0 && gy >= 0 && gx < GRID && gy < GRID;
-      let y = fbm(gx * 0.07, gy * 0.07) * 0.45;
-      if (inside) y = Math.max(-0.45, groundZ(gx, gy) * 0.06);
+      let y = fbm(gx * 0.07, gy * 0.07) * h(0.45);
+      if (inside) y = Math.max(h(-0.45), groundZ(gx, gy) * h(0.06));
       const sec = sectionAt(gx, gy);
-      if (sec?.locked) y = 0.08 + fbm(gx * 0.2, gy * 0.2) * 0.25;
+      if (sec?.locked) y = h(0.08) + fbm(gx * 0.2, gy * 0.2) * h(0.25);
       pos.setY(i, y);
       sampleColor(gx, gy, c);
       colors[i * 3] = c.r;
@@ -92,8 +92,8 @@ export function TerrainMesh() {
 
 export function WaterPlane() {
   return (
-    <mesh rotation-x={-Math.PI / 2} position={[wx(1.5), -0.2, wz(24)]} receiveShadow>
-      <planeGeometry args={[16, 48]} />
+    <mesh rotation-x={-Math.PI / 2} position={[wx(1.5), h(-0.2), wz(24)]} receiveShadow>
+      <planeGeometry args={[h(16), h(48)]} />
       <meshStandardMaterial color="#2a6a96" roughness={0.08} metalness={0.5} transparent opacity={0.86} />
     </mesh>
   );
