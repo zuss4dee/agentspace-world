@@ -37,7 +37,6 @@ export function CityChrome() {
     focusPoi,
     mapOverview,
     showCityOverview,
-    setMapOverview,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
