@@ -10,7 +10,7 @@ import { ExplorerCamera } from "@/components/world/gl/camera-rig";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
 import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/components/world/gl/life";
-import { DistantFills, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
+import { DistantFills, GrassTufts, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { TILE, fromWorld, h, wx, wz } from "@/lib/coords";
@@ -87,9 +87,9 @@ function ExteriorScene() {
   const planeZ = wz(Math.max(GRID, land.y1) / 2);
   return (
     <>
-      <color attach="background" args={["#86b4d0"]} />
-      <fog attach="fog" args={["#9bbfd4", h(18), h(110)]} />
-      <hemisphereLight args={["#fff1dc", "#3f5a44", 0.78]} />
+      <color attach="background" args={["#d8ddd8"]} />
+      <fog attach="fog" args={["#e4e2da", h(88), h(280)]} />
+      <hemisphereLight args={["#f4eee4", "#4a5e44", 0.82]} />
       <LightFollow />
       <ambientLight intensity={0.22} />
       <ExplorerCamera />
@@ -104,6 +104,7 @@ function ExteriorScene() {
       </mesh>
       <group>
         <TerrainMesh />
+      <GrassTufts />
       </group>
       <WaterPlane />
       <DistantFills />

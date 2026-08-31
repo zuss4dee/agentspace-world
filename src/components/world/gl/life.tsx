@@ -5,7 +5,7 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
-import { extraLamps, extraTraffic } from "@/lib/city-gen";
+import { extraLamps } from "@/lib/city-gen";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import {
   LAND_USES,
@@ -17,7 +17,8 @@ import {
   pointInRect,
   yardTreeSpots,
 } from "@/lib/plots";
-import { SCENERY, TRAFFIC } from "@/lib/scenery";
+import { SCENERY } from "@/lib/scenery";
+import { makeTrafficRoutes, pointOnPath } from "@/lib/traffic";
 import { useWorld } from "@/components/world/world-store";
 
 export function TreeField() {
@@ -206,7 +207,7 @@ export function AgentsLayer() {
   );
 }
 
-const CARS = [...TRAFFIC, ...extraTraffic()];
+const CARS = makeTrafficRoutes();
 
 export function TrafficLayer() {
   const group = useRef<THREE.Group>(null);
@@ -217,31 +218,26 @@ export function TrafficLayer() {
     CARS.forEach((car, i) => {
       const child = g.children[i];
       if (!child) return;
-      const u = ((t * car.speed * 6 + car.phase * GRID) % GRID + GRID) % GRID;
-      let x = car.lane;
-      let y = u;
-      if (car.axis === "x") {
-        x = u;
-        y = car.lane;
-      }
-      const ix = Math.min(GRID - 1, Math.floor(x));
-      const iy = Math.min(GRID - 1, Math.floor(y));
-      if (TERRAIN[iy]![ix] !== "road") {
-        child.visible = false;
-        return;
-      }
+      const dist = t * car.speed * 7 + car.phase * car.length;
+      const p = pointOnPath(car, dist);
       child.visible = true;
-      child.position.set(wx(x), h(0.16), wz(y));
-      child.rotation.y = car.axis === "x" ? Math.PI / 2 : 0;
+      child.position.set(wx(p.x), h(0.14), wz(p.y));
+      child.rotation.y = p.heading;
     });
   });
   return (
     <group ref={group}>
       {CARS.map((car, i) => (
-        <mesh key={i} castShadow raycast={() => undefined}>
-          <boxGeometry args={[h(0.48), h(0.18), h(0.24)]} />
-          <meshStandardMaterial color={car.color} metalness={0.35} roughness={0.4} />
-        </mesh>
+        <group key={i} raycast={() => undefined}>
+          <mesh position={[0, h(0.08), 0]} castShadow>
+            <boxGeometry args={[h(0.22), h(0.1), h(0.42)]} />
+            <meshStandardMaterial color={car.color} metalness={0.3} roughness={0.45} />
+          </mesh>
+          <mesh position={[0, h(0.16), h(-0.04)]} castShadow>
+            <boxGeometry args={[h(0.18), h(0.1), h(0.22)]} />
+            <meshStandardMaterial color="#1c1917" metalness={0.15} roughness={0.35} />
+          </mesh>
+        </group>
       ))}
     </group>
   );

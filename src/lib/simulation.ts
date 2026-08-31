@@ -1,5 +1,6 @@
 import type { Agent, DirectorEvent, MapId, PlacedProp, WorldSnapshot } from "./types";
-import { LOT_BUILDINGS, nearestRoad } from "./campus";
+import { LOT_BUILDINGS } from "./campus";
+import { roadCorners } from "./traffic";
 import { tasksFor } from "./playbooks";
 
 function pick<T>(list: T[]) {
@@ -316,13 +317,8 @@ export function assignNewTask(agent: Agent): Agent {
   const station = destBuilding ? pick(destBuilding.stations) : undefined;
   const tx = station?.x ?? agent.x;
   const ty = station?.y ?? agent.y;
-  const via = nearestRoad(agent.x, agent.y);
-  const via2 = nearestRoad(tx, ty);
-  const waypoints = [
-    { x: via.x + 0.15, y: via.y },
-    { x: via2.x + 0.15, y: via2.y },
-    { x: tx, y: ty },
-  ];
+  const viaRoad = roadCorners({ x: agent.x, y: agent.y }, { x: tx, y: ty });
+  const waypoints = [...viaRoad, { x: tx, y: ty }];
   return {
     ...agent,
     task: play.task,

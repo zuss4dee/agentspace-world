@@ -19,6 +19,7 @@ import {
   placeAtCell,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
+import { FacadeOffice } from "@/components/world/gl/buildings";
 import { useWorld } from "@/components/world/world-store";
 
 const C = {
@@ -27,6 +28,25 @@ const C = {
   owned: new THREE.Color("#9a9a9a"),
   taken: new THREE.Color("#c8c8c8"),
 };
+
+function usePalette(useId: string) {
+  switch (useId) {
+    case "hq":
+    case "office":
+    case "lab":
+      return { wall: "#d4dbe4", roof: "#3f4654", accent: "#c45c3a" };
+    case "warehouse":
+      return { wall: "#c4ae7a", roof: "#57534e", accent: "#d4a017" };
+    case "studio":
+      return { wall: "#d8a8bc", roof: "#6b3048", accent: "#fb7185" };
+    case "shop":
+      return { wall: "#e8d2b8", roof: "#6b3a28", accent: "#f59e0b" };
+    case "house":
+      return { wall: "#ead9c4", roof: "#7a4a32", accent: "#b45309" };
+    default:
+      return { wall: "#d8d0c4", roof: "#4a453e", accent: "#8a8178" };
+  }
+}
 
 export function PlotsLayer() {
   const pads = useRef<THREE.InstancedMesh>(null);
@@ -252,14 +272,15 @@ export function BuildingGhost() {
       {fp ? (
         <>
           <SitLandmark fp={fp} />
-          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.32} transparent opacity={0.92} />
-          </mesh>
-          <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
-            <boxGeometry args={[fp.w * TILE + h(0.05), h(fp.height) + h(0.05), fp.h * TILE + h(0.05)]} />
-            <meshStandardMaterial color="#111111" wireframe />
-          </mesh>
+          <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
+            <FacadeOffice
+              w={fp.w * TILE * 0.94}
+              d={fp.h * TILE * 0.94}
+              height={h(fp.height)}
+              opacity={0.9}
+              {...usePalette(use.id)}
+            />
+          </group>
           {!topView ? (
             <>
               <Html
@@ -371,10 +392,14 @@ export function ClaimedMarks() {
             {fp ? (
               <>
                 <SitLandmark fp={fp} />
-                <mesh position={[wx(fp.x + fp.w / 2), h(fp.height) / 2 + h(0.28), wz(fp.y + fp.h / 2)]}>
-                  <boxGeometry args={[fp.w * TILE, h(fp.height), fp.h * TILE]} />
-                  <meshStandardMaterial color="#f4f4f0" roughness={0.4} />
-                </mesh>
+                <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
+                  <FacadeOffice
+                    w={fp.w * TILE * 0.94}
+                    d={fp.h * TILE * 0.94}
+                    height={h(fp.height)}
+                    {...usePalette(use.id)}
+                  />
+                </group>
               </>
             ) : null}
           </group>

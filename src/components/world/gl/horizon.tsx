@@ -30,9 +30,9 @@ function cloudMap() {
   ] as const;
   for (const [x, y, r] of blobs) {
     const g = ctx.createRadialGradient(x, y, r * 0.12, x, y, r);
-    g.addColorStop(0, "rgba(248,252,255,0.72)");
-    g.addColorStop(0.38, "rgba(214,228,238,0.38)");
-    g.addColorStop(1, "rgba(170,200,220,0)");
+    g.addColorStop(0, "rgba(252,250,246,0.7)");
+    g.addColorStop(0.38, "rgba(232,226,214,0.32)");
+    g.addColorStop(1, "rgba(210,200,180,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 256, 160);
   }
@@ -73,7 +73,7 @@ function SkirtGeometry() {
       if (gx >= play.x0 + 2 && gy >= 86) c.setRGB(0.3 + n * 0.07, 0.48 + n * 0.09, 0.26);
     } else if (lake) {
       y = h(-0.72) + n * h(0.04);
-      c.setRGB(0.14 + n * 0.04, 0.38 + n * 0.08, 0.52);
+      c.setRGB(0.22 + n * 0.04, 0.4 + n * 0.06, 0.38);
     } else if (edge > -7) {
       y = h(-0.12) + n * h(0.08);
       c.setRGB(0.78 + n * 0.06, 0.72 + n * 0.05, 0.52);
@@ -84,12 +84,16 @@ function SkirtGeometry() {
         y = n * h(0.35);
         c.setRGB(0.24 + n * 0.1, 0.5 + n * 0.12, 0.24);
       } else {
-        c.setRGB(0.18 + n * 0.05, 0.42 + n * 0.08, 0.5 + n * 0.06);
+        c.setRGB(0.3 + n * 0.06, 0.46 + n * 0.07, 0.3 + n * 0.04);
       }
     } else {
       const fade = THREE.MathUtils.clamp((-edge - 18) / HORIZON_PAD, 0, 1);
       y = h(-0.7) + n * h(0.08) * (1 - fade);
-      c.setRGB(0.16 + fade * 0.18, 0.36 + fade * 0.22, 0.48 + fade * 0.22);
+      if (fade > 0.78) {
+        c.setRGB(0.28 + fade * 0.08, 0.4 + fade * 0.06, 0.38);
+      } else {
+        c.setRGB(0.34 + fade * 0.1, 0.44 + fade * 0.08, 0.3 + fade * 0.04);
+      }
     }
     pos.setX(i, x);
     pos.setZ(i, z);
@@ -112,14 +116,25 @@ function WorldSkirt() {
   );
 }
 
-function OceanSheet() {
+function OceanRim() {
   const hor = horizonBounds();
-  const span = worldRectCenterSpan(hor);
+  const sc = sceneryBounds();
+  const y = h(-0.7);
+  const strips = [
+    { x: (hor.x0 + hor.x1) / 2, z: (hor.y0 + sc.y0) / 2, w: hor.x1 - hor.x0, d: Math.max(4, sc.y0 - hor.y0) },
+    { x: (hor.x0 + hor.x1) / 2, z: (hor.y1 + sc.y1) / 2, w: hor.x1 - hor.x0, d: Math.max(4, hor.y1 - sc.y1) },
+    { x: (hor.x0 + sc.x0) / 2, z: (sc.y0 + sc.y1) / 2, w: Math.max(4, sc.x0 - hor.x0), d: sc.y1 - sc.y0 },
+    { x: (hor.x1 + sc.x1) / 2, z: (sc.y0 + sc.y1) / 2, w: Math.max(4, hor.x1 - sc.x1), d: sc.y1 - sc.y0 },
+  ];
   return (
-    <mesh rotation-x={-Math.PI / 2} position={[span.cx, h(-0.62), span.cz]} receiveShadow>
-      <planeGeometry args={[span.w * 1.04, span.d * 1.04]} />
-      <meshStandardMaterial color="#1f5878" roughness={0.12} metalness={0.42} transparent opacity={0.82} />
-    </mesh>
+    <group>
+      {strips.map((s, i) => (
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[wx(s.x), y, wz(s.z)]} receiveShadow>
+          <planeGeometry args={[s.w * TILE, s.d * TILE]} />
+          <meshStandardMaterial color="#3a5c5e" roughness={0.22} metalness={0.28} />
+        </mesh>
+      ))}
+    </group>
   );
 }
 
@@ -174,7 +189,7 @@ function RimLakes() {
       {LAKES.map((p, i) => (
         <mesh key={i} rotation-x={-Math.PI / 2} position={[wx(p.x), h(-0.18), wz(p.y)]} receiveShadow>
           <circleGeometry args={[Math.max(p.w, p.d) * TILE * 0.42, 28]} />
-          <meshStandardMaterial color="#2a6a96" roughness={0.08} metalness={0.48} transparent opacity={0.88} />
+          <meshStandardMaterial color="#3a6a68" roughness={0.14} metalness={0.32} transparent opacity={0.82} />
         </mesh>
       ))}
     </group>
@@ -202,7 +217,7 @@ function SectionRidge() {
       </mesh>
       <mesh position={[wx(p.x0) - t * 0.2, rise * 0.5, cz]} receiveShadow>
         <boxGeometry args={[t, rise, d + sand]} />
-        <meshStandardMaterial color="#6e8aa0" roughness={0.88} />
+        <meshStandardMaterial color="#7a8068" roughness={0.9} />
       </mesh>
       <mesh position={[wx(p.x1) + t * 0.2, rise * 0.5, cz]} receiveShadow>
         <boxGeometry args={[t, rise, d + sand]} />
@@ -218,7 +233,7 @@ function SectionRidge() {
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[wx(p.x0) - sand * 0.55, h(0.02), cz]} receiveShadow>
         <planeGeometry args={[sand, d + sand]} />
-        <meshStandardMaterial color="#3d7a8a" roughness={0.35} metalness={0.2} />
+        <meshStandardMaterial color="#5a6e58" roughness={0.55} metalness={0.08} />
       </mesh>
       <mesh rotation-x={-Math.PI / 2} position={[wx(p.x1) + sand * 0.7, h(0.05), cz]} receiveShadow>
         <planeGeometry args={[sand * 1.2, d + sand]} />
@@ -294,7 +309,7 @@ function HorizonHaze() {
         depthWrite: false,
         side: THREE.DoubleSide,
         uniforms: {
-          col: { value: new THREE.Color("#c4d6e4") },
+          col: { value: new THREE.Color("#ddd6c6") },
         },
         vertexShader: `
           varying vec2 vUv;
@@ -309,9 +324,8 @@ function HorizonHaze() {
           void main() {
             vec2 p = vUv - 0.5;
             float d = length(p) * 2.0;
-            float ring = smoothstep(0.52, 0.74, d) * (1.0 - smoothstep(0.9, 1.02, d));
-            float mist = smoothstep(0.38, 0.92, d) * 0.22;
-            float a = ring * 0.42 + mist;
+            float ring = smoothstep(0.86, 0.93, d) * (1.0 - smoothstep(0.98, 1.03, d));
+            float a = ring * 0.28;
             gl_FragColor = vec4(col, a);
           }
         `,
@@ -373,10 +387,10 @@ function HorizonClouds() {
           <meshBasicMaterial
             map={tex}
             transparent
-            opacity={0.78}
+            opacity={0.55}
             depthWrite={false}
             fog
-            color="#e7f0f6"
+            color="#f4f0e8"
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -388,7 +402,7 @@ function HorizonClouds() {
 export function DistantFills() {
   return (
     <group>
-      <OceanSheet />
+      <OceanRim />
       <WorldSkirt />
       <RimParks />
       <RimLakes />
