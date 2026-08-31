@@ -340,6 +340,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setInteriorId(id);
     setTopView(false);
     setSelectedBuildingId(id);
+    setSelectedPlotId(null);
     setSelectedAgentId(null);
     setFollowAgent(false);
     setMapOverview(false);

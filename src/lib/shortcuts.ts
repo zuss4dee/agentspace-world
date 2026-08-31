@@ -11,7 +11,7 @@ export const CAMERA_SHORTCUTS: ShortcutRow[] = [
   { keys: "Scroll", does: "Zoom in and out" },
   { keys: "W A S D", does: "Walk the camera over the map" },
   { keys: "Double-click", does: "Fly to that patch of land" },
-  { keys: "?", does: "Open this shortcuts list" },
+  { keys: "Escape", does: "Leave a building you walked into" },
 ];
 
 export const SHORTCUT_SURFACES = [

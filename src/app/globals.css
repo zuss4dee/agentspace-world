@@ -506,13 +506,13 @@
 .gbw-inside {
   pointer-events: auto;
   cursor: pointer;
-  position: fixed;
-  top: 16px;
+  position: absolute;
+  top: 64px;
   left: 50%;
-  z-index: 40;
+  z-index: 50;
   transform: translateX(-50%);
   border: 1px solid #ed712e8c;
-  border-radius: 2px;
+  border-radius: 8px;
   background: #ed712ee6;
   color: #fff6ec;
   padding: 8px 14px;
