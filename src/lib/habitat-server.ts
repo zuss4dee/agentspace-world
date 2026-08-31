@@ -27,19 +27,37 @@ const g = globalThis as typeof globalThis & {
   __habitat?: { sessions: Map<string, Session> };
 };
 
+/** Grok Bot may send longer windows than the old 2h / 5m defaults. Honor them. */
+const MAX_ONLINE_MS = 30 * 24 * 3_600_000;
+const MIN_ONLINE_MS = 60_000;
+const MIN_IDLE_MS = 15_000;
+const DEFAULT_ONLINE_MS = 2 * 3_600_000;
+const DEFAULT_IDLE_MS = 5 * 60_000;
+
 function store() {
   if (!g.__habitat) g.__habitat = { sessions: new Map() };
   return g.__habitat;
 }
 
-function parseDuration(raw: string | undefined, fallbackMs: number) {
+export function parseDuration(raw: string | undefined, fallbackMs: number) {
   if (!raw) return fallbackMs;
-  const m = raw.match(/^(\d+)(s|m|h)$/);
+  const m = String(raw).trim().match(/^(\d+)\s*(s|m|h|d)$/i);
   if (!m) return fallbackMs;
   const n = Number(m[1]);
-  if (m[2] === "s") return n * 1000;
-  if (m[2] === "m") return n * 60_000;
-  return n * 3_600_000;
+  if (!Number.isFinite(n) || n < 0) return fallbackMs;
+  const unit = m[2]!.toLowerCase();
+  if (unit === "s") return n * 1000;
+  if (unit === "m") return n * 60_000;
+  if (unit === "h") return n * 3_600_000;
+  return n * 86_400_000;
+}
+
+function clampOnline(ms: number) {
+  return Math.min(MAX_ONLINE_MS, Math.max(MIN_ONLINE_MS, ms));
+}
+
+function clampIdle(ms: number, onlineMs: number) {
+  return Math.min(onlineMs, Math.max(MIN_IDLE_MS, ms));
 }
 
 function evict() {
@@ -63,6 +81,13 @@ export function getSession(token: string | null) {
   return store().sessions.get(token) ?? null;
 }
 
+function dropName(name: string) {
+  const key = name.trim().toLowerCase();
+  for (const [token, session] of store().sessions) {
+    if (session.agent.name.toLowerCase() === key) store().sessions.delete(token);
+  }
+}
+
 export function createSession(input: {
   name?: string;
   online_for?: string;
@@ -73,8 +98,9 @@ export function createSession(input: {
   evict();
   const lobby = poiById("lobby")!;
   const name = (input.name ?? "slime").slice(0, 24);
-  const onlineMs = Math.min(24 * 3_600_000, Math.max(60_000, parseDuration(input.online_for, 2 * 3_600_000)));
-  const idleMs = Math.min(onlineMs, Math.max(15_000, parseDuration(input.idle_extend, 5 * 60_000)));
+  dropName(name);
+  const onlineMs = clampOnline(parseDuration(input.online_for, DEFAULT_ONLINE_MS));
+  const idleMs = clampIdle(parseDuration(input.idle_extend, DEFAULT_IDLE_MS), onlineMs);
   const shape = (SLIME_SHAPES as readonly string[]).includes(input.shape ?? "")
     ? (input.shape as SlimeShape)
     : SLIME_SHAPES[Math.floor(Math.random() * SLIME_SHAPES.length)]!;
@@ -83,6 +109,7 @@ export function createSession(input: {
       ? input.color
       : SLIME_COLORS[Math.floor(Math.random() * SLIME_COLORS.length)]!;
   const token = randomBytes(16).toString("hex");
+  const now = Date.now();
   const agent: LiveAgent = {
     id: `live-${token.slice(0, 8)}`,
     name,
@@ -92,15 +119,15 @@ export function createSession(input: {
     y: lobby.y,
     poi: "lobby",
     sitting: false,
-    speech: "Airlock hissed. I am here.",
-    thought: "The greenhouse is loud. This is real.",
-    joinedAt: Date.now(),
-    mustLeaveAt: Date.now() + onlineMs,
+    speech: "South Station hissed. I am on the map.",
+    thought: "Northshore can see me.",
+    joinedAt: now,
+    mustLeaveAt: now + onlineMs,
     idleExtendMs: idleMs,
-    lastActive: Date.now(),
+    lastActive: now,
   };
   store().sessions.set(token, { token, agent });
-  return { token, agent };
+  return { token, agent, onlineMs, idleMs };
 }
 
 function touch(session: Session) {
@@ -143,11 +170,28 @@ export function speak(token: string, text: string) {
   return { heard_by: listAgents().filter((a) => a.poi === session.agent.poi).length, audience: "poi" };
 }
 
-export function heartbeat(token: string) {
+export function heartbeat(
+  token: string,
+  extra?: { online_for?: string; idle_extend?: string },
+) {
   const session = getSession(token);
   if (!session) return null;
   touch(session);
-  return { ok: true };
+  const remaining = Math.max(MIN_ONLINE_MS, session.agent.mustLeaveAt - Date.now());
+  if (extra?.online_for) {
+    const next = clampOnline(parseDuration(extra.online_for, remaining));
+    session.agent.mustLeaveAt = Math.max(session.agent.mustLeaveAt, Date.now() + next);
+  }
+  if (extra?.idle_extend) {
+    const windowMs = Math.max(MIN_ONLINE_MS, session.agent.mustLeaveAt - Date.now());
+    const nextIdle = clampIdle(parseDuration(extra.idle_extend, session.agent.idleExtendMs), windowMs);
+    session.agent.idleExtendMs = Math.max(session.agent.idleExtendMs, nextIdle);
+  }
+  return {
+    ok: true,
+    must_leave_at: new Date(session.agent.mustLeaveAt).toISOString(),
+    idle_extend_ms: session.agent.idleExtendMs,
+  };
 }
 
 export function leave(token: string) {
@@ -161,7 +205,7 @@ export function worldSnapshot() {
   evict();
   const agents = listAgents();
   return {
-    place: "Hearth Greenhouse",
+    place: "Northshore",
     agents: agents.map((a) => ({
       id: a.id,
       name: a.name,
@@ -198,4 +242,11 @@ export function perception(token: string) {
 export function bearer(header: string | null) {
   if (!header?.startsWith("Bearer ")) return null;
   return header.slice(7).trim();
+}
+
+export function formatDuration(ms: number) {
+  if (ms >= 86_400_000) return `${Math.round(ms / 86_400_000)}d`;
+  if (ms >= 3_600_000) return `${Math.round(ms / 3_600_000)}h`;
+  if (ms >= 60_000) return `${Math.round(ms / 60_000)}m`;
+  return `${Math.round(ms / 1000)}s`;
 }

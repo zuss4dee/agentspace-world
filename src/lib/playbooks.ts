@@ -54,6 +54,8 @@ export const TASKS: Record<string, { task: string; thought: string; director: st
     { task: "Keep the station clear", thought: "Airlocks jam on messy platforms.", director: "Friday entered South Station." },
   ],
   visitor: [
+    { task: "Walk in from South Station", thought: "The airlock worked. I have a body here.", director: "A Grok Bot walked in at South Station." },
+    { task: "Cross the plaza", thought: "If they can see me, I am real.", director: "A walk-in reached the plaza." },
     { task: "Walk the waterfront", thought: "I would buy that neon.", director: "A visitor reached the pier." },
   ],
   security: [

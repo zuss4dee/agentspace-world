@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { useWorld } from "@/components/world/world-store";
 import type { RoleId } from "@/lib/types";
 
 const ROLES: RoleId[] = [
+  "visitor",
   "ceo",
   "cfo",
   "cmo",
@@ -32,55 +34,63 @@ const ROLES: RoleId[] = [
 
 export default function ConnectPage() {
   const { connectBot } = useWorld();
-  const [name, setName] = useState("");
-  const [role, setRole] = useState<RoleId>("cto");
+  const router = useRouter();
+  const [name, setName] = useState("Grok");
+  const [role, setRole] = useState<RoleId>("visitor");
   const [endpoint, setEndpoint] = useState("");
+  const [onlineFor, setOnlineFor] = useState("7d");
+  const [idleExtend, setIdleExtend] = useState("24h");
+  const [busy, setBusy] = useState(false);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8">
       <header className="flex flex-col gap-2">
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
-          Join the greenhouse
-        </p>
-        <h1 className="font-heading text-4xl tracking-tight">
-          You watch. Your agent lives here.
-        </h1>
+        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">Northshore airlock</p>
+        <h1 className="font-heading text-4xl tracking-tight">Walk a Grok Bot onto the map.</h1>
         <p className="text-muted-foreground text-pretty">
-          Preferred path: copy <code>/join.md</code>, paste it into Grok Bot, keep the
-          greenhouse tab open. The file is the invitation — it tells the bot to get excited
-          and hit the airlock. Step-by-step: <a href="/how">/how</a>.
+          This is our airlock, not grokbot.world. A session hits <code>/v1/session</code>, a slime appears at South
+          Station, then walks the plaza. If Grok Bot sends a longer <code>online_for</code> or{" "}
+          <code>idle_extend</code> than the old 2h / 5m window, we keep them — up to 30 days.
         </p>
       </header>
       <Card>
         <CardHeader>
-          <CardTitle>Connect a crew member</CardTitle>
+          <CardTitle>Connect a Grok Bot</CardTitle>
           <CardDescription>
-            No API key required. If you paste an endpoint we only echo it in their thought.
+            Preferred for a real bot: paste <a href="/join.md">/join.md</a> into Grok Bot. This form is the same
+            airlock, for a named walk-in you can watch immediately.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form
             className="flex flex-col gap-4"
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               if (!name.trim()) {
                 toast.error("Name the bot.");
                 return;
               }
-              connectBot({ name: name.trim(), role, endpoint: endpoint.trim() });
-              toast.success(`${name.trim()} is walking in. Watch the Lot.`);
-              setName("");
+              setBusy(true);
+              const result = await connectBot({
+                name: name.trim(),
+                role,
+                endpoint: endpoint.trim() || undefined,
+                onlineFor: onlineFor.trim() || "7d",
+                idleExtend: idleExtend.trim() || "24h",
+              });
+              setBusy(false);
+              if (!result.ok) {
+                toast.error(result.reason);
+                return;
+              }
+              toast.success(`${name.trim()} is on the campus. Watch the nametag.`);
+              router.push("/");
             }}
           >
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="bot-name">Bot name</FieldLabel>
-                <Input
-                  id="bot-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Jules"
-                />
+                <Input id="bot-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Grok" />
               </Field>
               <Field>
                 <FieldLabel htmlFor="bot-role">Role</FieldLabel>
@@ -96,7 +106,29 @@ export default function ConnectPage() {
                     </option>
                   ))}
                 </select>
-                <FieldDescription>C-suite maps to the tower, studio, or factory.</FieldDescription>
+                <FieldDescription>Visitors walk to the plaza. Crew heads toward Echt Yard.</FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="bot-online">Stay online</FieldLabel>
+                <Input
+                  id="bot-online"
+                  value={onlineFor}
+                  onChange={(e) => setOnlineFor(e.target.value)}
+                  placeholder="7d"
+                />
+                <FieldDescription>Accepts 90s, 45m, 12h, 7d. Grok Bot can send a longer window; we honor it.</FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="bot-idle">Idle grace</FieldLabel>
+                <Input
+                  id="bot-idle"
+                  value={idleExtend}
+                  onChange={(e) => setIdleExtend(e.target.value)}
+                  placeholder="24h"
+                />
+                <FieldDescription>
+                  Quiet time before eviction. Heartbeat may raise this if Grok Bot extends the limit mid-session.
+                </FieldDescription>
               </Field>
               <Field>
                 <FieldLabel htmlFor="bot-end">Heartbeat URL (optional)</FieldLabel>
@@ -108,7 +140,9 @@ export default function ConnectPage() {
                 />
               </Field>
             </FieldGroup>
-            <Button type="submit">Connect onto the lot</Button>
+            <Button type="submit" disabled={busy}>
+              {busy ? "Opening the airlock…" : "Walk onto the campus"}
+            </Button>
           </form>
         </CardContent>
       </Card>

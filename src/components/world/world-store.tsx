@@ -15,12 +15,10 @@ import { catalogById } from "@/lib/catalog";
 import {
   createSnapshot,
   directorLine,
-  nid,
   placeProp,
   pushEvent,
   stepAgents,
 } from "@/lib/simulation";
-import { tasksFor } from "@/lib/playbooks";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { ALL_BUILDINGS } from "@/lib/city-gen";
 import { PLOTS } from "@/lib/plots";
@@ -43,7 +41,13 @@ type WorldApi = {
   focusBuilding: (id: string) => void;
   buyProp: (catalogId: string) => { ok: true; creatorPayout: number } | { ok: false; reason: string };
   gift: (cents: number, label: string) => void;
-  connectBot: (input: { name: string; role: RoleId; endpoint: string }) => void;
+  connectBot: (input: {
+    name: string;
+    role: RoleId;
+    endpoint?: string;
+    onlineFor?: string;
+    idleExtend?: string;
+  }) => Promise<{ ok: true; agentId: string } | { ok: false; reason: string }>;
   submitStudio: (name: string, kind: string, notes: string) => void;
   agentsOn: (mapId: MapId) => Agent[];
   link: "connecting" | "live" | "offline";
@@ -161,30 +165,33 @@ export function WorldProvider({ children }: { children: ReactNode }) {
         setLink("live");
         apply((prev) => {
           const npcs = prev.agents.filter((a) => !a.live);
-          const liveAgents: Agent[] = data.agents.map((a) => ({
-            id: a.id,
-            name: a.name,
-            role: "visitor",
-            color: a.color,
-            shape: a.shape,
-            x: a.x,
-            y: a.z,
-            targetX: a.x,
-            targetY: a.z,
-            buildingId: a.poi,
-            stationId: a.poi,
-            organization: "Walk-in",
-            waypoints: [],
-            outfitId: "visitor-lanyard",
-            status: a.sitting ? "idle" : "walking",
-            task: a.thought,
-            thought: a.thought,
-            speech: a.speech,
-            live: true,
-            poi: a.poi,
-            connected: true,
-            mapId: "lot",
-          }));
+          const liveAgents: Agent[] = data.agents.map((a) => {
+            const old = prev.agents.find((p) => p.id === a.id && p.live);
+            return {
+              id: a.id,
+              name: a.name,
+              role: "visitor" as const,
+              color: a.color,
+              shape: a.shape,
+              x: old ? old.x : a.x,
+              y: old ? old.y : a.z,
+              targetX: a.x,
+              targetY: a.z,
+              buildingId: a.poi,
+              stationId: a.poi,
+              organization: "Grok Bot",
+              waypoints: [],
+              outfitId: "visitor-lanyard",
+              status: a.sitting ? "idle" : "walking",
+              task: a.thought,
+              thought: a.thought,
+              speech: a.speech,
+              live: true,
+              poi: a.poi,
+              connected: true,
+              mapId: "lot" as const,
+            };
+          });
           let events = prev.events;
           for (const incoming of liveAgents) {
             if (!prev.agents.some((p) => p.id === incoming.id)) {
@@ -249,52 +256,6 @@ export function WorldProvider({ children }: { children: ReactNode }) {
           ? placeProp(prev.props, "bench-gift", "lot")
           : prev.props;
       return { ...prev, giftedCents: prev.giftedCents + cents, events, props };
-    });
-  }, [apply]);
-
-  const connectBot = useCallback((input: { name: string; role: RoleId; endpoint: string }) => {
-    apply((prev) => {
-      const play = tasksFor(input.role)[0]!;
-      const home = LOT_BUILDINGS.find((b) => {
-        if (input.role === "ceo" || input.role === "coo") return b.id === "hq";
-        if (input.role === "cfo") return b.id === "finance";
-        if (input.role === "cmo") return b.id === "loft";
-        if (input.role === "creative" || input.role === "designer") return b.id === "studio";
-        if (input.role === "cto" || input.role === "researcher") return b.id === "lab";
-        if (input.role === "security") return b.id === "data";
-        if (input.role === "knowledge") return b.id === "gallery";
-        if (input.role === "support") return b.id === "seed-cafe";
-        return b.id === "warehouse";
-      });
-      const station = home?.stations[0];
-      const spawn = poiById("lobby")!;
-      const agent: Agent = {
-        id: nid(),
-        name: input.name,
-        role: input.role,
-        organization: "Northshore",
-        color: "#e2e8f0",
-        x: spawn.x,
-        y: spawn.y,
-        targetX: station?.x ?? spawn.x,
-        targetY: station?.y ?? spawn.y,
-        waypoints: [],
-        buildingId: home?.id ?? "hq",
-        stationId: station?.id ?? "desk",
-        outfitId: "founder-hoodie",
-        status: "walking",
-        task: play.task,
-        thought: play.thought + (input.endpoint ? ` Signal: ${input.endpoint}` : ""),
-        connected: true,
-        mapId: "lot",
-      };
-      const events = pushEvent(prev.events, {
-        kind: "connect",
-        agentId: agent.id,
-        mapId: "lot",
-        text: `${agent.name} connected as ${input.role} and is walking in from South Station.`,
-      });
-      return { ...prev, agents: [...prev.agents, agent], events };
     });
   }, [apply]);
 
@@ -406,6 +367,47 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setCameraScaleState(id === "hearth" ? 0.55 : 0.72);
     setCameraTick((t) => t + 1);
   }, []);
+
+  const connectBot = useCallback(async (input: {
+    name: string;
+    role: RoleId;
+    endpoint?: string;
+    onlineFor?: string;
+    idleExtend?: string;
+  }) => {
+    try {
+      const res = await fetch("/v1/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: input.name,
+          online_for: input.onlineFor ?? "24h",
+          idle_extend: input.idleExtend ?? "2h",
+        }),
+      });
+      if (!res.ok) return { ok: false as const, reason: "Airlock refused the session." };
+      const data = (await res.json()) as { token: string; agent_id: string };
+      const auth = { Authorization: `Bearer ${data.token}`, "Content-Type": "application/json" };
+      const dest = input.role === "visitor" ? "hearth" : "startup";
+      await fetch("/v1/me/go", {
+        method: "POST",
+        headers: auth,
+        body: JSON.stringify({ poi: dest }),
+      });
+      const line = input.endpoint
+        ? `South Station hissed. ${input.name} is on the map. Signal ${input.endpoint}.`
+        : `South Station hissed. ${input.name} walked in as a Grok Bot.`;
+      await fetch("/v1/me/speak", {
+        method: "POST",
+        headers: auth,
+        body: JSON.stringify({ text: line }),
+      });
+      focusPoi(dest === "hearth" ? "hearth" : "startup");
+      return { ok: true as const, agentId: data.agent_id };
+    } catch {
+      return { ok: false as const, reason: "Could not reach the airlock." };
+    }
+  }, [focusPoi]);
 
   const focusCoord = useCallback((x: number, y: number, scale = 1.05) => {
     setMapOverview(false);

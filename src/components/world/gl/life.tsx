@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
 import * as THREE from "three";
 import { GRID, TERRAIN } from "@/lib/campus";
 import { extraLamps, extraTraffic } from "@/lib/city-gen";
@@ -65,7 +66,7 @@ export function BushField() {
 }
 
 export function AgentsLayer() {
-  const { world, liveRef, selectedAgentId, selectAgent, setFollowAgent, setCameraScale, cameraScale } = useWorld();
+  const { world, liveRef, selectedAgentId, selectAgent, setFollowAgent, setCameraScale, cameraScale, topView } = useWorld();
   const group = useRef<THREE.Group>(null);
   const agents = world.agents.filter((a) => a.mapId === "lot");
   const far = cameraScale < 0.55;
@@ -83,23 +84,31 @@ export function AgentsLayer() {
   return (
     <group ref={group}>
       {agents.map((a) => (
-        <mesh
-          key={a.id}
-          position={[wx(a.x), 0.12, wz(a.y)]}
-          onClick={(e: ThreeEvent<MouseEvent>) => {
-            e.stopPropagation();
-            selectAgent(a.id);
-            setFollowAgent(true);
-            setCameraScale(1.75);
-          }}
-        >
-          <capsuleGeometry args={far ? [0.07, 0.04, 3, 6] : [0.085, 0.07, 4, 8]} />
-          <meshStandardMaterial
-            color={a.color}
-            emissive={selectedAgentId === a.id ? "#ed712e" : a.color}
-            emissiveIntensity={selectedAgentId === a.id ? 0.4 : 0.06}
-          />
-        </mesh>
+        <group key={a.id} position={[wx(a.x), 0.12, wz(a.y)]}>
+          <mesh
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              e.stopPropagation();
+              selectAgent(a.id);
+              setFollowAgent(true);
+              setCameraScale(1.75);
+            }}
+          >
+            <capsuleGeometry args={a.live ? [0.12, 0.1, 4, 8] : far ? [0.07, 0.04, 3, 6] : [0.085, 0.07, 4, 8]} />
+            <meshStandardMaterial
+              color={a.color}
+              emissive={selectedAgentId === a.id ? "#ed712e" : a.live ? a.color : a.color}
+              emissiveIntensity={selectedAgentId === a.id ? 0.4 : a.live ? 0.22 : 0.06}
+            />
+          </mesh>
+          {a.live && !topView ? (
+            <Html position={[0, 0.55, 0]} center distanceFactor={12} occlude={false} pointerEvents="none">
+              <div className="ns-nametag">
+                <strong>{a.name}</strong>
+                {a.speech ? <em>{a.speech}</em> : null}
+              </div>
+            </Html>
+          ) : null}
+        </group>
       ))}
     </group>
   );

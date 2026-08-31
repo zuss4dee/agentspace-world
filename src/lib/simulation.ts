@@ -332,10 +332,22 @@ export function directorLine(agent: Agent, kind: "arrive" | "work") {
 export function stepAgents(agents: Agent[], dt: number, paused: boolean): Agent[] {
   if (paused) return agents;
   return agents.map((agent) => {
-    if (agent.live) return agent;
     const dx = agent.targetX - agent.x;
     const dy = agent.targetY - agent.y;
     const dist = Math.hypot(dx, dy);
+    if (agent.live) {
+      if (dist < 0.12) {
+        return { ...agent, x: agent.targetX, y: agent.targetY, status: agent.status === "walking" ? "idle" : agent.status };
+      }
+      const speed = 2.4;
+      const step = Math.min(dist, speed * dt);
+      return {
+        ...agent,
+        x: agent.x + (dx / dist) * step,
+        y: agent.y + (dy / dist) * step,
+        status: "walking",
+      };
+    }
     if (dist < 0.12) {
       if (agent.waypoints.length) {
         const [next, ...rest] = agent.waypoints;

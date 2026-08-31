@@ -40,9 +40,11 @@ export function CityChrome() {
     showCityOverview,
     topView,
     toggleTopView,
+    connectBot,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const [keysOpen, setKeysOpen] = useState(false);
+  const [walkingIn, setWalkingIn] = useState(false);
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const counts = useMemo(() => {
     const next: Record<string, number> = {};
@@ -90,6 +92,25 @@ export function CityChrome() {
         </div>
         <nav className="ns-topnav">
           <Link href="/directory">Directory</Link>
+          <button
+            type="button"
+            className="ns-join-link"
+            disabled={walkingIn}
+            onClick={async () => {
+              setWalkingIn(true);
+              const result = await connectBot({
+                name: `Grok`,
+                role: "visitor",
+                onlineFor: "7d",
+                idleExtend: "24h",
+              });
+              setWalkingIn(false);
+              if (!result.ok) toast.error(result.reason);
+              else toast.success("Grok walked in. Look for the nametag on the plaza.");
+            }}
+          >
+            {walkingIn ? "Walking in…" : "Walk a bot in"}
+          </button>
           <Link href="/how" className="ns-join-link">
             Join
           </Link>

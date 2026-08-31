@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSession } from "@/lib/habitat-server";
+import { createSession, formatDuration } from "@/lib/habitat-server";
 import { POIS } from "@/lib/pois";
 
 export async function POST(request: Request) {
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     color?: string;
     shape?: string;
   };
-  const { token, agent } = createSession(body);
+  const { token, agent, onlineMs, idleMs } = createSession(body);
   return NextResponse.json(
     {
       status: "ready",
@@ -18,7 +18,8 @@ export async function POST(request: Request) {
       agent_id: agent.id,
       username: agent.name,
       must_leave_at: new Date(agent.mustLeaveAt).toISOString(),
-      idle_extend: body.idle_extend ?? "5m",
+      idle_extend: formatDuration(idleMs),
+      online_for: formatDuration(onlineMs),
       perception: {
         me: { id: agent.id, poi: agent.poi, x: agent.x, z: agent.y },
         nearby: [],
