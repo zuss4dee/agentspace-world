@@ -87,8 +87,8 @@ function ExteriorScene() {
   const planeZ = wz(Math.max(GRID, land.y1) / 2);
   return (
     <>
-      <color attach="background" args={["#8eb8d6"]} />
-      <fog attach="fog" args={["#9fc4d6", h(16), h(38)]} />
+      <color attach="background" args={["#86b4d0"]} />
+      <fog attach="fog" args={["#9bbfd4", h(18), h(110)]} />
       <hemisphereLight args={["#fff1dc", "#3f5a44", 0.78]} />
       <LightFollow />
       <ambientLight intensity={0.22} />

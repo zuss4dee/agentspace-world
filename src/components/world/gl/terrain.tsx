@@ -28,7 +28,11 @@ function sampleColor(gx: number, gy: number, out: THREE.Color) {
     return;
   }
   if (!inside) {
-    out.setRGB(0.3 + n * 0.06, 0.46 + n * 0.08, 0.28);
+    const ox = gx < 0 ? -gx : gx >= GRID ? gx - GRID : 0;
+    const oy = gy < 0 ? -gy : gy >= GRID ? gy - GRID : 0;
+    const edge = Math.hypot(ox, oy);
+    const t = Math.min(1, edge / 5);
+    out.setRGB(0.28 + n * 0.05 + t * 0.04, 0.44 + n * 0.07 - t * 0.06, 0.3 + t * 0.2);
     return;
   }
   if (kind === "water") {
@@ -115,6 +119,4 @@ export function WaterPlane() {
   );
 }
 
-export function DistantFills() {
-  return null;
-}
+export { DistantFills } from "./horizon";

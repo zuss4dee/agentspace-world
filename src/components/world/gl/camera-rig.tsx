@@ -5,7 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
 import { distFromScale, h, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, TILE, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
-import { cameraPanLimits } from "@/lib/world-sections";
+import { cameraFlyLimits, cameraPanLimits } from "@/lib/world-sections";
 
 const keys = new Set<string>();
 const _forward = new THREE.Vector3();
@@ -304,6 +304,9 @@ export function ExplorerCamera() {
       t.z = nz;
       camera.position.x += dx;
       camera.position.z += dz;
+      const fly = cameraFlyLimits(d, mapOverview);
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, fly.minX, fly.maxX);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, fly.minZ, fly.maxZ);
     }
 
     const wantH = interiorId ? h(7.2) : mapOverview ? OVERVIEW_DIST : distFromScale(cameraScale);
@@ -361,17 +364,21 @@ export function ExplorerCamera() {
     const fog = scene.fog;
     if (fog instanceof THREE.Fog) {
       if (mapOverview || (topRef.current && !interiorId)) {
-        fog.near = h(34);
-        fog.far = h(420);
+        fog.near = h(52);
+        fog.far = h(200);
       } else {
         const d = camera.position.distanceTo(t);
-        fog.near = Math.max(h(14), d * 0.7);
-        fog.far = Math.max(h(220), d * 2.15);
+        fog.near = Math.max(h(16), d * 0.8);
+        fog.far = Math.max(h(96), Math.min(h(250), d * 2.4));
       }
     }
 
-    if (!interiorId) keepAboveGround(camera, GROUND_Y);
-    else keepAboveGround(camera, h(0.35));
+    if (!interiorId) {
+      keepAboveGround(camera, GROUND_Y);
+      const fly = cameraFlyLimits(camera.position.distanceTo(t), mapOverview);
+      camera.position.x = THREE.MathUtils.clamp(camera.position.x, fly.minX, fly.maxX);
+      camera.position.z = THREE.MathUtils.clamp(camera.position.z, fly.minZ, fly.maxZ);
+    } else keepAboveGround(camera, h(0.35));
 
     camera.lookAt(t);
 
