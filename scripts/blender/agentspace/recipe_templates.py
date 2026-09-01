@@ -37,4 +37,7 @@ RECIPE_IDS = (
     "pavilion",
     "stacked_volumes",
     "asymmetric_campus",
+    "sculpture_hq",
+    "vertical_landmark",
+    "hybrid",
 )
