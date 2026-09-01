@@ -67,10 +67,13 @@ def validate_footprint(
         if d > bounds.max_d + tolerance:
             issues.append(f"depth {d}m exceeds plot max {bounds.max_d}m ({bounds.plot_id})")
 
-    if w <= 0 or d <= 0:
+    h = float(local_meters.get("h", 0))
+    if w <= 0 or d <= 0 or h <= 0:
         issues.append("invalid measured footprint")
+    if spec.max_height is not None and h > float(spec.max_height) + tolerance:
+        issues.append(f"height {h}m exceeds plot max {spec.max_height}m ({spec.parcel_id})")
 
-    return {"ok": not issues, "issues": issues, "bounds": bounds, "measured": {"w": w, "d": d, "h": local_meters.get("h", 0)}}
+    return {"ok": not issues, "issues": issues, "bounds": bounds, "measured": {"w": w, "d": d, "h": h}}
 
 
 def assert_no_interior_kinds(asset_id: str) -> dict:
@@ -86,3 +89,11 @@ def assert_no_interior_kinds(asset_id: str) -> dict:
         if kind in forbidden:
             bad.append(f"{ob.name}:{kind}")
     return {"ok": not bad, "interiorComponents": bad}
+
+
+def validate_asset_id(asset_id: str) -> dict:
+    """Pack ids are the stable contract consumed by R3F and publish."""
+    import re
+
+    ok = bool(re.fullmatch(r"pack\.agentspace\.building\.[a-z0-9][a-z0-9._-]*", asset_id))
+    return {"ok": ok, "assetId": asset_id, "reason": None if ok else "invalid building asset id"}
