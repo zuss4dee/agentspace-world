@@ -1,13 +1,23 @@
 /**
  * Company → building generation contracts.
- * Website scrape / LLM fill is later. Echt is the first handwritten spec.
+ * Website/asset ingestion is explicit: an official logo may be supplied, but
+ * the generator never invents one. Echt remains the handwritten frozen spec.
  */
 
 export type BrandSpec = {
   companyId: string;
   companyName: string;
   website?: string;
-  logo?: { assetId?: string; wordmark: string };
+  logo?: {
+    assetId?: string;
+    wordmark: string;
+    sourceUrl?: string;
+    fetchedAt?: string;
+    sha256?: string;
+    format?: "svg" | "png" | "jpg" | "jpeg";
+    aspectRatio?: number;
+    provenance?: "official" | "wordmark_fallback";
+  };
   primaryColours: string[];
   secondaryColours: string[];
   typography: { display: string; body: string };
@@ -41,6 +51,8 @@ export type GeneratedBuildingSpec = {
   roofKind: "membrane" | "terrace" | "pitch";
   /** Exterior export kinds only — no interior geometry. */
   runtimeExportKinds: string[];
+  maxHeight?: number;
+  detailDensity?: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH";
 };
 
 export const ECHT_BRAND: BrandSpec = {
