@@ -30,6 +30,15 @@ class SlotSpec(TypedDict):
     procedural: tuple[str, ...]
 
 
+class SculptureSpec(TypedDict):
+    component_id: str
+    category: str
+    style: str
+    scale_range: tuple[float, float]
+    allowed_locations: tuple[str, ...]
+    weight: float
+
+
 # Composition slots → candidate assets (library instancing + existing procedural vocabulary).
 DECORATION_SLOTS: dict[str, SlotSpec] = {
     "rooftop_sculpture": {
@@ -65,6 +74,44 @@ DECORATION_SLOTS: dict[str, SlotSpec] = {
         "procedural": ("antenna", "spire"),
     },
 }
+
+# Existing procedural sculptures and reusable scene-library objects. This is
+# metadata only: the geometry remains authored in Blender and is never
+# duplicated into a new mesh for library assets.
+SCULPTURE_CATALOG: tuple[SculptureSpec, ...] = (
+    {
+        "component_id": "hero_rings",
+        "category": "sculpture",
+        "style": "graphic concentric rings",
+        "scale_range": (0.7, 1.1),
+        "allowed_locations": ("roof", "entrance", "plaza"),
+        "weight": 1.0,
+    },
+    {
+        "component_id": "orb_stack",
+        "category": "sculpture",
+        "style": "playful orb stack",
+        "scale_range": (0.7, 1.0),
+        "allowed_locations": ("roof", "entrance", "plaza"),
+        "weight": 0.85,
+    },
+    {
+        "component_id": "spire",
+        "category": "landmark",
+        "style": "chunky vertical beacon",
+        "scale_range": (0.65, 1.15),
+        "allowed_locations": ("roof", "entrance"),
+        "weight": 0.95,
+    },
+    {
+        "component_id": "antenna",
+        "category": "rooftop object",
+        "style": "toy antenna farm",
+        "scale_range": (0.5, 0.85),
+        "allowed_locations": ("roof",),
+        "weight": 0.8,
+    },
+)
 
 
 def resolve_library_id(key: str) -> str:
