@@ -1,7 +1,7 @@
 """Silhouette recipe implementations for company HQ assets.
 
-Each recipe produces a substantially different massing language.
-Only bridge_complex is wired to production (Echt); others are framework-ready.
+Each recipe produces a substantially different massing language. Echt keeps
+its frozen bridge_complex preset; every other family is parametric.
 """
 from __future__ import annotations
 
@@ -189,10 +189,13 @@ from .building_recipes_procedural import (
     recipe_asymmetric_campus_procedural as recipe_asymmetric_campus,
     recipe_bridge_complex_procedural,
     recipe_courtyard_block_procedural as recipe_courtyard_block,
+    recipe_hybrid_procedural as recipe_hybrid,
     recipe_pavilion_procedural as recipe_pavilion,
+    recipe_sculpture_hq_procedural as recipe_sculpture_hq,
     recipe_stacked_volumes_procedural as recipe_stacked_volumes,
     recipe_stepped_terrace_procedural as recipe_stepped_terrace,
     recipe_tower_campus_procedural as recipe_tower_campus,
+    recipe_vertical_landmark_procedural as recipe_vertical_landmark,
 )
 
 
@@ -212,6 +215,9 @@ RECIPE_IDS = (
     "pavilion",
     "stacked_volumes",
     "asymmetric_campus",
+    "sculpture_hq",
+    "vertical_landmark",
+    "hybrid",
 )
 
 RECIPES: dict[str, RecipeFn] = {
@@ -222,4 +228,7 @@ RECIPES: dict[str, RecipeFn] = {
     "pavilion": recipe_pavilion,
     "stacked_volumes": recipe_stacked_volumes,
     "asymmetric_campus": recipe_asymmetric_campus,
+    "sculpture_hq": recipe_sculpture_hq,
+    "vertical_landmark": recipe_vertical_landmark,
+    "hybrid": recipe_hybrid,
 }
