@@ -407,11 +407,10 @@ def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
     # Round satellite tower
     tb = positions["b"]
     cylinder_tower(part, "tower.sat", 2.8, 18.0, tb[0] + 4.5, tb[1] - 2.0, base_z, m["brand"], m["glass"], m["charcoal"], ctx.root, ctx.col, bands=4, glow_mat=m["glow"])
-    sky_bridge_platform(part, "link.skydeck", (ta[0] + tb_pos[0]) / 2, (ta[1] + tb_pos[1]) / 2, base_z + 14.0, 11.0, 3.2, 0.65, m["brand"], m["glow"], ctx.root, ctx.col)
-    toy_spire(part, "spire.sat", tb[0] + 4.5, tb[1] - 2.0, base_z + 18.0, 3.5, m["charcoal"], m["coral"], ctx.root, ctx.col)
-
     ta, tb_pos = positions["a"], positions["b"]
     tc = positions["c"]
+    sky_bridge_platform(part, "link.skydeck", (ta[0] + tb_pos[0]) / 2, (ta[1] + tb_pos[1]) / 2, base_z + 14.0, 11.0, 3.2, 0.65, m["brand"], m["glow"], ctx.root, ctx.col)
+    toy_spire(part, "spire.sat", tb[0] + 4.5, tb[1] - 2.0, base_z + 18.0, 3.5, m["charcoal"], m["coral"], ctx.root, ctx.col)
     diagonal_bridge(part, "link.ab", (ta[0] + tb_pos[0]) / 2, (ta[1] + tb_pos[1]) / 2, base_z + 10.0, 10.0, 2.8, 0.52, m["cream_dark"], ctx.root, ctx.col, rise=3.0)
     bridge_connector(part, "link.bc", (tb_pos[0] + tc[0]) / 2, (tb_pos[1] + tc[1]) / 2, base_z + 8.5, 8.0, 2.6, 2.2, m["charcoal"], ctx.root, ctx.col)
 
@@ -421,3 +420,96 @@ def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W, podium_d=ctx.D,
                      plaza_w=_s(ctx, 10.0), plaza_d=_s(ctx, 3.8), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
     _set_anchors(ctx, entrance=(tb_pos[0] * 0.3, _front(ctx) + 2.0, base_z), roof_center=(tb_pos[0], tb_pos[1]), roof_z=base_z + blobs[1][5] + 1.5)
+
+
+def recipe_sculpture_hq_procedural(ctx: "BuildingContext") -> None:
+    """A low, gallery-like HQ whose identity is carried by sculpture."""
+    m, part = ctx.mats, ctx.part
+    rng = _rng(ctx)
+    base_z = shared_podium(
+        part,
+        "podium",
+        ctx.W * 0.86,
+        ctx.D * 0.74,
+        ctx.site_z,
+        m["cream_dark"],
+        m["charcoal"],
+        ctx.root,
+        ctx.col,
+        h=0.5,
+        bevel=0.24,
+    )
+    wing_h = rng.uniform("wing.h", 8.0, 13.0)
+    left_x = -ctx.W * 0.22 + rng.uniform("left.x", -1.5, 1.5)
+    right_x = ctx.W * 0.23 + rng.uniform("right.x", -1.0, 2.0)
+    rounded_mass(part, "mass.gallery.left", ctx.W * 0.38, ctx.D * 0.48, wing_h, left_x, 0.8, base_z, m["cream"], ctx.root, ctx.col, bevel=0.34, cid="mass.gallery.left")
+    skewed_mass(
+        part,
+        "mass.gallery.right",
+        ctx.W * 0.34,
+        ctx.D * 0.44,
+        wing_h * 0.82,
+        right_x,
+        -0.2,
+        base_z,
+        m["coral"],
+        ctx.root,
+        ctx.col,
+        skew_x=rng.uniform("right.skew", -2.5, 2.8),
+        skew_y=0.8,
+        bevel=0.34,
+    )
+    toy_curtain_wall(part, "gallery.glass", 0, -ctx.D * 0.32, base_z + 1.5, base_z + wing_h * 0.78, ctx.W * 0.34, m["glass"], m["charcoal"], ctx.root, ctx.col, depth=0.36, cols=3)
+    terrace_garden(part, "gallery.terrace", right_x, 0.8, base_z + wing_h * 0.82 + 0.45, ctx.W * 0.22, ctx.D * 0.25, m, ctx.root, ctx.col)
+
+    sculpture_scale = rng.uniform("sculpture.scale", 0.9, 1.3)
+    sculpture = rng.choice("sculpture.kind", ["rings", "orbs"])
+    if sculpture == "orbs":
+        orb_sculpture_stack(part, "sculpture", -ctx.W * 0.18, _plaza_y(ctx) + 0.2, ctx.site_z + 0.1, m, ctx.root, ctx.col, count=rng.randint("sculpture.count", 3, 5), scale=sculpture_scale)
+    else:
+        hero_sculpture_rings(part, "sculpture", -ctx.W * 0.18, _plaza_y(ctx) + 0.2, ctx.site_z + 0.1, m["brand"], m["coral"], ctx.root, ctx.col, scale=sculpture_scale)
+    arch_portal_entrance(part, "entrance", 0, _front(ctx) + 2.1, base_z, m, ctx.root, ctx.col, span=12.5, height=8.5)
+    signage_from_brand(part, "sign", ctx.brand, 0, _front(ctx) - 0.22, base_z + 6.7, m["sign"], ctx.root, ctx.col, s=0.5, d=0.2)
+    slanted_wedge_roof(part, "roof.left", ctx.W * 0.38, ctx.D * 0.48, left_x, 0.8, base_z + wing_h, m["roof"], m["brand"], ctx.root, ctx.col, rise=1.3)
+    slanted_wedge_roof(part, "roof.right", ctx.W * 0.34, ctx.D * 0.44, right_x, -0.2, base_z + wing_h * 0.82, m["roof"], m["coral"], ctx.root, ctx.col, rise=1.0)
+    site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.95, podium_d=ctx.D * 0.9, plaza_w=_s(ctx, 11.0), plaza_d=_s(ctx, 4.2), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    _set_anchors(ctx, entrance=(0, _front(ctx) + 2.1, base_z), roof_center=(left_x, 0.8), roof_z=base_z + wing_h + 1.6)
+
+
+def recipe_vertical_landmark_procedural(ctx: "BuildingContext") -> None:
+    """A deliberately singular skyline element with a compact supporting base."""
+    m, part = ctx.mats, ctx.part
+    rng = _rng(ctx)
+    base_z = shared_podium(part, "podium", ctx.W * 0.82, ctx.D * 0.72, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.5, bevel=0.24)
+    tx = rng.uniform("landmark.x", -2.0, 2.0)
+    ty = rng.uniform("landmark.y", 0.5, 2.5)
+    th = rng.uniform("landmark.height", 29.0, 40.0)
+    style = ctx.params.get("landmark_style") or rng.choice("landmark.style", ["wishbone", "cylinder"])
+    if style == "wishbone":
+        wishbone_tower(part, "landmark", ctx.W * 0.32, ctx.D * 0.34, th, tx, ty, base_z, m["brand"], m["coral"], m["glass"], ctx.root, ctx.col, bevel=0.36)
+    else:
+        cylinder_tower(part, "landmark", min(ctx.W, ctx.D) * 0.19, th, tx, ty, base_z, m["brand"], m["glass"], m["charcoal"], ctx.root, ctx.col, bands=7, glow_mat=m["glow"])
+    toy_spire(part, "landmark.spire", tx, ty, base_z + th, 5.0, m["charcoal"], m["coral"], ctx.root, ctx.col, r=0.7)
+    rounded_mass(part, "base.west", ctx.W * 0.3, ctx.D * 0.46, 8.5, -ctx.W * 0.27, 0.3, base_z, m["cream"], ctx.root, ctx.col, bevel=0.3, cid="base.west")
+    rounded_mass(part, "base.east", ctx.W * 0.25, ctx.D * 0.4, 11.0, ctx.W * 0.28, -0.8, base_z, m["coral"], ctx.root, ctx.col, bevel=0.3, cid="base.east")
+    diagonal_bridge(part, "landmark.link", (tx + ctx.W * 0.18) / 2, (ty - 0.5) / 2, base_z + 7.0, 8.5, 2.6, 0.52, m["cream_dark"], ctx.root, ctx.col, rise=2.5)
+    arch_portal_entrance(part, "entrance", 0, _front(ctx) + 2.0, base_z, m, ctx.root, ctx.col, span=11.5, height=8.5)
+    signage_from_brand(part, "sign", ctx.brand, tx, ty - ctx.D * 0.18, base_z + th * 0.42, m["sign"], ctx.root, ctx.col, s=0.48, d=0.2)
+    site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.94, podium_d=ctx.D * 0.88, plaza_w=_s(ctx, 9.5), plaza_d=_s(ctx, 3.8), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    _set_anchors(ctx, entrance=(0, _front(ctx) + 2.0, base_z), roof_center=(tx, ty), roof_z=base_z + th + 3.0)
+
+
+def recipe_hybrid_procedural(ctx: "BuildingContext") -> None:
+    """Controlled hybrid: a campus base with one selected landmark language."""
+    rng = _rng(ctx)
+    mode = ctx.params.get("hybrid_mode") or rng.choice("hybrid.mode", ["tower", "sculpture", "terrace"])
+    if mode == "sculpture":
+        recipe_sculpture_hq_procedural(ctx)
+        return
+    if mode == "terrace":
+        recipe_stepped_terrace_procedural(ctx)
+        return
+    recipe_tower_campus_procedural(ctx)
+    # A single branded bridge makes this a hybrid rather than a duplicate of
+    # tower_campus while keeping the silhouette controlled.
+    diagonal_bridge(ctx.part, "hybrid.link", 0, _front(ctx) + 5.0, ctx.site_z + 9.0, ctx.W * 0.42, 2.4, 0.5, ctx.mats["coral"], ctx.root, ctx.col, rise=2.0)
