@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 from mathutils import Vector
 
-from .library_catalog import DECORATION_SLOTS, LIBRARY_ASSETS, resolve_library_id
+from .library_catalog import DECORATION_SLOTS, LIBRARY_ASSETS, SCULPTURE_CATALOG, resolve_library_id
 from .library_instancer import _asset_footprint_z, instance_library_asset
 from .mini_city_style import (
     hero_sculpture_rings,
@@ -121,6 +121,8 @@ def _pick(rng: ParamRNG, slot: str, options: tuple[str, ...]) -> str:
 def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[PropPlan]:
     """Deterministic prop plan from seed — intentional focal + secondary tiers."""
     rng = ParamRNG(ctx.seed)
+    density = str(ctx.params.get("detail_density") or getattr(ctx.spec, "detail_density", "MEDIUM")).upper()
+    density_scale = {"LOW": 0.35, "MEDIUM": 0.7, "HIGH": 1.0, "VERY_HIGH": 1.35}.get(density, 0.7)
     profile = ctx.params.get("composition_profile") or rng.weighted_choice(
         "comp.profile",
         ["landmark_roof", "plaza_sculpture", "street_buzz", "signage_corner", "roof_garden"],
@@ -212,7 +214,7 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
         )
 
     # 2 — entrance flank (asymmetric pair max 1–2)
-    if rng.uniform("ent.flank", 0, 1) > 0.35:
+    if density_scale >= 0.55 and rng.uniform("ent.flank", 0, 1) > 0.35:
         src = lib_pick("facade_prop") or "poster"
         off = rng.uniform("ent.off", 4.0, 7.5) * (1 if rng.choice("ent.side", ["l", "r"]) == "r" else -1)
         plans.append(
@@ -230,19 +232,20 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
     corner_i = rng.randint("corner.i", 0, 3)
     cx, cy, cz = anchors.corners[corner_i]
     src = lib_pick("corner_prop") or "streetlight_park"
-    plans.append(
-        PropPlan(
-            "corner_prop",
-            src,
-            (cx + rng.uniform("cx", -0.8, 0.8), cy + rng.uniform("cy", 0.5, 1.5), cz + 0.08),
-            rotation_z=rng.uniform("corner.rot", -0.5, 0.5),
-            scale=rng.uniform("corner.scale", 0.85, 1.05),
-            kind="landscape",
+    if density_scale >= 0.55:
+        plans.append(
+            PropPlan(
+                "corner_prop",
+                src,
+                (cx + rng.uniform("cx", -0.8, 0.8), cy + rng.uniform("cy", 0.5, 1.5), cz + 0.08),
+                rotation_z=rng.uniform("corner.rot", -0.5, 0.5),
+                scale=rng.uniform("corner.scale", 0.85, 1.05),
+                kind="landscape",
+            )
         )
-    )
 
     # 4 — landscaping tier (trees/planters — procedural vocabulary, no mesh duplication)
-    tree_n = rng.randint("trees", 1, 2)
+    tree_n = 0 if density_scale < 0.55 else rng.randint("trees", 1, 2 if density_scale < 1.1 else 3)
     for i in range(tree_n):
         plans.append(
             PropPlan(
@@ -257,7 +260,7 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
                 kind="landscape",
             )
         )
-    if rng.uniform("planter", 0, 1) > 0.4:
+    if density_scale >= 0.7 and rng.uniform("planter", 0, 1) > 0.4:
         plans.append(
             PropPlan(
                 "landscape_prop",
@@ -273,7 +276,7 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
         )
 
     # 5 — secondary street prop (opposite side from focal)
-    if profile != "street_buzz" and rng.uniform("st2", 0, 1) > 0.45:
+    if density_scale >= 0.7 and profile != "street_buzz" and rng.uniform("st2", 0, 1) > 0.45:
         src = _pick(rng, "st2", ("bench", "bike", "bollard", "hydrant"))
         plans.append(
             PropPlan(
@@ -291,7 +294,7 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
         )
 
     # 6 — optional roof detail (small, not competing with landmark)
-    if profile != "landmark_roof" and anchors.roof_z > 8 and rng.uniform("roofdet", 0, 1) > 0.5:
+    if density_scale >= 0.7 and profile != "landmark_roof" and anchors.roof_z > 8 and rng.uniform("roofdet", 0, 1) > 0.5:
         src = lib_pick("roof_detail") or "antenna"
         ox = rng.uniform("rd.x", -anchors.width * 0.15, anchors.width * 0.15)
         plans.append(
@@ -376,4 +379,6 @@ def apply_toy_composition(ctx: "BuildingContext") -> dict[str, Any]:
         "plans": len(plans),
         "placed": placed,
         "profile": ctx.params.get("composition_profile"),
+        "detailDensity": density,
+        "sculptureCatalogue": [entry["component_id"] for entry in SCULPTURE_CATALOG],
     }
