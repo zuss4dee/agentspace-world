@@ -133,6 +133,35 @@ PREVIEW_BUILDINGS: tuple[PreviewBuildingCase, ...] = (
         footprint_d=32.0,
         recipe_params={"tower_style": "cantilever", "roof_module": "pitch_cap", "composition_profile": "street_buzz"},
     ),
+    PreviewBuildingCase(
+        "sculpture_hq",
+        "preview.sculpture.s01",
+        "pack.agentspace.building.preview.sculpture_hq.s01",
+        (570.0, 24.0, 0.0),
+        "Gallery HQ + hero sculpture + terrace",
+        "PREVIEW sculpture_hq / seed s01",
+        recipe_params={"composition_profile": "plaza_sculpture", "detail_density": "VERY_HIGH"},
+    ),
+    PreviewBuildingCase(
+        "vertical_landmark",
+        "preview.landmark.s01",
+        "pack.agentspace.building.preview.vertical_landmark.s01",
+        (570.0, 110.0, 0.0),
+        "Singular wishbone/cylinder skyline landmark",
+        "PREVIEW vertical_landmark / seed s01",
+        scale=1.1,
+        recipe_params={"landmark_style": "wishbone", "detail_density": "HIGH"},
+    ),
+    PreviewBuildingCase(
+        "hybrid",
+        "preview.hybrid.s01",
+        "pack.agentspace.building.preview.hybrid.s01",
+        (632.0, 110.0, 0.0),
+        "Controlled tower + bridge hybrid",
+        "PREVIEW hybrid / seed s01",
+        scale=1.1,
+        recipe_params={"hybrid_mode": "tower", "detail_density": "MEDIUM"},
+    ),
 )
 
 
@@ -148,6 +177,9 @@ def preview_brand(case: PreviewBuildingCase) -> BrandSpec:
         "preview.campus.s01": "CHE",
         "preview.bridge.s01": "ETC",
         "preview.bridge.s02": "TECH",
+        "preview.sculpture.s01": "FORM",
+        "preview.landmark.s01": "VERT",
+        "preview.hybrid.s01": "MIX",
     }
     return BrandSpec(
         company_id=case.company_id,
