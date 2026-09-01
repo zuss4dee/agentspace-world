@@ -8,7 +8,13 @@ from typing import Any
 @dataclass
 class BrandLogoSpec:
     wordmark: str = ""
-    asset_path: str | None = None  # Phase 2: official SVG/PNG on disk — never AI-generated
+    asset_path: str | None = None
+    source_url: str | None = None
+    fetched_at: str | None = None
+    sha256: str | None = None
+    format: str | None = None
+    aspect_ratio: float | None = None
+    fallback: bool = False
 
 
 @dataclass
@@ -17,6 +23,9 @@ class BrandSpec:
     company_name: str
     primary_colours: list[str] = field(default_factory=list)
     secondary_colours: list[str] = field(default_factory=list)
+    website: str = ""
+    industry: str = ""
+    personality: list[str] = field(default_factory=list)
     visual_style: str = ""
     architectural_direction: str = ""
     signage_direction: str = ""
@@ -41,3 +50,5 @@ class GeneratedBuildingSpec:
     recipe_params: dict[str, Any] = field(default_factory=dict)
     plot_grid: dict[str, float] | None = None  # {x, y, w, h} tiles — plot allocation
     runtime_export_kinds: list[str] = field(default_factory=list)
+    max_height: float | None = None
+    detail_density: str = "MEDIUM"
