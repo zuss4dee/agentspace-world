@@ -264,7 +264,6 @@ run_publish(${JSON.stringify(toExport)}, world=${args.world ? "True" : "False"},
 
   const exported = result.exported || [];
   const registryUpdated = bumpPackRegistry(exported);
-  writeAssetRegistry(exported, inspect);
   for (const a of exported) {
     if (!a.assetId?.startsWith("pack.agentspace.building")) continue;
     try {
@@ -286,6 +285,8 @@ run_publish(${JSON.stringify(toExport)}, world=${args.world ? "True" : "False"},
       console.warn("building meters sync skipped for", a.assetId, e.message || e);
     }
   }
+  /* Sync first so ASSET_CATALOG receives the measured metadata for new HQs. */
+  writeAssetRegistry(exported, inspect);
   let websiteUpdated = registryUpdated;
   if (args.world && result.world) {
     bumpWorldBinding(args.worldName, result.world.signature || "pub");
