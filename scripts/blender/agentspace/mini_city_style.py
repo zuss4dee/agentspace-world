@@ -691,18 +691,31 @@ def stylized_bollard(part, prefix, x, y, z, mat, parent, col, *, h=0.75):
 
 
 def signage_from_brand(part, prefix, brand, x, y, z, sign_mat, parent, col, *, s=0.55, d=0.22):
-    """Exterior signage — wordmark now; official logo plane in Phase 2.
-
-    Phase 2: when brand.logo.asset_path is set, load the official SVG/PNG texture
-    onto a sign plane. Never AI-redraw logos.
-    """
+    """Place an official logo when supplied, otherwise an explicit wordmark fallback."""
     logo = getattr(brand, "logo", None)
     logo_path = getattr(logo, "asset_path", None) if logo else None
     wordmark = getattr(logo, "wordmark", "") if logo else ""
     if logo_path:
-        # Phase 2 hook — apply_logo_texture_plane(part, prefix, logo_path, ...)
-        raise NotImplementedError("logo texture signage is Phase 2 — use wordmark for now")
-    block_sign(part, prefix, wordmark or getattr(brand, "company_name", "HQ")[:4].upper(), x, y, z, sign_mat, parent, col, s=s, d=d)
+        from .logo_ingestion import apply_logo_surface
+
+        result = apply_logo_surface(
+            part,
+            prefix,
+            logo,
+            x,
+            y,
+            z,
+            parent,
+            col,
+            width=max(1.2, 5.0 * s),
+            depth=d,
+            asset_id=str(parent.get("asw_assetId") or ""),
+        )
+        if result.get("placed"):
+            return {"mode": "official", **result}
+    text = wordmark or getattr(brand, "company_name", "HQ")[:4].upper()
+    block_sign(part, prefix, text, x, y, z, sign_mat, parent, col, s=s, d=d)
+    return {"mode": "wordmark_fallback", "wordmark": text}
 
 
 def toy_pitch_cap(part, prefix, w, d, x, y, z, roof_mat, accent_mat, parent, col, *, pitch=0.55):
