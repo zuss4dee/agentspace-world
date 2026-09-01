@@ -15,11 +15,13 @@ from .company_building_spec import BrandSpec, GeneratedBuildingSpec
 from .geom import box, ensure_collection, link
 from .param_rng import deterministic_seed
 from .plot_validator import assert_no_interior_kinds, validate_footprint
+from .plot_validator import validate_asset_id
 from .pbr_library import ensure_mats
 from .building_composition import apply_toy_composition
 from .recipe_templates import compose
 from .registry import tag
 from .spec_compiler import compile_spec
+from .logo_ingestion import inspect_logo, write_logo_manifest
 
 KIND = "building"
 
@@ -133,6 +135,9 @@ def _measure_local_bbox(asset_id: str, fallback_w: float, fallback_d: float) -> 
 def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     """Build one exterior company HQ in the asset library."""
     compiled = compile_spec(brand, spec)
+    asset_id_check = validate_asset_id(compiled.asset_id)
+    if not asset_id_check["ok"]:
+        raise ValueError(asset_id_check["reason"])
 
     _remove_asset(compiled.asset_id)
 
@@ -221,9 +226,32 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     if not footprint_check["ok"]:
         raise RuntimeError(f"plot footprint validation failed: {footprint_check['issues']}")
 
+    logo_report = inspect_logo(brand.logo)
+    if logo_report.get("available"):
+        try:
+            logo_report["manifest"] = write_logo_manifest(brand.logo, logo_report, brand.company_id)
+        except OSError as exc:
+            logo_report["manifestError"] = str(exc)
+    component_ids = [
+        str(o.get("asw_componentId"))
+        for o in bpy.data.objects
+        if o.get("asw_assetId") == compiled.asset_id and o.get("asw_componentId")
+    ]
+    unique_component_ids = len(component_ids) == len(set(component_ids))
+    if not unique_component_ids:
+        raise RuntimeError("duplicate component IDs in generated building")
+
     report["recipe"] = compiled.recipe
     report["preset"] = compiled.recipe_params.get("preset")
     report["composition"] = composition
+    report["assetIdValidation"] = asset_id_check
+    report["componentValidation"] = {
+        "ok": unique_component_ids,
+        "count": len(component_ids),
+        "unique": len(set(component_ids)),
+    }
+    report["logo"] = logo_report
+    report["detailDensity"] = compiled.detail_density
     return report
 
 
