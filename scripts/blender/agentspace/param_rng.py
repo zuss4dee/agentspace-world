@@ -45,11 +45,15 @@ RECIPE_IDS = (
     "pavilion",
     "stacked_volumes",
     "asymmetric_campus",
+    "sculpture_hq",
+    "vertical_landmark",
+    "hybrid",
 )
 
 ROOF_MODULES = ("stack", "terrace", "pitch_cap", "dome")
 FACADE_MODULES = ("curtain", "punched", "band", "mixed")
 ENTRANCE_MODULES = ("portal", "canopy", "portico", "steps")
+DETAIL_DENSITIES = ("LOW", "MEDIUM", "HIGH", "VERY_HIGH")
 
 
 def generate_recipe_params(rng: ParamRNG, recipe: str, *, w: float, d: float) -> dict[str, Any]:
@@ -65,6 +69,11 @@ def generate_recipe_params(rng: ParamRNG, recipe: str, *, w: float, d: float) ->
         "glass_bias": rng.uniform("glass", 0.35, 0.75),
         "width_ratio": rng.uniform("wr", 0.72, 0.96),
         "depth_ratio": rng.uniform("dr", 0.68, 0.94),
+        "detail_density": rng.weighted_choice(
+            "detail_density",
+            list(DETAIL_DENSITIES),
+            [0.8, 2.0, 1.2, 0.45],
+        ),
     }
     if recipe == "tower_campus":
         base["tower_height"] = rng.uniform("tower_h", 22.0, min(38.0, w * 0.9))
@@ -78,9 +87,41 @@ def generate_recipe_params(rng: ParamRNG, recipe: str, *, w: float, d: float) ->
     return base
 
 
-def select_recipe(rng: ParamRNG) -> str:
-    return rng.weighted_choice(
-        "recipe",
-        list(RECIPE_IDS),
-        [1.2, 1.0, 1.0, 0.9, 0.85, 1.0, 1.1],
+def select_recipe(rng: ParamRNG, brand=None) -> str:
+    """Choose a family deterministically, with brand traits acting as a bias."""
+    weights = {recipe: 1.0 for recipe in RECIPE_IDS}
+    weights.update(
+        {
+            "bridge_complex": 1.2,
+            "tower_campus": 1.0,
+            "stepped_terrace": 1.0,
+            "courtyard_block": 0.9,
+            "pavilion": 0.85,
+            "stacked_volumes": 1.0,
+            "asymmetric_campus": 1.1,
+            "sculpture_hq": 0.85,
+            "vertical_landmark": 0.9,
+            "hybrid": 0.7,
+        }
     )
+    text = " ".join(
+        [
+            str(getattr(brand, "industry", "")),
+            str(getattr(brand, "visual_style", "")),
+            str(getattr(brand, "architectural_direction", "")),
+            " ".join(getattr(brand, "personality", []) or []),
+        ]
+    ).lower()
+    if any(token in text for token in ("creative", "design", "art", "playful", "marketing")):
+        for recipe in ("asymmetric_campus", "sculpture_hq", "pavilion"):
+            weights[recipe] += 0.8
+    if any(token in text for token in ("tech", "ai", "software", "research", "lab")):
+        for recipe in ("tower_campus", "stacked_volumes", "vertical_landmark"):
+            weights[recipe] += 0.65
+    if any(token in text for token in ("finance", "bank", "legal", "formal", "premium")):
+        for recipe in ("tower_campus", "courtyard_block"):
+            weights[recipe] += 0.55
+    if any(token in text for token in ("campus", "community", "education")):
+        for recipe in ("courtyard_block", "bridge_complex"):
+            weights[recipe] += 0.6
+    return rng.weighted_choice("recipe", list(RECIPE_IDS), [weights[r] for r in RECIPE_IDS])
