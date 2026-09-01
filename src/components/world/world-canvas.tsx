@@ -1,17 +1,18 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
-import { Canvas, useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
-import { ContactShadows } from "@react-three/drei";
+import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { BeaconMarker } from "@/components/world/gl/beacon-marker";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
 import { BuildingGhost, ClaimedMarks, LatticeField, PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
+import { ArchVizFinish, ArchVizLights } from "@/components/world/gl/arch-viz";
 import { LockedLand } from "@/components/world/gl/locked-land";
 import { InteriorRoom } from "@/components/world/gl/interior";
 import { AgentsLayer, BushField, Lamps, TrafficLayer, TreeField } from "@/components/world/gl/life";
 import { StreetLife } from "@/components/world/gl/street-life";
+import { AuthoredEnvironmentLayer } from "@/components/world/gl/env-gltf";
+import { AuthoredWorldLayer, preloadAuthoredWorld } from "@/components/world/gl/world-gltf";
 import { StreetsLayer } from "@/components/world/gl/streets";
 import { DistantFills, GrassTufts, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
 import { useWorld } from "@/components/world/world-store";
@@ -19,64 +20,11 @@ import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { TILE, fromWorld, h, wx, wz } from "@/lib/coords";
 import { landBounds, plotAt, isLotMultiModifier } from "@/lib/plots";
 import { sectionAt } from "@/lib/world-sections";
+import { BUILDINGS_ENABLED } from "@/lib/architecture-stage";
+import { ARCH_EXPOSURE } from "@/lib/arch-viz";
+import { AUTHORED_WORLD_ENABLED } from "@/lib/world-gltf";
 
-function DaylightEnv() {
-  const scene = useThree((s) => s.scene);
-  useLayoutEffect(() => {
-    const c = document.createElement("canvas");
-    c.width = 256;
-    c.height = 128;
-    const ctx = c.getContext("2d")!;
-    const g = ctx.createLinearGradient(0, 0, 0, 128);
-    g.addColorStop(0, "#c8c4bc");
-    g.addColorStop(0.42, "#e4dcc8");
-    g.addColorStop(0.58, "#c4b89a");
-    g.addColorStop(1, "#5a6a4e");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 256, 128);
-    const tex = new THREE.CanvasTexture(c);
-    tex.mapping = THREE.EquirectangularReflectionMapping;
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.needsUpdate = true;
-    scene.environment = tex;
-    scene.environmentIntensity = 0.58;
-    return () => {
-      scene.environment = null;
-      tex.dispose();
-    };
-  }, [scene]);
-  return null;
-}
-
-function LightFollow() {
-  const ref = useRef<THREE.DirectionalLight>(null);
-  const scene = useThree((s) => s.scene);
-  useLayoutEffect(() => {
-    const l = ref.current;
-    if (l) scene.add(l.target);
-  }, [scene]);
-  useFrame(({ camera }) => {
-    const l = ref.current;
-    if (!l) return;
-    l.position.set(camera.position.x + h(22), camera.position.y + h(32), camera.position.z + h(14));
-    l.target.position.set(camera.position.x - h(8), 0, camera.position.z - h(8));
-    l.target.updateMatrixWorld();
-  });
-  return (
-    <directionalLight
-      ref={ref}
-      color="#fff1de"
-      intensity={1.72}
-      castShadow
-      shadow-mapSize={[2048, 2048]}
-      shadow-camera-far={h(90)}
-      shadow-camera-left={-h(28)}
-      shadow-camera-right={h(28)}
-      shadow-camera-top={h(28)}
-      shadow-camera-bottom={-h(28)}
-    />
-  );
-}
+preloadAuthoredWorld();
 
 function ExteriorScene() {
   const { selectBuilding, selectAgent, selectDistrict, selectPlot, focusCoord } = useWorld();
@@ -120,13 +68,11 @@ function ExteriorScene() {
   const planeZ = wz(Math.max(GRID, land.y1) / 2);
   return (
     <>
-      <color attach="background" args={["#d4d0c6"]} />
-      <fog attach="fog" args={["#ddd6c8", h(140), h(380)]} />
-      <hemisphereLight args={["#f2ebe0", "#4a5844", 0.62]} />
-      <LightFollow />
-      <ambientLight intensity={0.12} />
-      <directionalLight position={[-h(18), h(12), -h(10)]} intensity={0.18} color="#efe6d4" />
-      <DaylightEnv />
+      <color attach="background" args={["#c8c2b6"]} />
+      <fog attach="fog" args={["#cfc8ba", h(280), h(720)]} />
+      <hemisphereLight args={["#e8e4dc", "#5a6458", 0.55]} />
+      <ambientLight intensity={0.18} />
+      <ArchVizLights />
       <ExplorerCamera />
       <mesh
         rotation-x={-Math.PI / 2}
@@ -137,27 +83,25 @@ function ExteriorScene() {
         <planeGeometry args={[planeW, planeD]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
-      <group>
-        <TerrainMesh />
-      <GrassTufts />
-      </group>
-      <StreetsLayer />
-      <WaterPlane />
-      <DistantFills />
+      {AUTHORED_WORLD_ENABLED ? (
+        <AuthoredWorldLayer />
+      ) : (
+        <>
+          <group>
+            <TerrainMesh />
+            <GrassTufts />
+          </group>
+          <AuthoredEnvironmentLayer />
+          <StreetsLayer />
+          <WaterPlane />
+          <DistantFills />
+          <TreeField />
+          <BushField />
+          <StreetLife />
+          <Lamps />
+        </>
+      )}
       <LockedLand />
-      <TreeField />
-      <BushField />
-      <StreetLife />
-      <Lamps />
-      <ContactShadows
-        frames={1}
-        position={[wx(24), h(0.02), wz(7)]}
-        opacity={0.34}
-        scale={TILE * 40}
-        blur={2.1}
-        far={h(12)}
-        color="#2a241c"
-      />
       <LatticeField />
       <PlotsLayer />
       <SaleStakes />
@@ -167,12 +111,14 @@ function ExteriorScene() {
       <BeaconMarker />
       <TrafficLayer />
       <AgentsLayer />
+      <ArchVizFinish />
     </>
   );
 }
 
 function Scene() {
   const { interiorId } = useWorld();
+  if (!BUILDINGS_ENABLED) return <ExteriorScene />;
   return interiorId ? <InteriorRoom /> : <ExteriorScene />;
 }
 
@@ -182,13 +128,24 @@ export function WorldCanvas() {
     <Canvas
       key={interiorId ? `in-${interiorId}` : "out"}
       shadows
-      dpr={[1, 1.6]}
+      dpr={[1, 2]}
       camera={
         interiorId
           ? { position: [2.4, 2.15, 4.35], fov: 50, near: 0.08, far: 48 }
-          : { position: [wx(28.5) + h(9), h(12), wz(8) + h(9)], fov: 42, near: h(0.3), far: h(4200) }
+          : { position: [wx(28.5) + h(9), h(12), wz(8) + h(9)], fov: 36, near: h(0.3), far: h(4200) }
       }
-      gl={{ antialias: true, powerPreference: "high-performance" }}
+      gl={{
+        alpha: false,
+        antialias: true,
+        powerPreference: "high-performance",
+        outputColorSpace: THREE.SRGBColorSpace,
+        toneMapping: THREE.AgXToneMapping,
+        toneMappingExposure: ARCH_EXPOSURE,
+      }}
+      onCreated={({ gl, scene }) => {
+        gl.setClearColor("#c8c2b6", 1);
+        scene.background = new THREE.Color("#c8c2b6");
+      }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"
     >
       <Scene />

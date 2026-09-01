@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
+import { getPlot } from "@/lib/plots";
 import { POIS, SLIME_COLORS, SLIME_SHAPES, poiById, type SlimeShape } from "@/lib/pois";
+import { PLOT_POI_PREFIX } from "@/lib/building-crew";
 
 export type LiveAgent = {
   id: string;
@@ -134,32 +136,51 @@ function touch(session: Session) {
   session.agent.lastActive = Date.now();
 }
 
+type ResolvedPlace = { id: string; label: string; x: number; y: number };
+
+function resolvePlace(poiId: string): ResolvedPlace | null {
+  if (poiId.startsWith(PLOT_POI_PREFIX)) {
+    const plotId = poiId.slice(PLOT_POI_PREFIX.length);
+    const plot = getPlot(plotId);
+    if (!plot) return null;
+    return {
+      id: poiId,
+      label: plot.groupLabel,
+      x: plot.x + plot.w / 2,
+      y: plot.y + plot.h / 2,
+    };
+  }
+  const poi = poiById(poiId);
+  if (!poi) return null;
+  return { id: poi.id, label: poi.label, x: poi.x, y: poi.y };
+}
+
 export function goTo(token: string, poiId: string) {
   const session = getSession(token);
   if (!session) return null;
-  const poi = poiById(poiId);
-  if (!poi) return { error: "unknown_poi" as const };
+  const place = resolvePlace(poiId);
+  if (!place) return { error: "unknown_poi" as const };
   touch(session);
-  session.agent.poi = poi.id;
-  session.agent.x = poi.x + (Math.random() - 0.5) * 0.6;
-  session.agent.y = poi.y + (Math.random() - 0.5) * 0.6;
+  session.agent.poi = place.id;
+  session.agent.x = place.x + (Math.random() - 0.5) * 0.6;
+  session.agent.y = place.y + (Math.random() - 0.5) * 0.6;
   session.agent.sitting = false;
-  session.agent.thought = `Heading to ${poi.label}.`;
-  return { eta_seconds: 4, poi: poi.id };
+  session.agent.thought = `Heading to ${place.label}.`;
+  return { eta_seconds: 4, poi: place.id };
 }
 
 export function sitAt(token: string, poiId: string) {
   const session = getSession(token);
   if (!session) return null;
-  const poi = poiById(poiId) ?? poiById(session.agent.poi);
-  if (!poi) return { error: "unknown_poi" as const };
+  const place = resolvePlace(poiId) ?? resolvePlace(session.agent.poi);
+  if (!place) return { error: "unknown_poi" as const };
   touch(session);
-  session.agent.poi = poi.id;
-  session.agent.x = poi.x;
-  session.agent.y = poi.y;
+  session.agent.poi = place.id;
+  session.agent.x = place.x;
+  session.agent.y = place.y;
   session.agent.sitting = true;
-  session.agent.thought = `Sitting at ${poi.label}.`;
-  return { eta_seconds: 1, poi: poi.id };
+  session.agent.thought = `Inside ${place.label}.`;
+  return { eta_seconds: 1, poi: place.id };
 }
 
 export function speak(token: string, text: string) {

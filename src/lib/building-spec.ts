@@ -3,6 +3,7 @@ import type { Building } from "./types";
 export type CompanyProfile = {
   name: string;
   logo: string;
+  website?: string;
   does: string;
   description: string;
   founder: string;

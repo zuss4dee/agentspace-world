@@ -18,11 +18,14 @@ import {
   yardTreeSpots,
 } from "@/lib/plots";
 import { SCENERY } from "@/lib/scenery";
+import { inAuthoredEnv } from "@/lib/env-district";
 import { makeTrafficRoutes, pointOnPath } from "@/lib/traffic";
 import { useWorld } from "@/components/world/world-store";
+import { CrewmateMarker, agentFacingRad } from "@/components/world/gl/crewmate-marker";
+import { ProceduralCar, TESLA_TRAFFIC_INDEX, TeslaTrafficCar } from "@/components/world/gl/vehicle-gltf";
 
 export function TreeField() {
-  const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree"), []);
+  const core = useMemo(() => SCENERY.filter((s) => s.kind === "tree" && !inAuthoredEnv(s.x, s.y)), []);
   const trunks = useRef<THREE.InstancedMesh>(null);
   const oaks = useRef<THREE.InstancedMesh>(null);
   const pines = useRef<THREE.InstancedMesh>(null);
@@ -208,7 +211,7 @@ export function TreeField() {
 }
 
 export function BushField() {
-  const bushes = useMemo(() => SCENERY.filter((s) => s.kind === "bush" || s.kind === "hedge"), []);
+  const bushes = useMemo(() => SCENERY.filter((s) => (s.kind === "bush" || s.kind === "hedge") && !inAuthoredEnv(s.x, s.y)), []);
   const { selectedPlotId, selectedPlotIds, claimedPlotIds, plotExpand, landSlice } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const hide = useMemo(() => {
@@ -257,34 +260,54 @@ export function AgentsLayer() {
   return (
     <group ref={group}>
       {agents.map((a) => (
-        <group key={a.id} position={[wx(a.x), h(0.08), wz(a.y)]}>
-          <mesh
-            onClick={(e: ThreeEvent<MouseEvent>) => {
-              e.stopPropagation();
-              selectAgent(a.id);
-              setFollowAgent(true);
-              setCameraScale(1.75);
-            }}
-          >
-            <capsuleGeometry args={a.live ? [h(0.055), h(0.06), 4, 8] : far ? [h(0.035), h(0.03), 3, 6] : [h(0.042), h(0.045), 4, 8]} />
-            <meshStandardMaterial
+        <group key={a.id} position={[wx(a.x), topView ? h(0.02) : h(0.08), wz(a.y)]}>
+          {topView ? (
+            <CrewmateMarker
               color={a.color}
-              emissive={selectedAgentId === a.id ? "#ed712e" : a.live ? a.color : a.color}
-              emissiveIntensity={selectedAgentId === a.id ? 0.4 : a.live ? 0.18 : 0.04}
+              rotation={agentFacingRad(a.x, a.y, a.targetX, a.targetY)}
+              selected={selectedAgentId === a.id}
+              live={a.live}
+              name={a.name}
+              subtitle={a.speech || (a.live ? a.task : undefined)}
+              scale={far ? 0.82 : 1}
+              onClick={(e: ThreeEvent<MouseEvent>) => {
+                e.stopPropagation();
+                selectAgent(a.id);
+                setFollowAgent(true);
+                setCameraScale(1.75);
+              }}
             />
-          </mesh>
-          <mesh position={[0, far ? h(0.1) : h(0.12), 0]} raycast={() => undefined}>
-            <sphereGeometry args={[far ? h(0.03) : h(0.038), 6, 6]} />
-            <meshStandardMaterial color={a.color} roughness={0.55} />
-          </mesh>
-          {a.live && !topView ? (
-            <Html position={[0, h(0.32), 0]} center distanceFactor={14} occlude={false} pointerEvents="none">
-              <div className="ns-nametag">
-                <strong>{a.name}</strong>
-                {a.speech ? <em>{a.speech}</em> : null}
-              </div>
-            </Html>
-          ) : null}
+          ) : (
+            <>
+              <mesh
+                onClick={(e: ThreeEvent<MouseEvent>) => {
+                  e.stopPropagation();
+                  selectAgent(a.id);
+                  setFollowAgent(true);
+                  setCameraScale(1.75);
+                }}
+              >
+                <capsuleGeometry args={a.live ? [h(0.055), h(0.06), 4, 8] : far ? [h(0.035), h(0.03), 3, 6] : [h(0.042), h(0.045), 4, 8]} />
+                <meshStandardMaterial
+                  color={a.color}
+                  emissive={selectedAgentId === a.id ? "#ed712e" : a.color}
+                  emissiveIntensity={selectedAgentId === a.id ? 0.4 : a.live ? 0.18 : 0.04}
+                />
+              </mesh>
+              <mesh position={[0, far ? h(0.1) : h(0.12), 0]} raycast={() => undefined}>
+                <sphereGeometry args={[far ? h(0.03) : h(0.038), 6, 6]} />
+                <meshStandardMaterial color={a.color} roughness={0.55} />
+              </mesh>
+              {a.live ? (
+                <Html position={[0, h(0.32), 0]} center distanceFactor={14} occlude={false} pointerEvents="none">
+                  <div className="ns-nametag">
+                    <strong>{a.name}</strong>
+                    {a.speech ? <em>{a.speech}</em> : null}
+                  </div>
+                </Html>
+              ) : null}
+            </>
+          )}
         </group>
       ))}
     </group>
@@ -313,25 +336,7 @@ export function TrafficLayer() {
     <group ref={group}>
       {CARS.map((car, i) => (
         <group key={i} raycast={() => undefined}>
-          <mesh position={[0, h(0.08), 0]} castShadow>
-            <boxGeometry args={[h(0.2), h(0.08), h(0.38)]} />
-            <meshStandardMaterial color={car.color} metalness={0.42} roughness={0.38} />
-          </mesh>
-          <mesh position={[0, h(0.14), h(-0.02)]} castShadow>
-            <boxGeometry args={[h(0.16), h(0.08), h(0.18)]} />
-            <meshPhysicalMaterial color="#1a1816" metalness={0.3} roughness={0.12} transparent opacity={0.7} />
-          </mesh>
-          {[
-            [-h(0.08), h(0.12)],
-            [h(0.08), h(0.12)],
-            [-h(0.08), h(-0.12)],
-            [h(0.08), h(-0.12)],
-          ].map(([x, z], wi) => (
-            <mesh key={wi} position={[x, h(0.04), z]} rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={[h(0.035), h(0.035), h(0.04), 8]} />
-              <meshStandardMaterial color="#1c1917" roughness={0.5} />
-            </mesh>
-          ))}
+          {i === TESLA_TRAFFIC_INDEX ? <TeslaTrafficCar fallbackColor={car.color} /> : <ProceduralCar color={car.color} />}
         </group>
       ))}
     </group>
@@ -341,7 +346,9 @@ export function TrafficLayer() {
 export function Lamps() {
   const lamps = useMemo(() => {
     const core = SCENERY.filter((s) => s.kind === "lamp").map((s) => ({ x: s.x, y: s.y }));
-    return [...core, ...extraLamps()].filter((s) => s.x >= 6 && s.x <= 46 && s.y >= 0 && s.y <= 14);
+    return [...core, ...extraLamps()].filter(
+      (s) => s.x >= 6 && s.x <= 46 && s.y >= 0 && s.y <= 14 && !inAuthoredEnv(s.x, s.y),
+    );
   }, []);
   const postRef = useRef<THREE.InstancedMesh>(null);
   const globeRef = useRef<THREE.InstancedMesh>(null);

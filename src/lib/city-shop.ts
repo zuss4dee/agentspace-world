@@ -134,7 +134,7 @@ export function sampleSalePlot(zone: PlotZone, claimed: Set<string>): Plot | und
 }
 
 export function beaconPlot() {
-  return PLOTS.find((p) => p.zone === "ultimate") ?? PLOTS.find((p) => p.buildingId === "hq");
+  return PLOTS.find((p) => p.buildingId === "loft") ?? PLOTS.find((p) => p.zone === "ultimate");
 }
 
 export type DirectoryEntry = {

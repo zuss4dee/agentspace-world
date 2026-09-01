@@ -1,4 +1,5 @@
 import { DISTRICTS, GRID, ROAD_XS, ROAD_YS, TERRAIN, WORLD_BUILDINGS, districtAt } from "./campus";
+import { privateTileFootprint } from "./lot-footprint";
 import { hash2 } from "./noise";
 import { TILE_FEET, TILE_METERS, TILE_PX, formatSqFt, measureTiles, tilesToSqFt } from "./units";
 
@@ -68,7 +69,7 @@ function zoneFor(districtId: string): PlotZone {
 function blocked(x: number, y: number) {
   if (x < 0 || y < 0 || x >= GRID || y >= GRID) return true;
   const t = TERRAIN[y]![x]!;
-  return t === "road" || t === "water" || ROAD_XS.includes(x) || ROAD_YS.includes(y);
+  return t === "road" || t === "sidewalk" || t === "water" || ROAD_XS.includes(x) || ROAD_YS.includes(y);
 }
 
 function isOwnableGreen(x: number, y: number) {
@@ -88,18 +89,29 @@ function bandSpans(roads: number[], n: number) {
   return out;
 }
 
+type GreenBox = { x: number; y: number; w: number; h: number };
+
+/** Shrink a green bounding box inward so no tile sits on public right-of-way. */
+function clampPlotFootprint(box: GreenBox): GreenBox | null {
+  const inner = privateTileFootprint(box);
+  if (!inner || inner.w < MIN_LOT_EDGE || inner.h < MIN_LOT_EDGE) return null;
+  return inner;
+}
+
 function makeCityPlots(): Plot[] {
   const plots: Plot[] = [];
   const used: boolean[][] = Array.from({ length: GRID }, () => Array.from({ length: GRID }, () => false));
 
   for (const b of WORLD_BUILDINGS) {
+    const raw = { x: b.origin.x, y: b.origin.y, w: b.size.x, h: b.size.y };
+    const box = clampPlotFootprint(raw) ?? raw;
     const zone = zoneFor(b.districtId);
     plots.push({
       id: `plot-b-${b.id}`,
-      x: b.origin.x,
-      y: b.origin.y,
-      w: b.size.x,
-      h: b.size.y,
+      x: box.x,
+      y: box.y,
+      w: box.w,
+      h: box.h,
       kind: "owned",
       districtId: b.districtId,
       buildingId: b.id,
@@ -107,8 +119,8 @@ function makeCityPlots(): Plot[] {
       zone,
       groupLabel: b.name,
     });
-    for (let y = b.origin.y; y < b.origin.y + b.size.y; y++) {
-      for (let x = b.origin.x; x < b.origin.x + b.size.x; x++) {
+    for (let y = box.y; y < box.y + box.h; y++) {
+      for (let x = box.x; x < box.x + box.w; x++) {
         if (x >= 0 && y >= 0 && x < GRID && y < GRID) used[y]![x] = true;
       }
     }
@@ -147,17 +159,6 @@ function makeCityPlots(): Plot[] {
       const d = districtAt(box.x + box.w / 2, box.y + box.h / 2) ?? DISTRICTS[0]!;
       const area = box.w * box.h;
       const roll = hash2(box.x * 2.17, box.y * 3.41 + box.w);
-      const asPark =
-        d.id !== "campus" &&
-        (d.id === "parklands" ||
-          d.id === "meadow" ||
-          d.id === "southpark" ||
-          d.id === "eastmarsh" ||
-          (d.theme === "public" && area >= 36 && roll > 0.38));
-      if (asPark) {
-        stampLot(plots, used, lotN, box, "park");
-        continue;
-      }
       const keepWhole =
         d.id === "campus" || (area >= 64 && Math.min(box.w, box.h) >= 8 && roll > 0.84);
       if (keepWhole) {
@@ -172,8 +173,6 @@ function makeCityPlots(): Plot[] {
   return plots;
 }
 
-type GreenBox = { x: number; y: number; w: number; h: number };
-
 function stampLot(
   plots: Plot[],
   used: boolean[][],
@@ -181,6 +180,9 @@ function stampLot(
   box: GreenBox,
   kind: PlotKind,
 ) {
+  const clamped = clampPlotFootprint(box);
+  if (!clamped) return;
+  box = clamped;
   const d = districtAt(box.x + box.w / 2, box.y + box.h / 2) ?? DISTRICTS[0]!;
   const n = (lotN[d.id] = (lotN[d.id] ?? 0) + 1);
   const zone = zoneFor(d.id);
@@ -813,7 +815,9 @@ export function matchingAnchor(place: LotPlace, landW: number, landH: number, bw
 export function footprintHitsRoad(x: number, y: number, w: number, h: number) {
   for (let iy = y; iy < y + h; iy++) {
     for (let ix = x; ix < x + w; ix++) {
-      if (ix >= 0 && iy >= 0 && ix < GRID && iy < GRID && blocked(ix, iy)) return true;
+      if (ix < 0 || iy < 0 || ix >= GRID || iy >= GRID) return true;
+      const t = TERRAIN[iy]![ix]!;
+      if (t === "road" || t === "sidewalk" || t === "water" || ROAD_XS.includes(ix) || ROAD_YS.includes(iy)) return true;
     }
   }
   return false;

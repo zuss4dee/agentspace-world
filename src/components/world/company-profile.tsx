@@ -9,12 +9,14 @@ export function CompanyProfileCard({
   onEnter,
   onVisit,
   onClose,
+  visitLabel = "Visit",
 }: {
   profile: CompanyProfile;
   owned?: boolean;
   onEnter: () => void;
   onVisit?: () => void;
   onClose: () => void;
+  visitLabel?: string;
 }) {
   const mark = letterMark(profile.name || "Co");
   const hasLogo = Boolean(profile.logo.trim());
@@ -61,7 +63,7 @@ export function CompanyProfileCard({
           <div className="ns-plot-actions ns-company-actions">
             {onVisit ? (
               <button type="button" className="ns-ghost" onClick={onVisit}>
-                Visit
+                {visitLabel}
               </button>
             ) : (
               <button type="button" className="ns-ghost" onClick={onClose}>

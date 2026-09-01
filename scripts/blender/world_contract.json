@@ -1,0 +1,5934 @@
+{
+  "stage": 1,
+  "source": "src/lib/campus.ts + coords + traffic + plots + scenery",
+  "grid": 64,
+  "tile": 32,
+  "worldSpan": 2048,
+  "origin": {
+    "grid": {
+      "x": 32,
+      "y": 32
+    },
+    "world": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    }
+  },
+  "axes": {
+    "blenderXY": "three.js XZ",
+    "blenderZ": "up",
+    "gltfExport": "Y-up"
+  },
+  "roadXs": [
+    6,
+    12,
+    24,
+    36,
+    48,
+    58
+  ],
+  "roadYs": [
+    6,
+    12,
+    24,
+    36,
+    48,
+    58
+  ],
+  "carriageTiles": 0.42,
+  "walkTiles": 0.2,
+  "curbTiles": 0.022,
+  "land": {
+    "origin": {
+      "x": 0,
+      "y": 90
+    },
+    "cell": 6,
+    "cols": 250,
+    "rows": 400,
+    "bounds": {
+      "x0": 0,
+      "y0": 90,
+      "x1": 1500,
+      "y1": 2490
+    }
+  },
+  "districts": [
+    {
+      "id": "parklands",
+      "label": "Parklands",
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": -848,
+        "y": -848
+      }
+    },
+    {
+      "id": "corporate",
+      "label": "Corporate",
+      "origin": {
+        "x": 13,
+        "y": 0
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "executive",
+      "centerWorld": {
+        "x": -432,
+        "y": -848
+      }
+    },
+    {
+      "id": "startup",
+      "label": "Echt Yard",
+      "origin": {
+        "x": 25,
+        "y": 0
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "tech",
+      "centerWorld": {
+        "x": -48,
+        "y": -848
+      }
+    },
+    {
+      "id": "creative",
+      "label": "Creative",
+      "origin": {
+        "x": 37,
+        "y": 0
+      },
+      "size": {
+        "x": 11,
+        "y": 23
+      },
+      "theme": "creative",
+      "centerWorld": {
+        "x": 336,
+        "y": -656
+      }
+    },
+    {
+      "id": "research",
+      "label": "Research",
+      "origin": {
+        "x": 49,
+        "y": 0
+      },
+      "size": {
+        "x": 15,
+        "y": 23
+      },
+      "theme": "research",
+      "centerWorld": {
+        "x": 784,
+        "y": -656
+      }
+    },
+    {
+      "id": "meadow",
+      "label": "Meadow",
+      "origin": {
+        "x": 0,
+        "y": 13
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": -848,
+        "y": -432
+      }
+    },
+    {
+      "id": "civic",
+      "label": "Civic",
+      "origin": {
+        "x": 13,
+        "y": 13
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": -432,
+        "y": -432
+      }
+    },
+    {
+      "id": "campus",
+      "label": "Campus green",
+      "origin": {
+        "x": 25,
+        "y": 13
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "campus",
+      "centerWorld": {
+        "x": -48,
+        "y": -432
+      }
+    },
+    {
+      "id": "industrial",
+      "label": "Industrial",
+      "origin": {
+        "x": 0,
+        "y": 25
+      },
+      "size": {
+        "x": 23,
+        "y": 11
+      },
+      "theme": "operations",
+      "centerWorld": {
+        "x": -656,
+        "y": -48
+      }
+    },
+    {
+      "id": "labs",
+      "label": "Labs",
+      "origin": {
+        "x": 25,
+        "y": 25
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "research",
+      "centerWorld": {
+        "x": -48,
+        "y": -48
+      }
+    },
+    {
+      "id": "homes",
+      "label": "Homes",
+      "origin": {
+        "x": 37,
+        "y": 25
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "residential",
+      "centerWorld": {
+        "x": 336,
+        "y": -48
+      }
+    },
+    {
+      "id": "ridge",
+      "label": "Ridge",
+      "origin": {
+        "x": 49,
+        "y": 25
+      },
+      "size": {
+        "x": 15,
+        "y": 11
+      },
+      "theme": "residential",
+      "centerWorld": {
+        "x": 784,
+        "y": -48
+      }
+    },
+    {
+      "id": "yards",
+      "label": "Yards",
+      "origin": {
+        "x": 0,
+        "y": 37
+      },
+      "size": {
+        "x": 12,
+        "y": 11
+      },
+      "theme": "operations",
+      "centerWorld": {
+        "x": -832,
+        "y": 336
+      }
+    },
+    {
+      "id": "transit",
+      "label": "Transit",
+      "origin": {
+        "x": 13,
+        "y": 37
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "operations",
+      "centerWorld": {
+        "x": -432,
+        "y": 336
+      }
+    },
+    {
+      "id": "waterfront",
+      "label": "Waterfront",
+      "origin": {
+        "x": 37,
+        "y": 37
+      },
+      "size": {
+        "x": 11,
+        "y": 11
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": 336,
+        "y": 336
+      }
+    },
+    {
+      "id": "docks",
+      "label": "Docks",
+      "origin": {
+        "x": 49,
+        "y": 37
+      },
+      "size": {
+        "x": 15,
+        "y": 11
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": 784,
+        "y": 336
+      }
+    },
+    {
+      "id": "southpark",
+      "label": "South lawn",
+      "origin": {
+        "x": 0,
+        "y": 49
+      },
+      "size": {
+        "x": 23,
+        "y": 15
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": -656,
+        "y": 784
+      }
+    },
+    {
+      "id": "southgate",
+      "label": "Southgate",
+      "origin": {
+        "x": 25,
+        "y": 49
+      },
+      "size": {
+        "x": 23,
+        "y": 15
+      },
+      "theme": "residential",
+      "centerWorld": {
+        "x": 144,
+        "y": 784
+      }
+    },
+    {
+      "id": "eastmarsh",
+      "label": "East marsh",
+      "origin": {
+        "x": 49,
+        "y": 49
+      },
+      "size": {
+        "x": 15,
+        "y": 15
+      },
+      "theme": "public",
+      "centerWorld": {
+        "x": 784,
+        "y": 784
+      }
+    }
+  ],
+  "lots": [
+    {
+      "id": "plot-b-pavilion",
+      "kind": "owned",
+      "districtId": "parklands",
+      "buildingId": "pavilion",
+      "groupLabel": "Lawn Pavilion",
+      "grid": {
+        "x": 7,
+        "y": 2,
+        "w": 3,
+        "h": 3
+      },
+      "world": {
+        "x": -752,
+        "y": -912,
+        "w": 96,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-hq",
+      "kind": "owned",
+      "districtId": "corporate",
+      "buildingId": "hq",
+      "groupLabel": "Agentspace HQ",
+      "grid": {
+        "x": 14,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "world": {
+        "x": -496,
+        "y": -896,
+        "w": 160,
+        "d": 128
+      }
+    },
+    {
+      "id": "plot-b-finance",
+      "kind": "owned",
+      "districtId": "corporate",
+      "buildingId": "finance",
+      "groupLabel": "Ledger House",
+      "grid": {
+        "x": 20,
+        "y": 2,
+        "w": 3,
+        "h": 3
+      },
+      "world": {
+        "x": -336,
+        "y": -912,
+        "w": 96,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-hall",
+      "kind": "owned",
+      "districtId": "corporate",
+      "buildingId": "hall",
+      "groupLabel": "Board Hall",
+      "grid": {
+        "x": 14,
+        "y": 7,
+        "w": 4,
+        "h": 3
+      },
+      "world": {
+        "x": -512,
+        "y": -752,
+        "w": 128,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-loft",
+      "kind": "owned",
+      "districtId": "startup",
+      "buildingId": "loft",
+      "groupLabel": "Echt Studio",
+      "grid": {
+        "x": 26,
+        "y": 2,
+        "w": 4,
+        "h": 3
+      },
+      "world": {
+        "x": -128,
+        "y": -912,
+        "w": 128,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-seed-cafe",
+      "kind": "owned",
+      "districtId": "startup",
+      "buildingId": "seed-cafe",
+      "groupLabel": "Seed Cafe",
+      "grid": {
+        "x": 31,
+        "y": 2,
+        "w": 3,
+        "h": 3
+      },
+      "world": {
+        "x": 16,
+        "y": -912,
+        "w": 96,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-incubator",
+      "kind": "owned",
+      "districtId": "startup",
+      "buildingId": "incubator",
+      "groupLabel": "Echt House",
+      "grid": {
+        "x": 26,
+        "y": 6,
+        "w": 5,
+        "h": 4
+      },
+      "world": {
+        "x": -112,
+        "y": -768,
+        "w": 160,
+        "d": 128
+      }
+    },
+    {
+      "id": "plot-b-retail",
+      "kind": "owned",
+      "districtId": "startup",
+      "buildingId": "retail",
+      "groupLabel": "Ribbon Shop",
+      "grid": {
+        "x": 32,
+        "y": 7,
+        "w": 3,
+        "h": 3
+      },
+      "world": {
+        "x": 48,
+        "y": -752,
+        "w": 96,
+        "d": 96
+      }
+    },
+    {
+      "id": "plot-b-studio",
+      "kind": "owned",
+      "districtId": "creative",
+      "buildingId": "studio",
+      "groupLabel": "Signal Studio",
+      "grid": {
+        "x": 38,
+        "y": 2,
+        "w": 5,
+        "h": 4
+      },
+      "world": {
+        "x": 272,
+        "y": -896,
+        "w": 160,
+        "d": 128
+      }
+    },
+    {
+      "id": "plot-b-cottage",
+      "kind": "owned",
+      "districtId": "creative",
+      "buildingId": "cottage",
+      "groupLabel": "Vanta Cottage",
+      "grid": {
+        "x": 38,
+        "y": 8,
+        "w": 3,
+        "h": 3
+      },
+      "world": {
+        "x": 240,
+        "y": -720,
+        "w": 96,
+        "d": 96
+      }
+    },
+    {
+      "id": "park-parklands-1",
+      "kind": "park",
+      "districtId": "parklands",
+      "buildingId": null,
+      "groupLabel": "Parklands park",
+      "grid": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 6
+      },
+      "world": {
+        "x": -928,
+        "y": -928,
+        "w": 192,
+        "d": 192
+      }
+    },
+    {
+      "id": "park-southpark-1",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 0,
+        "y": 50,
+        "w": 6,
+        "h": 8
+      },
+      "world": {
+        "x": -928,
+        "y": 704,
+        "w": 192,
+        "d": 256
+      }
+    },
+    {
+      "id": "park-southpark-2",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 0,
+        "y": 59,
+        "w": 6,
+        "h": 5
+      },
+      "world": {
+        "x": -928,
+        "y": 944,
+        "w": 192,
+        "d": 160
+      }
+    },
+    {
+      "id": "park-parklands-2",
+      "kind": "park",
+      "districtId": "parklands",
+      "buildingId": null,
+      "groupLabel": "Parklands park",
+      "grid": {
+        "x": 7,
+        "y": 7,
+        "w": 4,
+        "h": 4
+      },
+      "world": {
+        "x": -736,
+        "y": -736,
+        "w": 128,
+        "d": 128
+      }
+    },
+    {
+      "id": "park-meadow-1",
+      "kind": "park",
+      "districtId": "meadow",
+      "buildingId": null,
+      "groupLabel": "Meadow park",
+      "grid": {
+        "x": 7,
+        "y": 14,
+        "w": 4,
+        "h": 9
+      },
+      "world": {
+        "x": -736,
+        "y": -432,
+        "w": 128,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-industrial-1",
+      "kind": "sale",
+      "districtId": "industrial",
+      "buildingId": null,
+      "groupLabel": "Industrial",
+      "grid": {
+        "x": 8,
+        "y": 26,
+        "w": 3,
+        "h": 9
+      },
+      "world": {
+        "x": -720,
+        "y": -48,
+        "w": 96,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-yards-1",
+      "kind": "sale",
+      "districtId": "yards",
+      "buildingId": null,
+      "groupLabel": "Yards",
+      "grid": {
+        "x": 8,
+        "y": 38,
+        "w": 3,
+        "h": 9
+      },
+      "world": {
+        "x": -720,
+        "y": 336,
+        "w": 96,
+        "d": 288
+      }
+    },
+    {
+      "id": "park-southpark-3",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 7,
+        "y": 50,
+        "w": 5,
+        "h": 8
+      },
+      "world": {
+        "x": -720,
+        "y": 704,
+        "w": 160,
+        "d": 256
+      }
+    },
+    {
+      "id": "park-southpark-4",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 7,
+        "y": 59,
+        "w": 5,
+        "h": 5
+      },
+      "world": {
+        "x": -720,
+        "y": 944,
+        "w": 160,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-civic-1",
+      "kind": "sale",
+      "districtId": "civic",
+      "buildingId": null,
+      "groupLabel": "Civic",
+      "grid": {
+        "x": 14,
+        "y": 14,
+        "w": 3,
+        "h": 9
+      },
+      "world": {
+        "x": -528,
+        "y": -432,
+        "w": 96,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-civic-2",
+      "kind": "sale",
+      "districtId": "civic",
+      "buildingId": null,
+      "groupLabel": "Civic · Lot 2",
+      "grid": {
+        "x": 17,
+        "y": 14,
+        "w": 6,
+        "h": 9
+      },
+      "world": {
+        "x": -384,
+        "y": -432,
+        "w": 192,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-industrial-2",
+      "kind": "sale",
+      "districtId": "industrial",
+      "buildingId": null,
+      "groupLabel": "Industrial · Lot 2",
+      "grid": {
+        "x": 14,
+        "y": 26,
+        "w": 9,
+        "h": 5
+      },
+      "world": {
+        "x": -432,
+        "y": -112,
+        "w": 288,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-industrial-3",
+      "kind": "sale",
+      "districtId": "industrial",
+      "buildingId": null,
+      "groupLabel": "Industrial · Lot 3",
+      "grid": {
+        "x": 14,
+        "y": 31,
+        "w": 9,
+        "h": 4
+      },
+      "world": {
+        "x": -432,
+        "y": 32,
+        "w": 288,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-transit-1",
+      "kind": "sale",
+      "districtId": "transit",
+      "buildingId": null,
+      "groupLabel": "Transit",
+      "grid": {
+        "x": 14,
+        "y": 38,
+        "w": 9,
+        "h": 4
+      },
+      "world": {
+        "x": -432,
+        "y": 256,
+        "w": 288,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-transit-2",
+      "kind": "sale",
+      "districtId": "transit",
+      "buildingId": null,
+      "groupLabel": "Transit · Lot 2",
+      "grid": {
+        "x": 14,
+        "y": 42,
+        "w": 9,
+        "h": 5
+      },
+      "world": {
+        "x": -432,
+        "y": 400,
+        "w": 288,
+        "d": 160
+      }
+    },
+    {
+      "id": "park-southpark-5",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 13,
+        "y": 50,
+        "w": 10,
+        "h": 8
+      },
+      "world": {
+        "x": -448,
+        "y": 704,
+        "w": 320,
+        "d": 256
+      }
+    },
+    {
+      "id": "park-southpark-6",
+      "kind": "park",
+      "districtId": "southpark",
+      "buildingId": null,
+      "groupLabel": "South lawn park",
+      "grid": {
+        "x": 13,
+        "y": 59,
+        "w": 10,
+        "h": 5
+      },
+      "world": {
+        "x": -448,
+        "y": 944,
+        "w": 320,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-campus-1",
+      "kind": "sale",
+      "districtId": "campus",
+      "buildingId": null,
+      "groupLabel": "Campus green",
+      "grid": {
+        "x": 26,
+        "y": 14,
+        "w": 9,
+        "h": 9
+      },
+      "world": {
+        "x": -48,
+        "y": -432,
+        "w": 288,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-labs-1",
+      "kind": "sale",
+      "districtId": "labs",
+      "buildingId": null,
+      "groupLabel": "Labs",
+      "grid": {
+        "x": 26,
+        "y": 26,
+        "w": 5,
+        "h": 9
+      },
+      "world": {
+        "x": -112,
+        "y": -48,
+        "w": 160,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-labs-2",
+      "kind": "sale",
+      "districtId": "labs",
+      "buildingId": null,
+      "groupLabel": "Labs · Lot 2",
+      "grid": {
+        "x": 31,
+        "y": 26,
+        "w": 4,
+        "h": 9
+      },
+      "world": {
+        "x": 32,
+        "y": -48,
+        "w": 128,
+        "d": 288
+      }
+    },
+    {
+      "id": "park-parklands-3",
+      "kind": "park",
+      "districtId": "parklands",
+      "buildingId": null,
+      "groupLabel": "Parklands park",
+      "grid": {
+        "x": 26,
+        "y": 38,
+        "w": 9,
+        "h": 9
+      },
+      "world": {
+        "x": -48,
+        "y": 336,
+        "w": 288,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-southgate-1",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate",
+      "grid": {
+        "x": 26,
+        "y": 50,
+        "w": 3,
+        "h": 7
+      },
+      "world": {
+        "x": -144,
+        "y": 688,
+        "w": 96,
+        "d": 224
+      }
+    },
+    {
+      "id": "land-southgate-2",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 2",
+      "grid": {
+        "x": 29,
+        "y": 50,
+        "w": 6,
+        "h": 7
+      },
+      "world": {
+        "x": 0,
+        "y": 688,
+        "w": 192,
+        "d": 224
+      }
+    },
+    {
+      "id": "land-southgate-3",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 3",
+      "grid": {
+        "x": 26,
+        "y": 60,
+        "w": 9,
+        "h": 4
+      },
+      "world": {
+        "x": -48,
+        "y": 960,
+        "w": 288,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-creative-1",
+      "kind": "sale",
+      "districtId": "creative",
+      "buildingId": null,
+      "groupLabel": "Creative",
+      "grid": {
+        "x": 38,
+        "y": 13,
+        "w": 9,
+        "h": 3
+      },
+      "world": {
+        "x": 336,
+        "y": -560,
+        "w": 288,
+        "d": 96
+      }
+    },
+    {
+      "id": "land-creative-2",
+      "kind": "sale",
+      "districtId": "creative",
+      "buildingId": null,
+      "groupLabel": "Creative · Lot 2",
+      "grid": {
+        "x": 38,
+        "y": 16,
+        "w": 9,
+        "h": 7
+      },
+      "world": {
+        "x": 336,
+        "y": -400,
+        "w": 288,
+        "d": 224
+      }
+    },
+    {
+      "id": "land-homes-1",
+      "kind": "sale",
+      "districtId": "homes",
+      "buildingId": null,
+      "groupLabel": "Homes",
+      "grid": {
+        "x": 38,
+        "y": 26,
+        "w": 4,
+        "h": 9
+      },
+      "world": {
+        "x": 256,
+        "y": -48,
+        "w": 128,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-homes-2",
+      "kind": "sale",
+      "districtId": "homes",
+      "buildingId": null,
+      "groupLabel": "Homes · Lot 2",
+      "grid": {
+        "x": 42,
+        "y": 26,
+        "w": 5,
+        "h": 9
+      },
+      "world": {
+        "x": 400,
+        "y": -48,
+        "w": 160,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-waterfront-1",
+      "kind": "sale",
+      "districtId": "waterfront",
+      "buildingId": null,
+      "groupLabel": "Waterfront",
+      "grid": {
+        "x": 38,
+        "y": 38,
+        "w": 9,
+        "h": 3
+      },
+      "world": {
+        "x": 336,
+        "y": 240,
+        "w": 288,
+        "d": 96
+      }
+    },
+    {
+      "id": "land-waterfront-2",
+      "kind": "sale",
+      "districtId": "waterfront",
+      "buildingId": null,
+      "groupLabel": "Waterfront · Lot 2",
+      "grid": {
+        "x": 38,
+        "y": 41,
+        "w": 9,
+        "h": 6
+      },
+      "world": {
+        "x": 336,
+        "y": 384,
+        "w": 288,
+        "d": 192
+      }
+    },
+    {
+      "id": "land-southgate-4",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 4",
+      "grid": {
+        "x": 38,
+        "y": 50,
+        "w": 3,
+        "h": 7
+      },
+      "world": {
+        "x": 240,
+        "y": 688,
+        "w": 96,
+        "d": 224
+      }
+    },
+    {
+      "id": "land-southgate-5",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 5",
+      "grid": {
+        "x": 41,
+        "y": 50,
+        "w": 6,
+        "h": 4
+      },
+      "world": {
+        "x": 384,
+        "y": 640,
+        "w": 192,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-southgate-6",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 6",
+      "grid": {
+        "x": 41,
+        "y": 54,
+        "w": 6,
+        "h": 3
+      },
+      "world": {
+        "x": 384,
+        "y": 752,
+        "w": 192,
+        "d": 96
+      }
+    },
+    {
+      "id": "land-southgate-7",
+      "kind": "sale",
+      "districtId": "southgate",
+      "buildingId": null,
+      "groupLabel": "Southgate · Lot 7",
+      "grid": {
+        "x": 38,
+        "y": 60,
+        "w": 9,
+        "h": 4
+      },
+      "world": {
+        "x": 336,
+        "y": 960,
+        "w": 288,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-research-1",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research",
+      "grid": {
+        "x": 50,
+        "y": 0,
+        "w": 3,
+        "h": 5
+      },
+      "world": {
+        "x": 624,
+        "y": -944,
+        "w": 96,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-research-2",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 2",
+      "grid": {
+        "x": 53,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "world": {
+        "x": 736,
+        "y": -944,
+        "w": 128,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-research-3",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 3",
+      "grid": {
+        "x": 50,
+        "y": 8,
+        "w": 7,
+        "h": 3
+      },
+      "world": {
+        "x": 688,
+        "y": -720,
+        "w": 224,
+        "d": 96
+      }
+    },
+    {
+      "id": "land-research-4",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 4",
+      "grid": {
+        "x": 50,
+        "y": 14,
+        "w": 7,
+        "h": 4
+      },
+      "world": {
+        "x": 688,
+        "y": -512,
+        "w": 224,
+        "d": 128
+      }
+    },
+    {
+      "id": "land-research-5",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 5",
+      "grid": {
+        "x": 50,
+        "y": 18,
+        "w": 7,
+        "h": 5
+      },
+      "world": {
+        "x": 688,
+        "y": -368,
+        "w": 224,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-ridge-1",
+      "kind": "sale",
+      "districtId": "ridge",
+      "buildingId": null,
+      "groupLabel": "Ridge",
+      "grid": {
+        "x": 50,
+        "y": 26,
+        "w": 7,
+        "h": 5
+      },
+      "world": {
+        "x": 688,
+        "y": -112,
+        "w": 224,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-ridge-2",
+      "kind": "sale",
+      "districtId": "ridge",
+      "buildingId": null,
+      "groupLabel": "Ridge · Lot 2",
+      "grid": {
+        "x": 50,
+        "y": 31,
+        "w": 7,
+        "h": 4
+      },
+      "world": {
+        "x": 688,
+        "y": 32,
+        "w": 224,
+        "d": 128
+      }
+    },
+    {
+      "id": "park-docks-1",
+      "kind": "park",
+      "districtId": "docks",
+      "buildingId": null,
+      "groupLabel": "Docks park",
+      "grid": {
+        "x": 50,
+        "y": 38,
+        "w": 7,
+        "h": 9
+      },
+      "world": {
+        "x": 688,
+        "y": 336,
+        "w": 224,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-research-6",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 6",
+      "grid": {
+        "x": 60,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "world": {
+        "x": 960,
+        "y": -944,
+        "w": 128,
+        "d": 160
+      }
+    },
+    {
+      "id": "land-research-7",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 7",
+      "grid": {
+        "x": 60,
+        "y": 8,
+        "w": 4,
+        "h": 3
+      },
+      "world": {
+        "x": 960,
+        "y": -720,
+        "w": 128,
+        "d": 96
+      }
+    },
+    {
+      "id": "land-research-8",
+      "kind": "sale",
+      "districtId": "research",
+      "buildingId": null,
+      "groupLabel": "Research · Lot 8",
+      "grid": {
+        "x": 60,
+        "y": 14,
+        "w": 4,
+        "h": 9
+      },
+      "world": {
+        "x": 960,
+        "y": -432,
+        "w": 128,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-ridge-3",
+      "kind": "sale",
+      "districtId": "ridge",
+      "buildingId": null,
+      "groupLabel": "Ridge · Lot 3",
+      "grid": {
+        "x": 60,
+        "y": 26,
+        "w": 4,
+        "h": 9
+      },
+      "world": {
+        "x": 960,
+        "y": -48,
+        "w": 128,
+        "d": 288
+      }
+    },
+    {
+      "id": "land-docks-2",
+      "kind": "sale",
+      "districtId": "docks",
+      "buildingId": null,
+      "groupLabel": "Docks · Lot 2",
+      "grid": {
+        "x": 60,
+        "y": 38,
+        "w": 4,
+        "h": 5
+      },
+      "world": {
+        "x": 960,
+        "y": 272,
+        "w": 128,
+        "d": 160
+      }
+    }
+  ],
+  "buildingFootprints": [
+    {
+      "id": "pavilion",
+      "name": "Lawn Pavilion",
+      "assetId": "pack.northshore.building.pavilion.pavilion",
+      "origin": {
+        "x": 7,
+        "y": 2
+      },
+      "size": {
+        "x": 3,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "hq",
+      "name": "Agentspace HQ",
+      "assetId": "pack.northshore.building.hq.hq",
+      "origin": {
+        "x": 14,
+        "y": 2
+      },
+      "size": {
+        "x": 5,
+        "y": 4
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "finance",
+      "name": "Ledger House",
+      "assetId": "pack.northshore.building.office.finance",
+      "origin": {
+        "x": 20,
+        "y": 2
+      },
+      "size": {
+        "x": 3,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "hall",
+      "name": "Board Hall",
+      "assetId": "pack.northshore.building.hall.hall",
+      "origin": {
+        "x": 14,
+        "y": 7
+      },
+      "size": {
+        "x": 4,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "loft",
+      "name": "Echt Studio",
+      "assetId": "pack.northshore.building.studio.loft",
+      "origin": {
+        "x": 26,
+        "y": 2
+      },
+      "size": {
+        "x": 4,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "seed-cafe",
+      "name": "Seed Cafe",
+      "assetId": "pack.northshore.building.cafe.seed-cafe",
+      "origin": {
+        "x": 31,
+        "y": 2
+      },
+      "size": {
+        "x": 3,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "incubator",
+      "name": "Echt House",
+      "assetId": "pack.northshore.building.hq.incubator",
+      "origin": {
+        "x": 26,
+        "y": 6
+      },
+      "size": {
+        "x": 5,
+        "y": 4
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "retail",
+      "name": "Ribbon Shop",
+      "assetId": "pack.northshore.building.retail.retail",
+      "origin": {
+        "x": 32,
+        "y": 7
+      },
+      "size": {
+        "x": 3,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "studio",
+      "name": "Signal Studio",
+      "assetId": "pack.northshore.building.studio.studio",
+      "origin": {
+        "x": 38,
+        "y": 2
+      },
+      "size": {
+        "x": 5,
+        "y": 4
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    },
+    {
+      "id": "cottage",
+      "name": "Vanta Cottage",
+      "assetId": "pack.northshore.building.house.cottage",
+      "origin": {
+        "x": 38,
+        "y": 8
+      },
+      "size": {
+        "x": 3,
+        "y": 3
+      },
+      "note": "Lot footprint only in STEP 1 — no building mesh"
+    }
+  ],
+  "terrainRows": [
+    "grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass",
+    "grass,park,park,park,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "sand,sand,sand,park,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,dirt,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,dirt,grass,dirt,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,dirt,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,sand,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,park,park,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "water,water,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "water,water,water,sand,sand,sand,road,park,park,park,park,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,dirt,grass,sidewalk,road,sidewalk,dirt,dirt,grass,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,dirt,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,dirt,grass,dirt,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,dirt,dirt,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,dirt",
+    "water,water,water,water,water,sand,road,park,park,park,park,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,grass,dirt,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,dirt,dirt,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,dirt,grass,sidewalk,road,sidewalk,grass,dirt,dirt,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,lot,lot,lot,lot,lot,grass,grass,sidewalk,road,sidewalk,dirt,grass,dirt,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,dirt,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,park,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,water,water,water,road,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,plaza,plaza,road,plaza,plaza,park,park,park,park,park,park,park,park,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,water,water,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,plaza,plaza,road,plaza,plaza,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "water,water,water,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,plaza,plaza,road,plaza,plaza,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "water,water,water,sand,dirt,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,plaza,plaza,road,plaza,plaza,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,sand,sand,dirt,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,dirt,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,sand,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,dirt,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,sand,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,dirt,dirt,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass",
+    "water,water,water,sand,dirt,sidewalk,road,sidewalk,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,dirt,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,dirt,dirt,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,dirt,grass,grass,grass,dirt,sidewalk,road,sidewalk,dirt,dirt,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "water,water,water,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,dirt,grass,dirt,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,dirt,sidewalk,road,sidewalk,grass,dirt,grass,grass,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,dirt,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,dirt,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,sand,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass",
+    "water,water,water,sand,grass,sidewalk,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,sand,sand,sand",
+    "water,water,water,lot,lot,lot,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,dirt,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,water,water,water,water,water",
+    "water,water,water,lot,lot,lot,road,sidewalk,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,water,water,water,water",
+    "water,water,lot,lot,lot,lot,road,sidewalk,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,water,water,water,water,water",
+    "sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,water,water,water,water,water",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,water,sidewalk,sidewalk,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,sand,sand,sand,water,water,water,road,water,water,water,water,water",
+    "grass,dirt,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,sand,sand,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,dirt,dirt,grass,sidewalk,road,sidewalk,sand,sand,sand,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,dirt,grass,grass,grass,grass,dirt,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,dirt,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,dirt,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,dirt,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,dirt,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "sidewalk,sidewalk,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road,road",
+    "sidewalk,sidewalk,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,sidewalk,road,sidewalk,sidewalk,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,dirt,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,dirt,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,park,park,park,park,road,park,park,park,park,park,road,park,park,park,park,park,park,park,park,grass,grass,sidewalk,road,sidewalk,grass,grass,dirt,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,dirt,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water",
+    "grass,grass,grass,grass,grass,sidewalk,road,sidewalk,dirt,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,dirt,grass,grass,grass,dirt,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,grass,grass,grass,grass,grass,grass,grass,grass,grass,sidewalk,road,sidewalk,sand,water,water,water,water,water,water,water,road,water,water,water,water,water"
+  ],
+  "scenery": [
+    {
+      "id": "tree-0",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 4.697357532098977,
+      "y": 0.2715120946550087,
+      "world": {
+        "x": -873.6845589728327,
+        "y": -1015.3116129710397
+      }
+    },
+    {
+      "id": "tree-1",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 15.717766560264863,
+      "y": 0.5236156911922081,
+      "world": {
+        "x": -521.0314700715244,
+        "y": -1007.2442978818493
+      }
+    },
+    {
+      "id": "tree-2",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 55.6942561771848,
+      "y": 0.2307344809424194,
+      "world": {
+        "x": 758.2161976699135,
+        "y": -1016.6164966098426
+      }
+    },
+    {
+      "id": "tree-3",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 2.650053541219677,
+      "y": 1.4172953134392627,
+      "world": {
+        "x": -939.1982866809703,
+        "y": -978.6465499699436
+      }
+    },
+    {
+      "id": "tree-4",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 4.639251414324008,
+      "y": 1.4015701412496127,
+      "world": {
+        "x": -875.5439547416318,
+        "y": -979.1497554800123
+      }
+    },
+    {
+      "id": "tree-5",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 7.708927496882097,
+      "y": 1.5620192806561364,
+      "world": {
+        "x": -777.3143200997729,
+        "y": -974.0153830190036
+      }
+    },
+    {
+      "id": "tree-6",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 8.661154699766485,
+      "y": 1.5363990577980076,
+      "world": {
+        "x": -746.8430496074725,
+        "y": -974.8352301504638
+      }
+    },
+    {
+      "id": "tree-7",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 9.72438169976158,
+      "y": 1.3971454528778848,
+      "world": {
+        "x": -712.8197856076295,
+        "y": -979.2913455079076
+      }
+    },
+    {
+      "id": "tree-8",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 10.624838078116227,
+      "y": 1.41946643561605,
+      "world": {
+        "x": -684.0051815002807,
+        "y": -978.5770740602863
+      }
+    },
+    {
+      "id": "tree-9",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 18.722609157652187,
+      "y": 1.466001575268092,
+      "world": {
+        "x": -424.87650695513,
+        "y": -977.0879495914211
+      }
+    },
+    {
+      "id": "tree-10",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 39.69269616214842,
+      "y": 1.268045448646444,
+      "world": {
+        "x": 246.16627718874952,
+        "y": -983.4225456433138
+      }
+    },
+    {
+      "id": "tree-11",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 54.73129609289754,
+      "y": 1.2746562153464764,
+      "world": {
+        "x": 727.4014749727212,
+        "y": -983.2110011089128
+      }
+    },
+    {
+      "id": "tree-12",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 3.619341334404453,
+      "y": 2.5411445334484597,
+      "world": {
+        "x": -908.1810772990575,
+        "y": -942.6833749296493
+      }
+    },
+    {
+      "id": "tree-13",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 5.678269928044756,
+      "y": 2.4430845947070985,
+      "world": {
+        "x": -842.2953623025678,
+        "y": -945.8212929693728
+      }
+    },
+    {
+      "id": "tree-14",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 19.730965697549436,
+      "y": 2.3791595874576164,
+      "world": {
+        "x": -392.60909767841804,
+        "y": -947.8668932013563
+      }
+    },
+    {
+      "id": "tree-15",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 43.70582480489429,
+      "y": 2.313630112518331,
+      "world": {
+        "x": 374.5863937566173,
+        "y": -949.9638363994134
+      }
+    },
+    {
+      "id": "tree-16",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 54.74119333422459,
+      "y": 2.4436290507142986,
+      "world": {
+        "x": 727.7181866951869,
+        "y": -945.8038703771424
+      }
+    },
+    {
+      "id": "bush-17",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 10.5,
+      "y": 3.55,
+      "world": {
+        "x": -688,
+        "y": -910.4
+      }
+    },
+    {
+      "id": "tree-18",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 44.724019915207464,
+      "y": 3.44871698713323,
+      "world": {
+        "x": 407.16863728663884,
+        "y": -913.6410564117366
+      }
+    },
+    {
+      "id": "tree-19",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 46.73355312622516,
+      "y": 3.4157286258541717,
+      "world": {
+        "x": 471.47370003920514,
+        "y": -914.6966839726665
+      }
+    },
+    {
+      "id": "tree-20",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 50.69301647935208,
+      "y": 3.641344349793872,
+      "world": {
+        "x": 598.1765273392666,
+        "y": -907.4769808065961
+      }
+    },
+    {
+      "id": "bush-21",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 10.5,
+      "y": 4.55,
+      "world": {
+        "x": -688,
+        "y": -878.4
+      }
+    },
+    {
+      "id": "tree-22",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 43.7098302345039,
+      "y": 4.487465660703856,
+      "world": {
+        "x": 374.7145675041247,
+        "y": -880.4010988574767
+      }
+    },
+    {
+      "id": "tree-23",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 44.718296242084534,
+      "y": 4.614581113482564,
+      "world": {
+        "x": 406.9854797467051,
+        "y": -876.3334043685579
+      }
+    },
+    {
+      "id": "tree-24",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 45.6925741688101,
+      "y": 4.311415923599998,
+      "world": {
+        "x": 438.1623734019231,
+        "y": -886.0346904448
+      }
+    },
+    {
+      "id": "tree-26",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 8.707380104870026,
+      "y": 5.5730460216648,
+      "world": {
+        "x": -745.3638366441592,
+        "y": -845.6625273067264
+      }
+    },
+    {
+      "id": "bush-27",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 9.5,
+      "y": 5.55,
+      "world": {
+        "x": -720,
+        "y": -846.4
+      }
+    },
+    {
+      "id": "tree-29",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 4.747740876231546,
+      "y": 7.230029484697025,
+      "world": {
+        "x": -872.0722919605905,
+        "y": -792.6390564896952
+      }
+    },
+    {
+      "id": "tree-30",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 5.738808553363924,
+      "y": 7.281309315139879,
+      "world": {
+        "x": -840.3581262923544,
+        "y": -790.9981019155239
+      }
+    },
+    {
+      "id": "tree-31",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 8.713136613776442,
+      "y": 7.335613831412047,
+      "world": {
+        "x": -745.1796283591539,
+        "y": -789.2603573948145
+      }
+    },
+    {
+      "id": "tree-32",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 10.664635057059058,
+      "y": 7.251207604009688,
+      "world": {
+        "x": -682.7316781741101,
+        "y": -791.96135667169
+      }
+    },
+    {
+      "id": "tree-33",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 5.664495579627555,
+      "y": 8.611642094383022,
+      "world": {
+        "x": -842.7361414519182,
+        "y": -748.4274529797433
+      }
+    },
+    {
+      "id": "tree-35",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 41.74581701585703,
+      "y": 8.246739836574852,
+      "world": {
+        "x": 311.8661445074249,
+        "y": -760.1043252296047
+      }
+    },
+    {
+      "id": "bush-36",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 44.5,
+      "y": 8.55,
+      "world": {
+        "x": 400,
+        "y": -750.4
+      }
+    },
+    {
+      "id": "tree-38",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 51.7199174405805,
+      "y": 8.397592685108066,
+      "world": {
+        "x": 631.0373580985761,
+        "y": -755.2770340765419
+      }
+    },
+    {
+      "id": "bush-39",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 8.5,
+      "y": 9.55,
+      "world": {
+        "x": -752,
+        "y": -718.4
+      }
+    },
+    {
+      "id": "tree-40",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 20.698813683658045,
+      "y": 9.350881094739815,
+      "world": {
+        "x": -361.63796212294255,
+        "y": -724.7718049683259
+      }
+    },
+    {
+      "id": "tree-41",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 41.69272843152794,
+      "y": 9.338947948160852,
+      "world": {
+        "x": 310.16730980889406,
+        "y": -725.1536656588528
+      }
+    },
+    {
+      "id": "tree-42",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 42.742058450539844,
+      "y": 9.29594468953819,
+      "world": {
+        "x": 343.745870417275,
+        "y": -726.529769934778
+      }
+    },
+    {
+      "id": "bush-43",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 43.5,
+      "y": 9.55,
+      "world": {
+        "x": 368,
+        "y": -718.4
+      }
+    },
+    {
+      "id": "bush-44",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 44.5,
+      "y": 9.55,
+      "world": {
+        "x": 400,
+        "y": -718.4
+      }
+    },
+    {
+      "id": "bush-45",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 46.5,
+      "y": 9.55,
+      "world": {
+        "x": 464,
+        "y": -718.4
+      }
+    },
+    {
+      "id": "tree-46",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 51.7367709435639,
+      "y": 9.27375962049773,
+      "world": {
+        "x": 631.5766701940447,
+        "y": -727.2396921440727
+      }
+    },
+    {
+      "id": "tree-47",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 55.710922642561854,
+      "y": 9.541850022807193,
+      "world": {
+        "x": 758.7495245619793,
+        "y": -718.6607992701698
+      }
+    },
+    {
+      "id": "tree-48",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 60.74964002899287,
+      "y": 9.454488219130871,
+      "world": {
+        "x": 919.9884809277719,
+        "y": -721.4563769878121
+      }
+    },
+    {
+      "id": "tree-49",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 4.709787480082852,
+      "y": 10.361078189715045,
+      "world": {
+        "x": -873.2868006373487,
+        "y": -692.4454979291186
+      }
+    },
+    {
+      "id": "bush-50",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 5.5,
+      "y": 10.55,
+      "world": {
+        "x": -848,
+        "y": -686.4
+      }
+    },
+    {
+      "id": "tree-51",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 17.714071953835173,
+      "y": 10.310468365259112,
+      "world": {
+        "x": -457.14969747727446,
+        "y": -694.0650123117084
+      }
+    },
+    {
+      "id": "tree-52",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 19.69899968755999,
+      "y": 10.256334792609413,
+      "world": {
+        "x": -393.6320099980803,
+        "y": -695.7972866364987
+      }
+    },
+    {
+      "id": "tree-53",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.733443798399094,
+      "y": 10.26324719731674,
+      "world": {
+        "x": 55.470201548771,
+        "y": -695.5760896858643
+      }
+    },
+    {
+      "id": "bush-54",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 42.5,
+      "y": 10.55,
+      "world": {
+        "x": 336,
+        "y": -686.4
+      }
+    },
+    {
+      "id": "tree-55",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 43.73099038822693,
+      "y": 10.580582244371726,
+      "world": {
+        "x": 375.3916924232617,
+        "y": -685.4213681801048
+      }
+    },
+    {
+      "id": "tree-57",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 52.71641468599728,
+      "y": 10.245669713366986,
+      "world": {
+        "x": 662.9252699519129,
+        "y": -696.1385691722564
+      }
+    },
+    {
+      "id": "tree-58",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 54.73325706337164,
+      "y": 10.278642747676349,
+      "world": {
+        "x": 727.4642260278924,
+        "y": -695.0834320743568
+      }
+    },
+    {
+      "id": "tree-59",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 63.704063255751635,
+      "y": 10.384120574634107,
+      "world": {
+        "x": 1014.5300241840523,
+        "y": -691.7081416117086
+      }
+    },
+    {
+      "id": "tree-60",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 39.65553218034984,
+      "y": 11.423116506696532,
+      "world": {
+        "x": 244.9770297711948,
+        "y": -658.460271785711
+      }
+    },
+    {
+      "id": "tree-61",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 40.6473905662242,
+      "y": 11.29715067084653,
+      "world": {
+        "x": 276.7164981191745,
+        "y": -662.491178532911
+      }
+    },
+    {
+      "id": "tree-62",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 42.6367697281712,
+      "y": 11.234013009733461,
+      "world": {
+        "x": 340.3766313014785,
+        "y": -664.5115836885293
+      }
+    },
+    {
+      "id": "tree-63",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 43.744428248534405,
+      "y": 11.414365243940846,
+      "world": {
+        "x": 375.82170395310095,
+        "y": -658.7403121938929
+      }
+    },
+    {
+      "id": "tree-64",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 45.67092409910174,
+      "y": 11.321855983509158,
+      "world": {
+        "x": 437.46957117125567,
+        "y": -661.7006085277069
+      }
+    },
+    {
+      "id": "bush-65",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 38.5,
+      "y": 13.55,
+      "world": {
+        "x": 208,
+        "y": -590.4
+      }
+    },
+    {
+      "id": "tree-66",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 41.65713163289547,
+      "y": 13.34884065910537,
+      "world": {
+        "x": 309.02821225265507,
+        "y": -596.8370989086281
+      }
+    },
+    {
+      "id": "bush-67",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 43.5,
+      "y": 13.55,
+      "world": {
+        "x": 368,
+        "y": -590.4
+      }
+    },
+    {
+      "id": "bush-68",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 45.5,
+      "y": 13.55,
+      "world": {
+        "x": 432,
+        "y": -590.4
+      }
+    },
+    {
+      "id": "tree-69",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 46.6409781135917,
+      "y": 13.366929690321648,
+      "world": {
+        "x": 468.5112996349344,
+        "y": -596.2582499097073
+      }
+    },
+    {
+      "id": "bush-70",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 8.5,
+      "y": 14.55,
+      "world": {
+        "x": -752,
+        "y": -558.4
+      }
+    },
+    {
+      "id": "tree-71",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 28.719586246292238,
+      "y": 14.379251164349988,
+      "world": {
+        "x": -104.97324011864839,
+        "y": -563.8639627408004
+      }
+    },
+    {
+      "id": "tree-72",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 29.648417699805577,
+      "y": 14.333572875413665,
+      "world": {
+        "x": -75.25063360622153,
+        "y": -565.3256679867627
+      }
+    },
+    {
+      "id": "tree-73",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 30.642288058506892,
+      "y": 14.485947586903148,
+      "world": {
+        "x": -43.44678212777944,
+        "y": -560.4496772190993
+      }
+    },
+    {
+      "id": "bush-74",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 31.5,
+      "y": 14.55,
+      "world": {
+        "x": -16,
+        "y": -558.4
+      }
+    },
+    {
+      "id": "tree-75",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 32.637425701606844,
+      "y": 14.5410904132219,
+      "world": {
+        "x": 20.39762245141901,
+        "y": -558.6851067768991
+      }
+    },
+    {
+      "id": "tree-76",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 34.63875599205858,
+      "y": 14.43339004876725,
+      "world": {
+        "x": 84.44019174587447,
+        "y": -562.131518439448
+      }
+    },
+    {
+      "id": "tree-77",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 39.70127132498965,
+      "y": 14.585550145156411,
+      "world": {
+        "x": 246.44068239966873,
+        "y": -557.2623953549949
+      }
+    },
+    {
+      "id": "tree-78",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 40.646893558165175,
+      "y": 14.648867530962796,
+      "world": {
+        "x": 276.7005938612856,
+        "y": -555.2362390091905
+      }
+    },
+    {
+      "id": "tree-79",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 42.728647229010676,
+      "y": 14.309490713102786,
+      "world": {
+        "x": 343.3167113283416,
+        "y": -566.0962971807108
+      }
+    },
+    {
+      "id": "bush-80",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 43.5,
+      "y": 14.55,
+      "world": {
+        "x": 368,
+        "y": -558.4
+      }
+    },
+    {
+      "id": "tree-81",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 44.72791164438058,
+      "y": 14.619752885011074,
+      "world": {
+        "x": 407.29317262017867,
+        "y": -556.1679076796456
+      }
+    },
+    {
+      "id": "tree-82",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 46.67585804396185,
+      "y": 14.36212914184216,
+      "world": {
+        "x": 469.6274574067793,
+        "y": -564.4118674610509
+      }
+    },
+    {
+      "id": "tree-83",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 56.73149984400516,
+      "y": 14.265993795784379,
+      "world": {
+        "x": 791.407995008165,
+        "y": -567.4881985348999
+      }
+    },
+    {
+      "id": "tree-84",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 63.719074199039824,
+      "y": 14.545020319153354,
+      "world": {
+        "x": 1015.0103743692744,
+        "y": -558.5593497870927
+      }
+    },
+    {
+      "id": "tree-85",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 8.61095843367275,
+      "y": 15.533964278241182,
+      "world": {
+        "x": -748.449330122472,
+        "y": -526.9131430962822
+      }
+    },
+    {
+      "id": "tree-86",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 10.691707118290651,
+      "y": 15.292056774420303,
+      "world": {
+        "x": -681.8653722146992,
+        "y": -534.6541832185503
+      }
+    },
+    {
+      "id": "tree-87",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 26.680785292890505,
+      "y": 15.4773918128285,
+      "world": {
+        "x": -170.21487062750384,
+        "y": -528.723461989488
+      }
+    },
+    {
+      "id": "tree-88",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 27.746881008468335,
+      "y": 15.495576734805582,
+      "world": {
+        "x": -136.09980772901326,
+        "y": -528.1415444862214
+      }
+    },
+    {
+      "id": "tree-89",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 30.723435302303187,
+      "y": 15.384885563759234,
+      "world": {
+        "x": -40.85007032629801,
+        "y": -531.6836619597045
+      }
+    },
+    {
+      "id": "bush-90",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 32.5,
+      "y": 15.55,
+      "world": {
+        "x": 16,
+        "y": -526.4
+      }
+    },
+    {
+      "id": "tree-91",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.685106701464974,
+      "y": 15.440174284250633,
+      "world": {
+        "x": 53.92341444687918,
+        "y": -529.9144229039798
+      }
+    },
+    {
+      "id": "bush-92",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 8.5,
+      "y": 16.55,
+      "world": {
+        "x": -752,
+        "y": -494.4
+      }
+    },
+    {
+      "id": "tree-93",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 26.62734108006407,
+      "y": 16.385025918704105,
+      "world": {
+        "x": -171.92508543794975,
+        "y": -499.6791706014686
+      }
+    },
+    {
+      "id": "tree-94",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 27.610341867452007,
+      "y": 16.61279265569683,
+      "world": {
+        "x": -140.46906024153577,
+        "y": -492.39063501770147
+      }
+    },
+    {
+      "id": "tree-95",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 28.709888583580323,
+      "y": 16.227834817749315,
+      "world": {
+        "x": -105.28356532542966,
+        "y": -504.7092858320219
+      }
+    },
+    {
+      "id": "bush-96",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 31.5,
+      "y": 16.55,
+      "world": {
+        "x": -16,
+        "y": -494.4
+      }
+    },
+    {
+      "id": "tree-98",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 34.65355574501291,
+      "y": 16.226962427335454,
+      "world": {
+        "x": 84.91378384041309,
+        "y": -504.73720232526546
+      }
+    },
+    {
+      "id": "tree-99",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 38.7021412029153,
+      "y": 16.574290303702945,
+      "world": {
+        "x": 214.4685184932896,
+        "y": -493.62271028150576
+      }
+    },
+    {
+      "id": "tree-100",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 45.72438274028309,
+      "y": 16.523556130009545,
+      "world": {
+        "x": 439.1802476890589,
+        "y": -495.24620383969454
+      }
+    },
+    {
+      "id": "tree-101",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 61.690019344070606,
+      "y": 16.588099962153137,
+      "world": {
+        "x": 950.0806190102594,
+        "y": -493.1808012110996
+      }
+    },
+    {
+      "id": "bush-102",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 8.5,
+      "y": 17.55,
+      "world": {
+        "x": -752,
+        "y": -462.4
+      }
+    },
+    {
+      "id": "bush-105",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 31.5,
+      "y": 17.55,
+      "world": {
+        "x": -16,
+        "y": -462.4
+      }
+    },
+    {
+      "id": "bush-106",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 32.5,
+      "y": 17.55,
+      "world": {
+        "x": 16,
+        "y": -462.4
+      }
+    },
+    {
+      "id": "tree-107",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.73361531281989,
+      "y": 17.555838058373954,
+      "world": {
+        "x": 55.475690010236576,
+        "y": -462.21318213203347
+      }
+    },
+    {
+      "id": "tree-108",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 39.73639890299455,
+      "y": 17.487042801368442,
+      "world": {
+        "x": 247.56476489582565,
+        "y": -464.41463035620984
+      }
+    },
+    {
+      "id": "bush-110",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 9.5,
+      "y": 18.55,
+      "world": {
+        "x": -720,
+        "y": -430.4
+      }
+    },
+    {
+      "id": "tree-111",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 22.715955143453357,
+      "y": 18.327632739233785,
+      "world": {
+        "x": -297.0894354094926,
+        "y": -437.5157523445189
+      }
+    },
+    {
+      "id": "tree-112",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 27.628946579641706,
+      "y": 18.503460635420016,
+      "world": {
+        "x": -139.8737094514654,
+        "y": -431.8892596665595
+      }
+    },
+    {
+      "id": "bush-113",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 28.5,
+      "y": 18.55,
+      "world": {
+        "x": -112,
+        "y": -430.4
+      }
+    },
+    {
+      "id": "tree-114",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 31.732632177437154,
+      "y": 18.527281742187732,
+      "world": {
+        "x": -8.555770322011085,
+        "y": -431.1269842499926
+      }
+    },
+    {
+      "id": "bush-115",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 32.5,
+      "y": 18.55,
+      "world": {
+        "x": 16,
+        "y": -430.4
+      }
+    },
+    {
+      "id": "tree-116",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 33.73796577932612,
+      "y": 18.4064766090818,
+      "world": {
+        "x": 55.61490493843576,
+        "y": -434.9927485093824
+      }
+    },
+    {
+      "id": "tree-117",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 34.63193202218099,
+      "y": 18.492438106148256,
+      "world": {
+        "x": 84.22182470979169,
+        "y": -432.2419806032558
+      }
+    },
+    {
+      "id": "tree-118",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 45.742306682248454,
+      "y": 18.59041078508925,
+      "world": {
+        "x": 439.75381383195054,
+        "y": -429.106854877144
+      }
+    },
+    {
+      "id": "tree-119",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 56.748039359456016,
+      "y": 18.50907763201576,
+      "world": {
+        "x": 791.9372595025925,
+        "y": -431.7095157754957
+      }
+    },
+    {
+      "id": "tree-120",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 63.711640150220774,
+      "y": 18.62685636472415,
+      "world": {
+        "x": 1014.7724848070648,
+        "y": -427.94059632882716
+      }
+    },
+    {
+      "id": "tree-121",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 8.658031185865184,
+      "y": 19.502269816172337,
+      "world": {
+        "x": -746.9430020523141,
+        "y": -399.9273658824852
+      }
+    },
+    {
+      "id": "bush-122",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 9.5,
+      "y": 19.55,
+      "world": {
+        "x": -720,
+        "y": -398.4
+      }
+    },
+    {
+      "id": "tree-123",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 21.736491560015565,
+      "y": 19.413044639476357,
+      "world": {
+        "x": -328.4322700795019,
+        "y": -402.78257153675656
+      }
+    },
+    {
+      "id": "tree-125",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 28.61853673654514,
+      "y": 19.31978197262433,
+      "world": {
+        "x": -108.20682443055557,
+        "y": -405.76697687602143
+      }
+    },
+    {
+      "id": "bush-126",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 31.5,
+      "y": 19.55,
+      "world": {
+        "x": -16,
+        "y": -398.4
+      }
+    },
+    {
+      "id": "tree-128",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 34.74200751271928,
+      "y": 19.309960492875142,
+      "world": {
+        "x": 87.74424040701706,
+        "y": -406.08126422799546
+      }
+    },
+    {
+      "id": "tree-129",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 41.69088345935597,
+      "y": 19.238641073349207,
+      "world": {
+        "x": 310.10827069939114,
+        "y": -408.3634856528254
+      }
+    },
+    {
+      "id": "bush-130",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 7.5,
+      "y": 20.55,
+      "world": {
+        "x": -784,
+        "y": -366.4
+      }
+    },
+    {
+      "id": "tree-131",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 8.669378706891308,
+      "y": 20.223255186293407,
+      "world": {
+        "x": -746.5798813794781,
+        "y": -376.85583403861096
+      }
+    },
+    {
+      "id": "bush-132",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 10.5,
+      "y": 20.55,
+      "world": {
+        "x": -688,
+        "y": -366.4
+      }
+    },
+    {
+      "id": "tree-133",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 16.690862663363077,
+      "y": 20.358871931018438,
+      "world": {
+        "x": -489.8923947723815,
+        "y": -372.51609820741
+      }
+    },
+    {
+      "id": "tree-134",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.725905860595958,
+      "y": 20.41787110657342,
+      "world": {
+        "x": -424.77101246092934,
+        "y": -370.6281245896506
+      }
+    },
+    {
+      "id": "tree-135",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 27.677766317698115,
+      "y": 20.273243527984288,
+      "world": {
+        "x": -138.31147783366032,
+        "y": -375.2562071045028
+      }
+    },
+    {
+      "id": "tree-136",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 31.730533883015596,
+      "y": 20.472374188531465,
+      "world": {
+        "x": -8.622915743500926,
+        "y": -368.88402596699314
+      }
+    },
+    {
+      "id": "tree-137",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 32.62458487585013,
+      "y": 20.573632294029267,
+      "world": {
+        "x": 19.98671602720424,
+        "y": -365.64376659106347
+      }
+    },
+    {
+      "id": "tree-138",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.717885692767595,
+      "y": 20.266111983883455,
+      "world": {
+        "x": 54.972342168563046,
+        "y": -375.48441651572944
+      }
+    },
+    {
+      "id": "tree-140",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 42.73920153416839,
+      "y": 20.540636174089013,
+      "world": {
+        "x": 343.6544490933884,
+        "y": -366.6996424291516
+      }
+    },
+    {
+      "id": "tree-141",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 43.74259468052807,
+      "y": 20.24267176464564,
+      "world": {
+        "x": 375.7630297768983,
+        "y": -376.23450353133956
+      }
+    },
+    {
+      "id": "bush-142",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 7.5,
+      "y": 21.55,
+      "world": {
+        "x": -784,
+        "y": -334.4
+      }
+    },
+    {
+      "id": "tree-143",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 8.715594914134272,
+      "y": 21.3085255271857,
+      "world": {
+        "x": -745.1009627477033,
+        "y": -342.1271831300576
+      }
+    },
+    {
+      "id": "tree-144",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 21.720942236501287,
+      "y": 21.62384801285116,
+      "world": {
+        "x": -328.9298484319588,
+        "y": -332.0368635887629
+      }
+    },
+    {
+      "id": "tree-145",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 26.71325021399025,
+      "y": 21.269007818707358,
+      "world": {
+        "x": -169.175993152312,
+        "y": -343.39174980136454
+      }
+    },
+    {
+      "id": "tree-146",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 27.69904368506468,
+      "y": 21.477456516412712,
+      "world": {
+        "x": -137.63060207793023,
+        "y": -336.7213914747932
+      }
+    },
+    {
+      "id": "tree-147",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 29.72629156705807,
+      "y": 21.30217928735883,
+      "world": {
+        "x": -72.75866985414177,
+        "y": -342.3302628045175
+      }
+    },
+    {
+      "id": "bush-148",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 31.5,
+      "y": 21.55,
+      "world": {
+        "x": -16,
+        "y": -334.4
+      }
+    },
+    {
+      "id": "bush-150",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 34.5,
+      "y": 21.55,
+      "world": {
+        "x": 80,
+        "y": -334.4
+      }
+    },
+    {
+      "id": "tree-151",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 41.70724864713702,
+      "y": 21.48933074237284,
+      "world": {
+        "x": 310.6319567083847,
+        "y": -336.34141624406914
+      }
+    },
+    {
+      "id": "tree-152",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 52.707217864612176,
+      "y": 21.301183399753334,
+      "world": {
+        "x": 662.6309716675896,
+        "y": -342.3621312078933
+      }
+    },
+    {
+      "id": "tree-153",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 62.708972633754456,
+      "y": 21.32544446033298,
+      "world": {
+        "x": 982.6871242801426,
+        "y": -341.5857772693446
+      }
+    },
+    {
+      "id": "tree-155",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 8.717984888688079,
+      "y": 22.401399895102987,
+      "world": {
+        "x": -745.0244835619815,
+        "y": -307.1552033567044
+      }
+    },
+    {
+      "id": "tree-156",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 9.733207922182373,
+      "y": 22.23013958033953,
+      "world": {
+        "x": -712.537346490164,
+        "y": -312.6355334291351
+      }
+    },
+    {
+      "id": "tree-157",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 10.715180798029905,
+      "y": 22.2011551477799,
+      "world": {
+        "x": -681.114214463043,
+        "y": -313.5630352710432
+      }
+    },
+    {
+      "id": "tree-159",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.746178935511125,
+      "y": 22.290640385412917,
+      "world": {
+        "x": 55.877725936356,
+        "y": -310.69950766678664
+      }
+    },
+    {
+      "id": "tree-160",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 42.72801742691968,
+      "y": 22.584233470173967,
+      "world": {
+        "x": 343.2965576614297,
+        "y": -301.30452895443307
+      }
+    },
+    {
+      "id": "tree-161",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 56.72505227598231,
+      "y": 22.4111052624954,
+      "world": {
+        "x": 791.2016728314338,
+        "y": -306.8446316001472
+      }
+    },
+    {
+      "id": "tree-162",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 34.73838974758837,
+      "y": 26.53251174788238,
+      "world": {
+        "x": 87.62847192282788,
+        "y": -174.9596240677638
+      }
+    },
+    {
+      "id": "tree-163",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 50.72887906289907,
+      "y": 26.38850500583976,
+      "world": {
+        "x": 599.3241300127702,
+        "y": -179.56783981312765
+      }
+    },
+    {
+      "id": "tree-164",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 53.74728226003754,
+      "y": 26.242227579438623,
+      "world": {
+        "x": 695.9130323212012,
+        "y": -184.24871745796406
+      }
+    },
+    {
+      "id": "tree-165",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 56.71524401033275,
+      "y": 26.496721480679252,
+      "world": {
+        "x": 790.8878083306481,
+        "y": -176.10491261826394
+      }
+    },
+    {
+      "id": "tree-166",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 10.733608879734675,
+      "y": 27.474411468570906,
+      "world": {
+        "x": -680.5245158484904,
+        "y": -144.818833005731
+      }
+    },
+    {
+      "id": "tree-167",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 14.719871709594372,
+      "y": 27.22771825247182,
+      "world": {
+        "x": -552.9641052929801,
+        "y": -152.71301592090174
+      }
+    },
+    {
+      "id": "tree-168",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 16.70865850632981,
+      "y": 27.524307680706805,
+      "world": {
+        "x": -489.322927797446,
+        "y": -143.22215421738224
+      }
+    },
+    {
+      "id": "tree-169",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 29.70546718654805,
+      "y": 27.212733746272715,
+      "world": {
+        "x": -73.42505003046244,
+        "y": -153.19252011927313
+      }
+    },
+    {
+      "id": "tree-170",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 42.74816205101342,
+      "y": 27.500067964176196,
+      "world": {
+        "x": 343.94118563242955,
+        "y": -143.99782514636172
+      }
+    },
+    {
+      "id": "tree-171",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 60.745508191594126,
+      "y": 27.498485217693815,
+      "world": {
+        "x": 919.856262131012,
+        "y": -144.0484730337979
+      }
+    },
+    {
+      "id": "tree-172",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 45.71936754934359,
+      "y": 28.391573597092066,
+      "world": {
+        "x": 439.0197615789948,
+        "y": -115.4696448930539
+      }
+    },
+    {
+      "id": "tree-173",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 55.705391271270855,
+      "y": 28.37099426689656,
+      "world": {
+        "x": 758.5725206806674,
+        "y": -116.1281834593101
+      }
+    },
+    {
+      "id": "tree-174",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 28.746181681639428,
+      "y": 29.28760663848843,
+      "world": {
+        "x": -104.12218618753832,
+        "y": -86.79658756837023
+      }
+    },
+    {
+      "id": "tree-175",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 43.729046911351816,
+      "y": 29.311235423555264,
+      "world": {
+        "x": 375.3295011632581,
+        "y": -86.04046644623156
+      }
+    },
+    {
+      "id": "tree-176",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 61.71582662104265,
+      "y": 29.34244132713902,
+      "world": {
+        "x": 950.9064518733649,
+        "y": -85.04187753155134
+      }
+    },
+    {
+      "id": "tree-177",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 8.697237590513396,
+      "y": 30.204589160515024,
+      "world": {
+        "x": -745.6883971035713,
+        "y": -57.45314686351924
+      }
+    },
+    {
+      "id": "tree-178",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 29.693392826624404,
+      "y": 30.37598251508168,
+      "world": {
+        "x": -73.81142954801908,
+        "y": -51.96855951738621
+      }
+    },
+    {
+      "id": "tree-179",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 51.7205869315294,
+      "y": 30.457377299098514,
+      "world": {
+        "x": 631.0587818089407,
+        "y": -49.36392642884755
+      }
+    },
+    {
+      "id": "tree-180",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 16.739552746986192,
+      "y": 31.36594237429017,
+      "world": {
+        "x": -488.33431209644186,
+        "y": -20.289844022714533
+      }
+    },
+    {
+      "id": "tree-181",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 52.733217524535576,
+      "y": 31.240738838449396,
+      "world": {
+        "x": 663.4629607851384,
+        "y": -24.29635716961934
+      }
+    },
+    {
+      "id": "tree-182",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 56.690266234036244,
+      "y": 31.467620598021675,
+      "world": {
+        "x": 790.0885194891598,
+        "y": -17.0361408633064
+      }
+    },
+    {
+      "id": "tree-183",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 27.745239551390114,
+      "y": 32.59114755596529,
+      "world": {
+        "x": -136.15233435551636,
+        "y": 18.91672179088937
+      }
+    },
+    {
+      "id": "tree-184",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 31.73376661781549,
+      "y": 32.369554756408256,
+      "world": {
+        "x": -8.519468229904305,
+        "y": 11.825752205064191
+      }
+    },
+    {
+      "id": "tree-185",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 34.72199889017793,
+      "y": 32.21025081309871,
+      "world": {
+        "x": 87.10396448569372,
+        "y": 6.728026019158733
+      }
+    },
+    {
+      "id": "tree-186",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 39.737942466994355,
+      "y": 32.40364426763199,
+      "world": {
+        "x": 247.61415894381935,
+        "y": 12.91661656422366
+      }
+    },
+    {
+      "id": "tree-187",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 45.69218884181828,
+      "y": 32.375541088671895,
+      "world": {
+        "x": 438.1500429381849,
+        "y": 12.017314837500635
+      }
+    },
+    {
+      "id": "tree-188",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 26.73048382909701,
+      "y": 33.23135658080883,
+      "world": {
+        "x": -168.62451746889565,
+        "y": 39.40341058588251
+      }
+    },
+    {
+      "id": "tree-189",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 61.745028955006546,
+      "y": 33.634426325007375,
+      "world": {
+        "x": 951.8409265602095,
+        "y": 52.301642400236005
+      }
+    },
+    {
+      "id": "tree-190",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 17.701080502956756,
+      "y": 34.27380278159381,
+      "world": {
+        "x": -457.5654239053838,
+        "y": 72.76168901100186
+      }
+    },
+    {
+      "id": "tree-191",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 40.741371048701694,
+      "y": 34.21249212410003,
+      "world": {
+        "x": 279.7238735584542,
+        "y": 70.79974797120099
+      }
+    },
+    {
+      "id": "tree-192",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 46.73905068608656,
+      "y": 34.207198464859175,
+      "world": {
+        "x": 471.6496219547698,
+        "y": 70.6303508754936
+      }
+    },
+    {
+      "id": "tree-193",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 52.719739635465885,
+      "y": 34.2753058135806,
+      "world": {
+        "x": 663.0316683349083,
+        "y": 72.80978603457925
+      }
+    },
+    {
+      "id": "tree-194",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 63.69933145695359,
+      "y": 34.56831930400786,
+      "world": {
+        "x": 1014.3786066225148,
+        "y": 82.18621772825145
+      }
+    },
+    {
+      "id": "tree-195",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 10.743012815360999,
+      "y": 38.23294632437792,
+      "world": {
+        "x": -680.223589908448,
+        "y": 199.45428238009345
+      }
+    },
+    {
+      "id": "tree-196",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 29.72381662538828,
+      "y": 38.37102005651468,
+      "world": {
+        "x": -72.83786798757501,
+        "y": 203.87264180846978
+      }
+    },
+    {
+      "id": "tree-197",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 50.716188665689515,
+      "y": 38.55321175438257,
+      "world": {
+        "x": 598.9180373020645,
+        "y": 209.70277614024235
+      }
+    },
+    {
+      "id": "tree-198",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 8.702259421273993,
+      "y": 39.44830573529471,
+      "world": {
+        "x": -745.5276985192322,
+        "y": 238.34578352943072
+      }
+    },
+    {
+      "id": "tree-199",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 16.738686824743127,
+      "y": 39.274767839475686,
+      "world": {
+        "x": -488.36202160821995,
+        "y": 232.79257086322195
+      }
+    },
+    {
+      "id": "tree-200",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 38.722591119762,
+      "y": 39.503109113664415,
+      "world": {
+        "x": 215.12291583238402,
+        "y": 240.09949163726128
+      }
+    },
+    {
+      "id": "tree-201",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 52.74597707145949,
+      "y": 39.49687489486296,
+      "world": {
+        "x": 663.8712662867038,
+        "y": 239.8999966356148
+      }
+    },
+    {
+      "id": "tree-202",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 63.70741110014569,
+      "y": 39.253370806189196,
+      "world": {
+        "x": 1014.6371552046621,
+        "y": 232.10786579805426
+      }
+    },
+    {
+      "id": "tree-203",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 14.748741701069775,
+      "y": 40.55720420234866,
+      "world": {
+        "x": -552.0402655657672,
+        "y": 273.83053447515704
+      }
+    },
+    {
+      "id": "tree-204",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 15.719875360438891,
+      "y": 40.42390468868689,
+      "world": {
+        "x": -520.9639884659555,
+        "y": 269.56495003798045
+      }
+    },
+    {
+      "id": "tree-205",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 20.733643786636094,
+      "y": 40.5363756038365,
+      "world": {
+        "x": -360.523398827645,
+        "y": 273.1640193227679
+      }
+    },
+    {
+      "id": "tree-206",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 21.6941925390056,
+      "y": 40.42099121269239,
+      "world": {
+        "x": -329.78583875182085,
+        "y": 269.47171880615656
+      }
+    },
+    {
+      "id": "tree-207",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 22.707668777906292,
+      "y": 40.422515043781736,
+      "world": {
+        "x": -297.35459910699865,
+        "y": 269.52048140101556
+      }
+    },
+    {
+      "id": "tree-208",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 33.71357400886882,
+      "y": 40.53981356930199,
+      "world": {
+        "x": 54.83436828380218,
+        "y": 273.2740342176637
+      }
+    },
+    {
+      "id": "tree-209",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 43.724809567193006,
+      "y": 40.55162207510039,
+      "world": {
+        "x": 375.1939061501762,
+        "y": 273.6519064032125
+      }
+    },
+    {
+      "id": "tree-210",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 54.69033668958218,
+      "y": 40.495298545108156,
+      "world": {
+        "x": 726.0907740666298,
+        "y": 271.849553443461
+      }
+    },
+    {
+      "id": "tree-211",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 60.69035602949225,
+      "y": 40.550164710072934,
+      "world": {
+        "x": 918.091392943752,
+        "y": 273.6052707223339
+      }
+    },
+    {
+      "id": "tree-212",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 32.73532228057593,
+      "y": 41.34028816240644,
+      "world": {
+        "x": 23.53031297842972,
+        "y": 298.889221197006
+      }
+    },
+    {
+      "id": "tree-213",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 56.72823563111524,
+      "y": 41.46827134679643,
+      "world": {
+        "x": 791.3035401956877,
+        "y": 302.9846830974857
+      }
+    },
+    {
+      "id": "tree-214",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 63.712166251985764,
+      "y": 41.63221775635648,
+      "world": {
+        "x": 1014.7893200635444,
+        "y": 308.23096820340743
+      }
+    },
+    {
+      "id": "tree-215",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 10.727261156564055,
+      "y": 42.409369039561355,
+      "world": {
+        "x": -680.7276429899503,
+        "y": 333.09980926596336
+      }
+    },
+    {
+      "id": "tree-216",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.69732584819394,
+      "y": 42.50805003453934,
+      "world": {
+        "x": 54.314427142206114,
+        "y": 336.2576011052588
+      }
+    },
+    {
+      "id": "tree-217",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 40.73382905368635,
+      "y": 42.23080892953149,
+      "world": {
+        "x": 279.4825297179632,
+        "y": 327.3858857450077
+      }
+    },
+    {
+      "id": "tree-218",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 44.694436639154446,
+      "y": 42.45255201302389,
+      "world": {
+        "x": 406.2219724529423,
+        "y": 334.4816644167645
+      }
+    },
+    {
+      "id": "tree-219",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 60.74057270148478,
+      "y": 42.38718218905215,
+      "world": {
+        "x": 919.698326447513,
+        "y": 332.3898300496687
+      }
+    },
+    {
+      "id": "tree-220",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 19.702261632746286,
+      "y": 43.58294602361475,
+      "world": {
+        "x": -393.52762775211886,
+        "y": 370.6542727556721
+      }
+    },
+    {
+      "id": "tree-221",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 32.69497509310577,
+      "y": 43.20991054595543,
+      "world": {
+        "x": 22.239202979384572,
+        "y": 358.7171374705738
+      }
+    },
+    {
+      "id": "tree-222",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 39.72230071696322,
+      "y": 43.51726061717418,
+      "world": {
+        "x": 247.11362294282299,
+        "y": 368.5523397495738
+      }
+    },
+    {
+      "id": "tree-223",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 51.73646211791129,
+      "y": 43.598333591979646,
+      "world": {
+        "x": 631.5667877731612,
+        "y": 371.14667494334867
+      }
+    },
+    {
+      "id": "tree-224",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 10.710974992718548,
+      "y": 44.316908316370245,
+      "world": {
+        "x": -681.2488002330065,
+        "y": 394.14106612384785
+      }
+    },
+    {
+      "id": "tree-225",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 14.71639209445675,
+      "y": 44.630120479942526,
+      "world": {
+        "x": -553.075452977384,
+        "y": 404.16385535816084
+      }
+    },
+    {
+      "id": "tree-226",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 30.738068391958222,
+      "y": 44.29634901358477,
+      "world": {
+        "x": -40.38181145733688,
+        "y": 393.48316843471275
+      }
+    },
+    {
+      "id": "tree-227",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 46.732449296610866,
+      "y": 44.32324858275524,
+      "world": {
+        "x": 471.4383774915477,
+        "y": 394.3439546481677
+      }
+    },
+    {
+      "id": "tree-228",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 51.70943771243947,
+      "y": 44.267978631812554,
+      "world": {
+        "x": 630.7020067980629,
+        "y": 392.5753162180017
+      }
+    },
+    {
+      "id": "tree-229",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 52.72038106570835,
+      "y": 45.228370843443194,
+      "world": {
+        "x": 663.0521941026673,
+        "y": 423.3078669901822
+      }
+    },
+    {
+      "id": "tree-230",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 54.737342006461404,
+      "y": 45.28040429516223,
+      "world": {
+        "x": 727.5949442067649,
+        "y": 424.9729374451913
+      }
+    },
+    {
+      "id": "tree-231",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 29.74628280977595,
+      "y": 46.25866273593893,
+      "world": {
+        "x": -72.11895008716965,
+        "y": 456.27720755004566
+      }
+    },
+    {
+      "id": "bush-232",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 2.5,
+      "y": 50.55,
+      "world": {
+        "x": -944,
+        "y": 593.5999999999999
+      }
+    },
+    {
+      "id": "tree-233",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 3.7403826108820795,
+      "y": 50.59871483141688,
+      "world": {
+        "x": -904.3077564517735,
+        "y": 595.1588746053401
+      }
+    },
+    {
+      "id": "tree-234",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 4.737671172948467,
+      "y": 50.395193092397676,
+      "world": {
+        "x": -872.3945224656491,
+        "y": 588.6461789567256
+      }
+    },
+    {
+      "id": "tree-235",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 14.619957499860902,
+      "y": 50.6118890020578,
+      "world": {
+        "x": -556.1613600044511,
+        "y": 595.5804480658496
+      }
+    },
+    {
+      "id": "tree-236",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 19.73684657251215,
+      "y": 50.33533503390151,
+      "world": {
+        "x": -392.4209096796112,
+        "y": 586.7307210848483
+      }
+    },
+    {
+      "id": "tree-237",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 21.72244453299936,
+      "y": 50.508555394778526,
+      "world": {
+        "x": -328.88177494402044,
+        "y": 592.2737726329128
+      }
+    },
+    {
+      "id": "tree-238",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 22.72019385850581,
+      "y": 50.330777122227666,
+      "world": {
+        "x": -296.9537965278141,
+        "y": 586.5848679112853
+      }
+    },
+    {
+      "id": "tree-239",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 30.73047288694943,
+      "y": 50.45546880630064,
+      "world": {
+        "x": -40.62486761761829,
+        "y": 590.5750018016204
+      }
+    },
+    {
+      "id": "tree-240",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 42.717611252272945,
+      "y": 50.40761170535125,
+      "world": {
+        "x": 342.96356007273425,
+        "y": 589.04357457124
+      }
+    },
+    {
+      "id": "tree-241",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 43.69151784549467,
+      "y": 50.44339784859458,
+      "world": {
+        "x": 374.1285710558295,
+        "y": 590.1887311550265
+      }
+    },
+    {
+      "id": "tree-242",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 2.6176019478002672,
+      "y": 51.327375316215516,
+      "world": {
+        "x": -940.2367376703914,
+        "y": 618.4760101188965
+      }
+    },
+    {
+      "id": "tree-243",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 3.631739283544448,
+      "y": 51.502890623376565,
+      "world": {
+        "x": -907.7843429265777,
+        "y": 624.0924999480501
+      }
+    },
+    {
+      "id": "tree-244",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 4.627337397459996,
+      "y": 51.43627851080037,
+      "world": {
+        "x": -875.9252032812801,
+        "y": 621.9609123456119
+      }
+    },
+    {
+      "id": "bush-245",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 8.5,
+      "y": 51.55,
+      "world": {
+        "x": -752,
+        "y": 625.5999999999999
+      }
+    },
+    {
+      "id": "bush-246",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 16.5,
+      "y": 51.55,
+      "world": {
+        "x": -496,
+        "y": 625.5999999999999
+      }
+    },
+    {
+      "id": "tree-247",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 18.634853074981947,
+      "y": 51.562920868179575,
+      "world": {
+        "x": -427.6847016005777,
+        "y": 626.0134677817464
+      }
+    },
+    {
+      "id": "bush-248",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 20.5,
+      "y": 51.55,
+      "world": {
+        "x": -368,
+        "y": 625.5999999999999
+      }
+    },
+    {
+      "id": "tree-249",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 21.69265726309459,
+      "y": 51.26791083213993,
+      "world": {
+        "x": -329.83496758097317,
+        "y": 616.5731466284778
+      }
+    },
+    {
+      "id": "tree-250",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 29.693121815998893,
+      "y": 51.37698276575939,
+      "world": {
+        "x": -73.82010188803542,
+        "y": 620.0634485043004
+      }
+    },
+    {
+      "id": "bush-251",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 2.5,
+      "y": 52.55,
+      "world": {
+        "x": -944,
+        "y": 657.5999999999999
+      }
+    },
+    {
+      "id": "bush-253",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 7.5,
+      "y": 52.55,
+      "world": {
+        "x": -784,
+        "y": 657.5999999999999
+      }
+    },
+    {
+      "id": "bush-255",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 13.5,
+      "y": 52.55,
+      "world": {
+        "x": -592,
+        "y": 657.5999999999999
+      }
+    },
+    {
+      "id": "tree-256",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 15.699881676720906,
+      "y": 52.30013504926174,
+      "world": {
+        "x": -521.603786344931,
+        "y": 649.6043215763757
+      }
+    },
+    {
+      "id": "tree-258",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 18.65159841334753,
+      "y": 52.22931656236397,
+      "world": {
+        "x": -427.1488507728791,
+        "y": 647.338129995647
+      }
+    },
+    {
+      "id": "bush-259",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 19.5,
+      "y": 52.55,
+      "world": {
+        "x": -400,
+        "y": 657.5999999999999
+      }
+    },
+    {
+      "id": "tree-260",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 20.661248051630537,
+      "y": 52.39502008016898,
+      "world": {
+        "x": -362.8400623478228,
+        "y": 652.6406425654075
+      }
+    },
+    {
+      "id": "tree-261",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 22.70947200892624,
+      "y": 52.595464172373255,
+      "world": {
+        "x": -297.2968957143603,
+        "y": 659.0548535159442
+      }
+    },
+    {
+      "id": "tree-262",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 2.627081844580971,
+      "y": 53.51151765240502,
+      "world": {
+        "x": -939.9333809734089,
+        "y": 688.3685648769606
+      }
+    },
+    {
+      "id": "bush-263",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 3.5,
+      "y": 53.55,
+      "world": {
+        "x": -912,
+        "y": 689.5999999999999
+      }
+    },
+    {
+      "id": "tree-264",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 5.708326624839174,
+      "y": 53.32128496347432,
+      "world": {
+        "x": -841.3335480051464,
+        "y": 682.2811188311782
+      }
+    },
+    {
+      "id": "tree-265",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 9.673041324200312,
+      "y": 53.43138517532316,
+      "world": {
+        "x": -714.46267762559,
+        "y": 685.804325610341
+      }
+    },
+    {
+      "id": "tree-266",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 13.618834835287998,
+      "y": 53.5880338472271,
+      "world": {
+        "x": -588.197285270784,
+        "y": 690.8170831112673
+      }
+    },
+    {
+      "id": "bush-267",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 14.5,
+      "y": 53.55,
+      "world": {
+        "x": -560,
+        "y": 689.5999999999999
+      }
+    },
+    {
+      "id": "bush-268",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 16.5,
+      "y": 53.55,
+      "world": {
+        "x": -496,
+        "y": 689.5999999999999
+      }
+    },
+    {
+      "id": "tree-269",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 17.64043158007553,
+      "y": 53.37652190751697,
+      "world": {
+        "x": -459.5061894375831,
+        "y": 684.0487010405429
+      }
+    },
+    {
+      "id": "tree-270",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.61341021813314,
+      "y": 53.642461347867,
+      "world": {
+        "x": -428.3708730197395,
+        "y": 692.558763131744
+      }
+    },
+    {
+      "id": "bush-271",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 19.5,
+      "y": 53.55,
+      "world": {
+        "x": -400,
+        "y": 689.5999999999999
+      }
+    },
+    {
+      "id": "tree-272",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 22.71867341770485,
+      "y": 53.29212825812405,
+      "world": {
+        "x": -297.0024506334448,
+        "y": 681.3481042599697
+      }
+    },
+    {
+      "id": "tree-273",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 39.71622139538522,
+      "y": 53.40739089351155,
+      "world": {
+        "x": 246.919084652327,
+        "y": 685.0365085923695
+      }
+    },
+    {
+      "id": "tree-274",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 46.7379490066196,
+      "y": 53.216351972181656,
+      "world": {
+        "x": 471.61436821182724,
+        "y": 678.923263109813
+      }
+    },
+    {
+      "id": "tree-275",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 0.7348166696428962,
+      "y": 54.24120618216075,
+      "world": {
+        "x": -1000.4858665714273,
+        "y": 711.7185978291441
+      }
+    },
+    {
+      "id": "tree-276",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 5.619893402772277,
+      "y": 54.25437129774983,
+      "world": {
+        "x": -844.1634111112871,
+        "y": 712.1398815279945
+      }
+    },
+    {
+      "id": "tree-277",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 7.71440213353344,
+      "y": 54.53444530896359,
+      "world": {
+        "x": -777.1391317269299,
+        "y": 721.1022498868349
+      }
+    },
+    {
+      "id": "tree-278",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 8.709079093063337,
+      "y": 54.574737147626735,
+      "world": {
+        "x": -745.3094690219732,
+        "y": 722.3915887240555
+      }
+    },
+    {
+      "id": "tree-279",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 11.709112945252855,
+      "y": 54.353352388574606,
+      "world": {
+        "x": -649.3083857519086,
+        "y": 715.3072764343874
+      }
+    },
+    {
+      "id": "bush-280",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 13.5,
+      "y": 54.55,
+      "world": {
+        "x": -592,
+        "y": 721.5999999999999
+      }
+    },
+    {
+      "id": "tree-281",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 15.747574422210164,
+      "y": 54.31936415920896,
+      "world": {
+        "x": -520.0776184892748,
+        "y": 714.2196530946867
+      }
+    },
+    {
+      "id": "tree-282",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 28.713769176323694,
+      "y": 54.29503235339344,
+      "world": {
+        "x": -105.15938635764178,
+        "y": 713.44103530859
+      }
+    },
+    {
+      "id": "tree-283",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 38.733611898284835,
+      "y": 54.22838259716214,
+      "world": {
+        "x": 215.4755807451147,
+        "y": 711.3082431091884
+      }
+    },
+    {
+      "id": "tree-284",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 42.71197655135347,
+      "y": 54.34992918932785,
+      "world": {
+        "x": 342.78324964331114,
+        "y": 715.1977340584913
+      }
+    },
+    {
+      "id": "tree-285",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 2.716426513858096,
+      "y": 55.205206053258735,
+      "world": {
+        "x": -937.0743515565409,
+        "y": 742.5665937042795
+      }
+    },
+    {
+      "id": "tree-286",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 3.7105553130932094,
+      "y": 55.41093605391052,
+      "world": {
+        "x": -905.2622299810173,
+        "y": 749.1499537251366
+      }
+    },
+    {
+      "id": "bush-287",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 8.5,
+      "y": 55.55,
+      "world": {
+        "x": -752,
+        "y": 753.5999999999999
+      }
+    },
+    {
+      "id": "tree-288",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 9.62983335867466,
+      "y": 55.61483037830567,
+      "world": {
+        "x": -715.8453325224109,
+        "y": 755.6745721057814
+      }
+    },
+    {
+      "id": "tree-289",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 10.654910771514551,
+      "y": 55.205550780295745,
+      "world": {
+        "x": -683.0428553115344,
+        "y": 742.5776249694638
+      }
+    },
+    {
+      "id": "tree-290",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 11.73170169245168,
+      "y": 55.542654337882055,
+      "world": {
+        "x": -648.5855458415463,
+        "y": 753.3649388122258
+      }
+    },
+    {
+      "id": "tree-291",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 17.63868363057918,
+      "y": 55.414415305034346,
+      "world": {
+        "x": -459.56212382146623,
+        "y": 749.2612897610991
+      }
+    },
+    {
+      "id": "tree-292",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.726633606243922,
+      "y": 55.354619483826674,
+      "world": {
+        "x": -424.7477246001945,
+        "y": 747.3478234824536
+      }
+    },
+    {
+      "id": "tree-293",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 22.72643086567362,
+      "y": 55.53949715062291,
+      "world": {
+        "x": -296.75421229844414,
+        "y": 753.263908819933
+      }
+    },
+    {
+      "id": "tree-294",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 33.734170970421474,
+      "y": 55.20797027928784,
+      "world": {
+        "x": 55.493471053487156,
+        "y": 742.655048937211
+      }
+    },
+    {
+      "id": "tree-295",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 42.713373113479975,
+      "y": 55.39711009824933,
+      "world": {
+        "x": 342.8279396313592,
+        "y": 748.7075231439785
+      }
+    },
+    {
+      "id": "bush-296",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 2.5,
+      "y": 56.55,
+      "world": {
+        "x": -944,
+        "y": 785.5999999999999
+      }
+    },
+    {
+      "id": "bush-297",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 7.5,
+      "y": 56.55,
+      "world": {
+        "x": -784,
+        "y": 785.5999999999999
+      }
+    },
+    {
+      "id": "tree-299",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 9.724597151158378,
+      "y": 56.50175061123264,
+      "world": {
+        "x": -712.8128911629319,
+        "y": 784.0560195594444
+      }
+    },
+    {
+      "id": "bush-300",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 11.5,
+      "y": 56.55,
+      "world": {
+        "x": -656,
+        "y": 785.5999999999999
+      }
+    },
+    {
+      "id": "bush-301",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 17.5,
+      "y": 56.55,
+      "world": {
+        "x": -464,
+        "y": 785.5999999999999
+      }
+    },
+    {
+      "id": "bush-302",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 19.5,
+      "y": 56.55,
+      "world": {
+        "x": -400,
+        "y": 785.5999999999999
+      }
+    },
+    {
+      "id": "tree-304",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 5.722545403645199,
+      "y": 57.609021592778845,
+      "world": {
+        "x": -840.8785470833536,
+        "y": 819.488690968923
+      }
+    },
+    {
+      "id": "tree-305",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 9.6307570015706,
+      "y": 57.2484113030787,
+      "world": {
+        "x": -715.8157759497408,
+        "y": 807.9491616985183
+      }
+    },
+    {
+      "id": "tree-306",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 10.621920402611522,
+      "y": 57.33348806801478,
+      "world": {
+        "x": -684.0985471164313,
+        "y": 810.671618176473
+      }
+    },
+    {
+      "id": "tree-308",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 16.667592178710038,
+      "y": 57.27223966865386,
+      "world": {
+        "x": -490.6370502812788,
+        "y": 808.7116693969235
+      }
+    },
+    {
+      "id": "tree-309",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 17.610317288139413,
+      "y": 57.58756408906393,
+      "world": {
+        "x": -460.4698467795388,
+        "y": 818.8020508500458
+      }
+    },
+    {
+      "id": "tree-310",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.623341135538794,
+      "y": 57.21917637180359,
+      "world": {
+        "x": -428.0530836627586,
+        "y": 807.0136438977149
+      }
+    },
+    {
+      "id": "tree-312",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 20.67310423075105,
+      "y": 57.42132811979682,
+      "world": {
+        "x": -362.4606646159664,
+        "y": 813.4824998334982
+      }
+    },
+    {
+      "id": "tree-313",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 3.696482196697616,
+      "y": 59.21830652044337,
+      "world": {
+        "x": -905.7125697056763,
+        "y": 870.9858086541878
+      }
+    },
+    {
+      "id": "tree-315",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 7.673582879757419,
+      "y": 59.36074418608878,
+      "world": {
+        "x": -778.4453478477626,
+        "y": 875.543813954841
+      }
+    },
+    {
+      "id": "bush-316",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 9.5,
+      "y": 59.55,
+      "world": {
+        "x": -720,
+        "y": 881.5999999999999
+      }
+    },
+    {
+      "id": "tree-317",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 11.700815871510713,
+      "y": 59.28490415699926,
+      "world": {
+        "x": -649.5738921116572,
+        "y": 873.1169330239763
+      }
+    },
+    {
+      "id": "tree-318",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 13.740494033590949,
+      "y": 59.376476727764754,
+      "world": {
+        "x": -584.3041909250896,
+        "y": 876.0472552884721
+      }
+    },
+    {
+      "id": "tree-322",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.681954813472657,
+      "y": 59.33967392252689,
+      "world": {
+        "x": -426.17744596887496,
+        "y": 874.8695655208605
+      }
+    },
+    {
+      "id": "bush-323",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 19.5,
+      "y": 59.55,
+      "world": {
+        "x": -400,
+        "y": 881.5999999999999
+      }
+    },
+    {
+      "id": "tree-324",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 20.699826276154454,
+      "y": 59.512760538822114,
+      "world": {
+        "x": -361.6055591630575,
+        "y": 880.4083372423077
+      }
+    },
+    {
+      "id": "tree-325",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 0.6933336642428003,
+      "y": 60.58443387597981,
+      "world": {
+        "x": -1001.8133227442304,
+        "y": 914.701884031354
+      }
+    },
+    {
+      "id": "tree-326",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 2.6158253516650802,
+      "y": 60.565913309992176,
+      "world": {
+        "x": -940.2935887467174,
+        "y": 914.1092259197496
+      }
+    },
+    {
+      "id": "tree-327",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 4.7147421238241805,
+      "y": 60.2105131114924,
+      "world": {
+        "x": -873.1282520376262,
+        "y": 902.7364195677569
+      }
+    },
+    {
+      "id": "bush-328",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 5.5,
+      "y": 60.55,
+      "world": {
+        "x": -848,
+        "y": 913.5999999999999
+      }
+    },
+    {
+      "id": "tree-329",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 7.701427942725786,
+      "y": 60.57921737406241,
+      "world": {
+        "x": -777.5543058327748,
+        "y": 914.5349559699971
+      }
+    },
+    {
+      "id": "tree-331",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 11.692393687374533,
+      "y": 60.339138697907224,
+      "world": {
+        "x": -649.8434020040149,
+        "y": 906.8524383330312
+      }
+    },
+    {
+      "id": "bush-332",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 15.5,
+      "y": 60.55,
+      "world": {
+        "x": -528,
+        "y": 913.5999999999999
+      }
+    },
+    {
+      "id": "tree-333",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 16.662963271246554,
+      "y": 60.46617614433872,
+      "world": {
+        "x": -490.7851753201103,
+        "y": 910.917636618839
+      }
+    },
+    {
+      "id": "tree-334",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 19.732399405871547,
+      "y": 60.351103399120625,
+      "world": {
+        "x": -392.5632190121105,
+        "y": 907.23530877186
+      }
+    },
+    {
+      "id": "tree-335",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 20.651682284844355,
+      "y": 60.40295634430386,
+      "world": {
+        "x": -363.14616688498063,
+        "y": 908.8946030177235
+      }
+    },
+    {
+      "id": "tree-336",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 21.72823738214356,
+      "y": 60.309044732324516,
+      "world": {
+        "x": -328.69640377140604,
+        "y": 905.8894314343845
+      }
+    },
+    {
+      "id": "tree-337",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 2.744667952945747,
+      "y": 61.466449932498655,
+      "world": {
+        "x": -936.1706255057361,
+        "y": 942.926397839957
+      }
+    },
+    {
+      "id": "tree-338",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 8.612819735244557,
+      "y": 61.40445492818326,
+      "world": {
+        "x": -748.3897684721742,
+        "y": 940.9425577018644
+      }
+    },
+    {
+      "id": "bush-339",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 9.5,
+      "y": 61.55,
+      "world": {
+        "x": -720,
+        "y": 945.5999999999999
+      }
+    },
+    {
+      "id": "tree-340",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 11.653506941711385,
+      "y": 61.58962421893266,
+      "world": {
+        "x": -651.0877778652357,
+        "y": 946.8679750058452
+      }
+    },
+    {
+      "id": "bush-341",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 15.5,
+      "y": 61.55,
+      "world": {
+        "x": -528,
+        "y": 945.5999999999999
+      }
+    },
+    {
+      "id": "tree-342",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 16.681222180170153,
+      "y": 61.596017409663546,
+      "world": {
+        "x": -490.2008902345551,
+        "y": 947.0725571092335
+      }
+    },
+    {
+      "id": "tree-343",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 17.641081012855466,
+      "y": 61.20666142230948,
+      "world": {
+        "x": -459.4854075886251,
+        "y": 934.6131655139034
+      }
+    },
+    {
+      "id": "bush-344",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.round-bush",
+      "x": 18.5,
+      "y": 61.55,
+      "world": {
+        "x": -432,
+        "y": 945.5999999999999
+      }
+    },
+    {
+      "id": "tree-346",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 33.73269591667486,
+      "y": 61.6455260595059,
+      "world": {
+        "x": 55.44626933359541,
+        "y": 948.6568339041887
+      }
+    },
+    {
+      "id": "tree-347",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 34.690832707461595,
+      "y": 61.568803003662474,
+      "world": {
+        "x": 86.10664663877105,
+        "y": 946.2016961171992
+      }
+    },
+    {
+      "id": "tree-348",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 43.72961921651404,
+      "y": 61.29057614376816,
+      "world": {
+        "x": 375.3478149284492,
+        "y": 937.2984366005812
+      }
+    },
+    {
+      "id": "bush-351",
+      "kind": "bush",
+      "assetId": "pack.northshore.bush.low-bush",
+      "x": 7.5,
+      "y": 62.55,
+      "world": {
+        "x": -784,
+        "y": 977.5999999999999
+      }
+    },
+    {
+      "id": "tree-352",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 8.743207785471895,
+      "y": 62.28941282127935,
+      "world": {
+        "x": -744.2173508648993,
+        "y": 969.2612102809392
+      }
+    },
+    {
+      "id": "tree-354",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 11.743334144070104,
+      "y": 62.41476448966405,
+      "world": {
+        "x": -648.2133073897567,
+        "y": 973.2724636692496
+      }
+    },
+    {
+      "id": "tree-355",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 13.708724613323284,
+      "y": 62.64270039047624,
+      "world": {
+        "x": -585.3208123736549,
+        "y": 980.5664124952398
+      }
+    },
+    {
+      "id": "tree-356",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.willow",
+      "x": 20.714827015010087,
+      "y": 62.41675489118097,
+      "world": {
+        "x": -361.1255355196772,
+        "y": 973.3361565177911
+      }
+    },
+    {
+      "id": "tree-357",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.cedar",
+      "x": 27.708143003354053,
+      "y": 62.53245339814094,
+      "world": {
+        "x": -137.3394238926703,
+        "y": 977.03850874051
+      }
+    },
+    {
+      "id": "tree-358",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.pine",
+      "x": 40.74686568218567,
+      "y": 62.4947755925602,
+      "world": {
+        "x": 279.8997018299415,
+        "y": 975.8328189619265
+      }
+    },
+    {
+      "id": "tree-359",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.oak",
+      "x": 18.724284849693504,
+      "y": 63.6154761351987,
+      "world": {
+        "x": -424.8228848098079,
+        "y": 1011.6952363263583
+      }
+    },
+    {
+      "id": "tree-360",
+      "kind": "tree",
+      "assetId": "pack.northshore.tree.maple",
+      "x": 41.730241951507196,
+      "y": 63.61594962678719,
+      "world": {
+        "x": 311.3677424482303,
+        "y": 1011.7103880571901
+      }
+    },
+    {
+      "id": "hedge-361",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 14.2,
+      "y": 1.35,
+      "world": {
+        "x": -569.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-362",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 15.2,
+      "y": 1.35,
+      "world": {
+        "x": -537.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-363",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 16.2,
+      "y": 1.35,
+      "world": {
+        "x": -505.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-364",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 17.2,
+      "y": 1.35,
+      "world": {
+        "x": -473.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-365",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 18.2,
+      "y": 1.35,
+      "world": {
+        "x": -441.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-366",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 19.2,
+      "y": 1.35,
+      "world": {
+        "x": -409.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-367",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 20.2,
+      "y": 1.35,
+      "world": {
+        "x": -377.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-368",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 21.2,
+      "y": 1.35,
+      "world": {
+        "x": -345.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "hedge-369",
+      "kind": "hedge",
+      "assetId": "pack.northshore.hedge.box-hedge",
+      "x": 22.2,
+      "y": 1.35,
+      "world": {
+        "x": -313.6,
+        "y": -980.8
+      }
+    },
+    {
+      "id": "lamp-370",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 6.68,
+      "y": 2.5,
+      "world": {
+        "x": -810.24,
+        "y": -944
+      }
+    },
+    {
+      "id": "lamp-371",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 6.68,
+      "y": 10.5,
+      "world": {
+        "x": -810.24,
+        "y": -688
+      }
+    },
+    {
+      "id": "lamp-372",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 12.68,
+      "y": 2.5,
+      "world": {
+        "x": -618.24,
+        "y": -944
+      }
+    },
+    {
+      "id": "lamp-373",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 12.68,
+      "y": 10.5,
+      "world": {
+        "x": -618.24,
+        "y": -688
+      }
+    },
+    {
+      "id": "lamp-374",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 24.68,
+      "y": 2.5,
+      "world": {
+        "x": -234.24,
+        "y": -944
+      }
+    },
+    {
+      "id": "lamp-375",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 24.68,
+      "y": 10.5,
+      "world": {
+        "x": -234.24,
+        "y": -688
+      }
+    },
+    {
+      "id": "lamp-376",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 36.68,
+      "y": 2.5,
+      "world": {
+        "x": 149.76,
+        "y": -944
+      }
+    },
+    {
+      "id": "lamp-377",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 36.68,
+      "y": 10.5,
+      "world": {
+        "x": 149.76,
+        "y": -688
+      }
+    },
+    {
+      "id": "lamp-378",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 10.5,
+      "y": 6.68,
+      "world": {
+        "x": -688,
+        "y": -810.24
+      }
+    },
+    {
+      "id": "lamp-379",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 20.5,
+      "y": 6.68,
+      "world": {
+        "x": -368,
+        "y": -810.24
+      }
+    },
+    {
+      "id": "lamp-380",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 30.5,
+      "y": 6.68,
+      "world": {
+        "x": -48,
+        "y": -810.24
+      }
+    },
+    {
+      "id": "lamp-381",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 40.5,
+      "y": 6.68,
+      "world": {
+        "x": 272,
+        "y": -810.24
+      }
+    },
+    {
+      "id": "lamp-382",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 10.5,
+      "y": 12.68,
+      "world": {
+        "x": -688,
+        "y": -618.24
+      }
+    },
+    {
+      "id": "lamp-383",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 20.5,
+      "y": 12.68,
+      "world": {
+        "x": -368,
+        "y": -618.24
+      }
+    },
+    {
+      "id": "lamp-384",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 30.5,
+      "y": 12.68,
+      "world": {
+        "x": -48,
+        "y": -618.24
+      }
+    },
+    {
+      "id": "lamp-385",
+      "kind": "lamp",
+      "assetId": "pack.northshore.lamp.street-lamp",
+      "x": 40.5,
+      "y": 12.68,
+      "world": {
+        "x": 272,
+        "y": -618.24
+      }
+    },
+    {
+      "id": "bench-386",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 23.2,
+      "y": 22.4,
+      "world": {
+        "x": -281.6,
+        "y": -307.20000000000005
+      }
+    },
+    {
+      "id": "bench-387",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 25.4,
+      "y": 23.2,
+      "world": {
+        "x": -211.20000000000005,
+        "y": -281.6
+      }
+    },
+    {
+      "id": "bench-388",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 22.6,
+      "y": 25.1,
+      "world": {
+        "x": -300.79999999999995,
+        "y": -220.79999999999995
+      }
+    },
+    {
+      "id": "bench-389",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 4.6,
+      "y": 7.4,
+      "world": {
+        "x": -876.8,
+        "y": -787.2
+      }
+    },
+    {
+      "id": "bench-390",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 28.4,
+      "y": 16.2,
+      "world": {
+        "x": -115.20000000000005,
+        "y": -505.6
+      }
+    },
+    {
+      "id": "bench-391",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 16.4,
+      "y": 40.6,
+      "world": {
+        "x": -499.20000000000005,
+        "y": 275.20000000000005
+      }
+    },
+    {
+      "id": "bench-392",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 41.2,
+      "y": 42.2,
+      "world": {
+        "x": 294.4000000000001,
+        "y": 326.4000000000001
+      }
+    },
+    {
+      "id": "bench-393",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 7.4,
+      "y": 52.2,
+      "world": {
+        "x": -787.2,
+        "y": 646.4000000000001
+      }
+    },
+    {
+      "id": "bench-394",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 51.4,
+      "y": 20.4,
+      "world": {
+        "x": 620.8,
+        "y": -371.20000000000005
+      }
+    },
+    {
+      "id": "bench-395",
+      "kind": "bench",
+      "assetId": "pack.northshore.bench.plaza-bench",
+      "x": 32.6,
+      "y": 5.6,
+      "world": {
+        "x": 19.200000000000045,
+        "y": -844.8
+      }
+    },
+    {
+      "id": "planter-396",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 13.4,
+      "y": 3.4,
+      "world": {
+        "x": -595.2,
+        "y": -915.2
+      }
+    },
+    {
+      "id": "planter-397",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 18.6,
+      "y": 7.4,
+      "world": {
+        "x": -428.79999999999995,
+        "y": -787.2
+      }
+    },
+    {
+      "id": "planter-398",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 33.4,
+      "y": 5.4,
+      "world": {
+        "x": 44.799999999999955,
+        "y": -851.2
+      }
+    },
+    {
+      "id": "planter-399",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 25.4,
+      "y": 26.4,
+      "world": {
+        "x": -211.20000000000005,
+        "y": -179.20000000000005
+      }
+    },
+    {
+      "id": "planter-400",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 14.5,
+      "y": 37.5,
+      "world": {
+        "x": -560,
+        "y": 176
+      }
+    },
+    {
+      "id": "planter-401",
+      "kind": "planter",
+      "assetId": "pack.northshore.planter.bowl-planter",
+      "x": 51.2,
+      "y": 37.4,
+      "world": {
+        "x": 614.4000000000001,
+        "y": 172.79999999999995
+      }
+    },
+    {
+      "id": "sign-432",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-parklands",
+      "x": 0.8,
+      "y": 0.8,
+      "world": {
+        "x": -998.4,
+        "y": -998.4
+      }
+    },
+    {
+      "id": "sign-433",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-corporate",
+      "x": 13.8,
+      "y": 0.8,
+      "world": {
+        "x": -582.4,
+        "y": -998.4
+      }
+    },
+    {
+      "id": "sign-434",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-startup",
+      "x": 25.8,
+      "y": 0.8,
+      "world": {
+        "x": -198.39999999999998,
+        "y": -998.4
+      }
+    },
+    {
+      "id": "sign-435",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-creative",
+      "x": 37.8,
+      "y": 0.8,
+      "world": {
+        "x": 185.5999999999999,
+        "y": -998.4
+      }
+    },
+    {
+      "id": "sign-436",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-research",
+      "x": 49.8,
+      "y": 0.8,
+      "world": {
+        "x": 569.5999999999999,
+        "y": -998.4
+      }
+    },
+    {
+      "id": "sign-437",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-civic",
+      "x": 13.8,
+      "y": 13.8,
+      "world": {
+        "x": -582.4,
+        "y": -582.4
+      }
+    },
+    {
+      "id": "sign-438",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-campus",
+      "x": 25.8,
+      "y": 13.8,
+      "world": {
+        "x": -198.39999999999998,
+        "y": -582.4
+      }
+    },
+    {
+      "id": "sign-439",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-labs",
+      "x": 25.8,
+      "y": 25.8,
+      "world": {
+        "x": -198.39999999999998,
+        "y": -198.39999999999998
+      }
+    },
+    {
+      "id": "sign-440",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-homes",
+      "x": 37.8,
+      "y": 25.8,
+      "world": {
+        "x": 185.5999999999999,
+        "y": -198.39999999999998
+      }
+    },
+    {
+      "id": "sign-441",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-ridge",
+      "x": 49.8,
+      "y": 25.8,
+      "world": {
+        "x": 569.5999999999999,
+        "y": -198.39999999999998
+      }
+    },
+    {
+      "id": "sign-442",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-transit",
+      "x": 13.8,
+      "y": 37.8,
+      "world": {
+        "x": -582.4,
+        "y": 185.5999999999999
+      }
+    },
+    {
+      "id": "sign-443",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-waterfront",
+      "x": 37.8,
+      "y": 37.8,
+      "world": {
+        "x": 185.5999999999999,
+        "y": 185.5999999999999
+      }
+    },
+    {
+      "id": "sign-444",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-docks",
+      "x": 49.8,
+      "y": 37.8,
+      "world": {
+        "x": 569.5999999999999,
+        "y": 185.5999999999999
+      }
+    },
+    {
+      "id": "sign-445",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-southpark",
+      "x": 0.8,
+      "y": 49.8,
+      "world": {
+        "x": -998.4,
+        "y": 569.5999999999999
+      }
+    },
+    {
+      "id": "sign-446",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-southgate",
+      "x": 25.8,
+      "y": 49.8,
+      "world": {
+        "x": -198.39999999999998,
+        "y": 569.5999999999999
+      }
+    },
+    {
+      "id": "sign-447",
+      "kind": "sign",
+      "assetId": "pack.northshore.sign.district-eastmarsh",
+      "x": 49.8,
+      "y": 49.8,
+      "world": {
+        "x": 569.5999999999999,
+        "y": 569.5999999999999
+      }
+    }
+  ]
+}

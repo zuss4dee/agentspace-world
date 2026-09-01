@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+.cursor/
+.tmp-cdp-env.png
+__pycache__/
+*.py[cod]
+*.blend1
 
 # debug
 npm-debug.log*

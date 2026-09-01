@@ -1,0 +1,16 @@
+{
+  "companyId": "echt",
+  "companyName": "Echt",
+  "logo": { "wordmark": "ECHT" },
+  "primaryColours": ["#c8cfc2", "#6a8a4a", "#111827"],
+  "secondaryColours": ["#5a6a54", "#e8eee4"],
+  "visualStyle": "quiet contemporary studio",
+  "industry": "design",
+  "architecturalDirection": "four-storey loft bar, deep north glass",
+  "assetId": "pack.northshore.building.studio.loft",
+  "buildingId": "loft",
+  "parcelId": "plot-b-loft",
+  "floors": 4,
+  "floorHeight": 18,
+  "footprint": { "w": 92, "d": 64 }
+}

@@ -9,12 +9,31 @@ export type { CompanyProfile } from "./building-spec";
 export const EMPTY_PROFILE: CompanyProfile = {
   name: "",
   logo: "",
+  website: "",
   does: "",
   description: "",
   founder: "",
   team: "",
   visitorMessage: "",
 };
+
+/** Normalize a user-entered URL for safe external navigation. */
+export function normalizeWebsiteUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withProto);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    return url.href;
+  } catch {
+    return null;
+  }
+}
+
+export function visitSiteUrl(profile: Pick<CompanyProfile, "website">): string | null {
+  return normalizeWebsiteUrl(profile.website ?? "");
+}
 
 export const PROFILE_STORAGE_KEY = "agentspace.building-profiles.v1";
 
@@ -215,6 +234,7 @@ export function defaultClaimProfile(useName?: string): CompanyProfile {
   return {
     name: useName ? useName : "Your company",
     logo: "",
+    website: "",
     does: "A new house on claimed land.",
     description: "You just claimed this lot. Write who you are — name, trade, and a line for the people who knock.",
     founder: "",

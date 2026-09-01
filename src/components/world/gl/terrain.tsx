@@ -8,6 +8,7 @@ import { fbm, hash2 } from "@/lib/noise";
 import { hitsSaleLot } from "@/lib/plots";
 import { CARRIAGE_HALF, WALK_OFF } from "@/lib/traffic";
 import { sectionAt } from "@/lib/world-sections";
+import { inAuthoredEnv } from "@/lib/env-district";
 
 function laneDist(v: number, lanes: number[]) {
   let d = 1e9;
@@ -111,6 +112,7 @@ export function TerrainMesh() {
       if (kind === "road" && !hitsSaleLot(gx, gy, 0.2) && (laneDist(gx, ROAD_XS) < CARRIAGE_HALF || laneDist(gy, ROAD_YS) < CARRIAGE_HALF)) y = h(0.02);
       const sec = sectionAt(gx, gy);
       if (sec?.locked) y = h(0.08) + fbm(gx * 0.2, gy * 0.2) * h(0.25);
+      if (inAuthoredEnv(gx, gy)) y = -0.08;
       pos.setY(i, y);
       sampleColor(gx, gy, c);
       colors[i * 3] = c.r;
@@ -210,6 +212,7 @@ export function GrassTufts() {
       if (ix < 0 || iy < 0 || ix >= GRID || iy >= GRID) continue;
       const t = TERRAIN[iy]![ix]!;
       if (t !== "grass" && t !== "park") continue;
+      if (inAuthoredEnv(x, y)) continue;
       if (hitsSaleLot(x, y, 0.3)) continue;
       out.push({ x, y, s: 0.55 + hash2(i, 4.4) * 0.7, tone: hash2(i, 9.1) });
     }

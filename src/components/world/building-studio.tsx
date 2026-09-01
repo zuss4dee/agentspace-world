@@ -88,6 +88,7 @@ function ProfileFields() {
   const p = draftSpec.profile ?? {
     name: "",
     logo: "",
+    website: "",
     does: "",
     description: "",
     founder: "",
@@ -111,6 +112,10 @@ function ProfileFields() {
       <label>
         Logo URL
         <input value={p.logo} onChange={(e) => set({ logo: e.target.value })} placeholder="https://… or leave blank for letters" />
+      </label>
+      <label>
+        Website URL
+        <input value={p.website} onChange={(e) => set({ website: e.target.value })} placeholder="https://yourcompany.com" inputMode="url" />
       </label>
       <label>
         What you do

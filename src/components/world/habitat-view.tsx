@@ -21,10 +21,16 @@ export function HabitatView({
   place: string;
   startPoi?: string;
 }) {
-  const { focusPoi, selectPlot, focusCoord } = useWorld();
+  const { focusPoi, selectPlot, focusCoord, setArchView } = useWorld();
   const params = useSearchParams();
   const started = useRef(false);
   useEffect(() => {
+    const view = params.get("view");
+    if (view === "street" || view === "three-quarter" || view === "elevated" || view === "facade") {
+      setArchView(view);
+      started.current = true;
+      return;
+    }
     const plotId = params.get("plot");
     if (plotId) {
       const p = getPlot(plotId);
@@ -38,7 +44,7 @@ export function HabitatView({
     if (started.current) return;
     started.current = true;
     focusPoi(startPoi);
-  }, [focusPoi, startPoi, params, selectPlot, focusCoord]);
+  }, [focusPoi, startPoi, params, selectPlot, focusCoord, setArchView]);
   return (
     <div className="relative min-h-0 flex-1">
       <WorldCanvas />

@@ -7,3 +7,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## Procedural company buildings (Blender)
+
+Visual target: [docs/BUILDING_VISUAL_STYLE.md](docs/BUILDING_VISUAL_STYLE.md) — Apple 3D Maps / premium toy-city aesthetic.
+
+Preview regeneration (library only, no publish): `scripts/blender/build_test_buildings.py`

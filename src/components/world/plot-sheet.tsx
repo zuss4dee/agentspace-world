@@ -57,6 +57,10 @@ export function PlotSheet({
   onLandSlice,
   onResizeLand,
   onAddAdjoining,
+  onSetupCompany,
+  onAddCrew,
+  crewCount = 0,
+  companyReady = false,
 }: {
   plot: Plot;
   land: Plot;
@@ -84,6 +88,10 @@ export function PlotSheet({
   onLandSlice: (s: TileRect) => void;
   onResizeLand: (delta: number) => void;
   onAddAdjoining: () => void;
+  onSetupCompany?: () => void;
+  onAddCrew?: () => void;
+  crewCount?: number;
+  companyReady?: boolean;
 }) {
   const theme = ZONE_THEME[plot.zone];
   const building = plot.buildingId ? LOT_BUILDINGS.find((b) => b.id === plot.buildingId) : undefined;
@@ -163,7 +171,17 @@ export function PlotSheet({
             </button>
           </div>
           <p className="ns-plot-copy">{sizeLine}</p>
-          {listed ? <p className="ns-plot-hint">Claim this pad, then build. Shift or Ctrl-click to add lots.</p> : null}
+          {claimed ? (
+            <p className="ns-plot-hint">
+              {companyReady
+                ? crewCount > 0
+                  ? `${crewCount} Grok bot${crewCount === 1 ? "" : "s"} inside your building.`
+                  : "Building is up — walk Grok bots in to staff it."
+                : "Your pad is secured. Finish company setup and place your building."}
+            </p>
+          ) : listed ? (
+            <p className="ns-plot-hint">Claim this pad, then build. Shift or Ctrl-click to add lots.</p>
+          ) : null}
 
           {listed ? (
             <>
@@ -285,6 +303,14 @@ export function PlotSheet({
             ) : building ? (
               <button type="button" className="ns-game-btn" onClick={() => onEnter(building.id)}>
                 Enter
+              </button>
+            ) : claimed && companyReady && onAddCrew ? (
+              <button type="button" className="ns-game-btn" onClick={onAddCrew}>
+                {crewCount > 0 ? "Add Grok bot" : "Walk in first bot"}
+              </button>
+            ) : claimed && onSetupCompany ? (
+              <button type="button" className="ns-game-btn" onClick={onSetupCompany}>
+                Set up company
               </button>
             ) : null}
           </div>

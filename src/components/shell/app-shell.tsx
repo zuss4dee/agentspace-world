@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const habitat = pathname === "/" || pathname === "/plaza" || pathname === "/directory";
+  const habitat = pathname === "/" || pathname === "/plaza" || pathname === "/directory" || pathname === "/bots";
   return (
     <WorldProvider>
       <TooltipProvider>
@@ -30,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Link href="/marketplace">Props</Link>
                   <Link href="/studio">Studio</Link>
                   <Link href="/connect">Connect</Link>
+                  <Link href="/bots">Bots</Link>
                   <Link href="/gift">Gift</Link>
                   <Link href="/vision">Vision</Link>
                 </nav>

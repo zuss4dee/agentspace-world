@@ -26,10 +26,14 @@ import {
   type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
+import { isOccupiedPlot } from "@/lib/lot-footprint";
 import { BuildingFromSpec } from "@/components/world/gl/architecture";
 import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
+import { BUILDINGS_ENABLED, CLAIMED_LOT_PREVIEW_ENABLED } from "@/lib/architecture-stage";
+import type { BuildingSpec } from "@/lib/building-spec";
+import { letterMark } from "@/lib/company-profile";
 import { useWorld } from "@/components/world/world-store";
 
 /** Empty/unclaimed = muted grey lawn. Claimed = maintained green. Edges stay close to the pad. */
@@ -46,6 +50,10 @@ const C = {
 
 function officePalette(useId: string) {
   return paletteForUse(useId);
+}
+
+function hideLotPad(p: Plot) {
+  return isOccupiedPlot(p);
 }
 
 export function PlotsLayer() {
@@ -69,12 +77,12 @@ export function PlotsLayer() {
       const selected = selectedPlotIds.includes(p.id) || selectedPlotId === p.id || selectedPlotIds.some((id) => basePlotId(id) === p.id);
 
       dummy.position.set(cx, forSale ? h(0.07) : h(0.035), cz);
-      dummy.scale.set(p.w * TILE * 0.992, 1, p.h * TILE * 0.992);
+      dummy.scale.set(hideLotPad(p) ? 0 : p.w * TILE * 0.992, 1, hideLotPad(p) ? 0 : p.h * TILE * 0.992);
       dummy.updateMatrix();
       pad.setMatrixAt(i, dummy.matrix);
 
       dummy.position.set(cx, forSale ? h(0.042) : h(0.024), cz);
-      dummy.scale.set(p.w * TILE * 0.998, 1, p.h * TILE * 0.998);
+      dummy.scale.set(hideLotPad(p) ? 0 : p.w * TILE * 0.998, 1, hideLotPad(p) ? 0 : p.h * TILE * 0.998);
       dummy.updateMatrix();
       edge.setMatrixAt(i, dummy.matrix);
 
@@ -349,7 +357,7 @@ export function BuildingGhost() {
             );
           })
         : null}
-      {fp ? (
+      {fp && BUILDINGS_ENABLED ? (
         <>
           <SitLandmark fp={fp} />
           <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
@@ -427,6 +435,35 @@ function SitLandmark({
   );
 }
 
+function ClaimedCompanyPin({
+  spec,
+  fp,
+}: {
+  spec: BuildingSpec;
+  fp: { x: number; y: number; w: number; h: number; height: number };
+}) {
+  const profile = spec.profile;
+  const name = profile?.name?.trim() || spec.signage.text || "Your company";
+  const logo = profile?.logo?.trim();
+  const mark = letterMark(name);
+  const cx = wx(fp.x + fp.w / 2);
+  const cz = wz(fp.y + fp.h / 2);
+  const labelY = h(fp.height) + h(0.85);
+
+  return (
+    <Html position={[cx, labelY, cz]} center distanceFactor={14} occlude={false} pointerEvents="none">
+      <div className="ns-claimed-pin">
+        {logo ? (
+          <img src={logo} alt="" className="ns-claimed-pin-logo" />
+        ) : (
+          <span className="ns-claimed-pin-mark">{mark}</span>
+        )}
+        <span className="ns-claimed-pin-name">{name}</span>
+      </div>
+    </Html>
+  );
+}
+
 export function ClaimedMarks() {
   const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs, selectPlot } = useWorld();
   return (
@@ -467,7 +504,7 @@ export function ClaimedMarks() {
               transparent
               opacity={0.4}
             />
-            {fp ? (
+            {fp && CLAIMED_LOT_PREVIEW_ENABLED ? (
               <>
                 <SitLandmark fp={fp} />
                 <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
@@ -478,6 +515,13 @@ export function ClaimedMarks() {
                     }
                   />
                 </group>
+                <ClaimedCompanyPin
+                  spec={
+                    buildingSpecs[id] ??
+                    specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id))
+                  }
+                  fp={fp}
+                />
               </>
             ) : null}
           </group>

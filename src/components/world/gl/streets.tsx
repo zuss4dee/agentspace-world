@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { GRID, ROAD_XS, ROAD_YS, TERRAIN } from "@/lib/campus";
 import { TILE, h, wx, wz } from "@/lib/coords";
 import { hitsSaleLot } from "@/lib/plots";
+import { inAuthoredEnv } from "@/lib/env-district";
 import { CARRIAGE_TILES, CURB_OFF, CURB_TILES, WALK_OFF, WALK_TILES } from "@/lib/traffic";
 import { useCityMaps } from "@/components/world/gl/surface-maps";
 
@@ -22,6 +23,7 @@ function inDistrict(x: number, y: number) {
 function isRoadCell(x: number, y: number) {
   if (x < 0 || y < 0 || x >= GRID || y >= GRID) return false;
   if (TERRAIN[y]![x] !== "road") return false;
+  if (inAuthoredEnv(x + 0.5, y + 0.5)) return false;
   if (hitsSaleLot(x + 0.5, y + 0.5, 0.08)) return false;
   return true;
 }

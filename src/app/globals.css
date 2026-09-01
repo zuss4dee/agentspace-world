@@ -362,6 +362,106 @@
   border-radius: 8px;
   padding: 4px 6px;
 }
+.ns-crewmate-tag[data-live="1"] strong {
+  border-color: #ed712e;
+  box-shadow: 2px 2px 0 #ed712e;
+}
+.ns-crewmate-tag em {
+  max-width: 160px;
+}
+.ns-crew-roster {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+.ns-crew-roster li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.72rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.ns-crew-roster em {
+  font-style: normal;
+  color: var(--mute);
+  text-transform: uppercase;
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+}
+.ns-crew-roster strong {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  color: #ed712e;
+}
+.ns-crew-dot {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  border: 1.5px solid #111;
+}
+.ns-crew-role {
+  width: 100%;
+  border: 1.5px solid #111;
+  border-radius: 8px;
+  padding: 0.35rem 0.45rem;
+  background: #fff;
+  font-size: 0.78rem;
+}
+.ns-claimed-pin {
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translateY(-6px);
+}
+.ns-claimed-pin-logo {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  border: 2px solid #111;
+  box-shadow: 2px 2px 0 #111;
+  padding: 3px;
+}
+.ns-claimed-pin-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #fff;
+  border: 2px solid #111;
+  box-shadow: 2px 2px 0 #111;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #111;
+}
+.ns-claimed-pin-name {
+  max-width: 140px;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111;
+  background: #fff;
+  border: 1.5px solid #111;
+  border-radius: 999px;
+  padding: 3px 8px;
+  box-shadow: 2px 2px 0 #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .gbw-lockchip {
   pointer-events: none;
   font-size: 0.62rem;
@@ -836,6 +936,37 @@
   background: #999;
 }
 .ns-dot-outskirts {
+  background: #fff;
+}
+.ns-arch-views {
+  pointer-events: auto;
+  position: absolute;
+  top: 220px;
+  right: 58px;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 16px;
+  border: 2px solid #111;
+  background: #111;
+  box-shadow: 4px 4px 0 #fff;
+}
+.ns-arch-views button {
+  min-width: 76px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f5f5f5;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.ns-arch-views button[data-on="1"] {
+  color: #111;
   background: #fff;
 }
 .ns-zoom {
@@ -1990,6 +2121,63 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+}
+.ns-claim-setup {
+  max-width: 420px;
+}
+.ns-claim-setup-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.ns-claim-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 14px;
+  padding: 12px;
+  border: 1.5px solid #333;
+  border-radius: 12px;
+  background: #141414;
+}
+.ns-claim-preview .ns-company-mark {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.ns-claim-preview-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ns-claim-preview-copy strong {
+  font-size: 14px;
+  color: #f5f5f5;
+}
+.ns-claim-preview-copy span {
+  font-size: 11px;
+  color: #888;
+}
+.ns-visit-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.ns-visit-site:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ns-claim-fields {
+  margin: 0 0 12px;
+}
+.ns-claim-upload input[type="file"] {
+  font-size: 11px;
+  color: #bbb;
 }
 .ns-studio-profile {
   display: flex;

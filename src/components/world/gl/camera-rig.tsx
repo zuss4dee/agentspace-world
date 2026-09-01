@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
 import { distFromScale, h, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, TILE, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
 import { cameraFlyLimits, cameraPanLimits } from "@/lib/world-sections";
+import { archCameraWorld } from "@/lib/arch-viz";
 
 const keys = new Set<string>();
 const _forward = new THREE.Vector3();
@@ -63,6 +64,7 @@ export function ExplorerCamera() {
     topView,
     setTopView,
     zoomPulse,
+    archView,
   } = useWorld();
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -218,11 +220,23 @@ export function ExplorerCamera() {
 
     if (cameraTick !== lastTick.current) {
       lastTick.current = cameraTick;
-      applyDist.current = true;
+      applyDist.current = !archView;
       orbiting.current = false;
     }
 
-    if (followAgent && selectedAgentId && !dragging.current) {
+    if (archView && !dragging.current) {
+      const shot = archCameraWorld(archView);
+      t.set(shot.target[0], shot.target[1], shot.target[2]);
+      if (!orbiting.current) {
+        camera.position.set(shot.position[0], shot.position[1], shot.position[2]);
+      }
+      const persp = camera as THREE.PerspectiveCamera;
+      if (persp.isPerspectiveCamera) {
+        persp.fov = shot.fov;
+        persp.updateProjectionMatrix();
+      }
+      applyDist.current = false;
+    } else if (followAgent && selectedAgentId && !dragging.current) {
       const a = liveRef.current.agents.find((ag) => ag.id === selectedAgentId);
       if (a) {
         const k = Math.min(1, dt * 5);
@@ -280,9 +294,9 @@ export function ExplorerCamera() {
     t.add(_step);
     camera.position.add(_step);
 
-    t.y = interiorId ? h(1.15) : h(0.2);
+    t.y = interiorId ? h(1.15) : archView ? t.y : h(0.2);
 
-    if (!interiorId) {
+    if (!interiorId && !archView) {
       const d = camera.position.distanceTo(t);
       const lim = cameraPanLimits(d, mapOverview);
       const nx = THREE.MathUtils.clamp(t.x, lim.minX, lim.maxX);
@@ -325,7 +339,7 @@ export function ExplorerCamera() {
       camera.position.y += (yWant - camera.position.y) * k;
       const cap = mapOverview ? OVERVIEW_DIST : MAX_VIEW_DIST;
       camera.position.y = THREE.MathUtils.clamp(camera.position.y, t.y + MIN_VIEW_DIST, t.y + cap);
-    } else {
+    } else if (!archView) {
       camera.up.set(0, 1, 0);
       if ((applyDist.current || interiorId) && !dragging.current) {
         const current = camera.position.distanceTo(t);
@@ -350,6 +364,8 @@ export function ExplorerCamera() {
           camera.position.copy(t).add(_dir);
         }
       }
+    } else {
+      camera.up.set(0, 1, 0);
     }
 
     const fog = scene.fog;
@@ -359,16 +375,22 @@ export function ExplorerCamera() {
         fog.far = h(420);
       } else {
         const d = camera.position.distanceTo(t);
-        fog.near = Math.max(h(120), d * 2.8);
-        fog.far = Math.max(h(260), Math.min(h(520), d * 7.5));
+        fog.near = Math.max(h(160), d * 3.2);
+        fog.far = Math.max(h(320), Math.min(h(640), d * 9));
+      }
+      if (archView) {
+        fog.near = 140;
+        fog.far = 900;
       }
     }
 
     if (!interiorId) {
       keepAboveGround(camera, GROUND_Y);
-      const fly = cameraFlyLimits(camera.position.distanceTo(t), mapOverview);
-      camera.position.x = THREE.MathUtils.clamp(camera.position.x, fly.minX, fly.maxX);
-      camera.position.z = THREE.MathUtils.clamp(camera.position.z, fly.minZ, fly.maxZ);
+      if (!archView) {
+        const fly = cameraFlyLimits(camera.position.distanceTo(t), mapOverview);
+        camera.position.x = THREE.MathUtils.clamp(camera.position.x, fly.minX, fly.maxX);
+        camera.position.z = THREE.MathUtils.clamp(camera.position.z, fly.minZ, fly.maxZ);
+      }
     } else keepAboveGround(camera, h(0.35));
 
     camera.lookAt(t);

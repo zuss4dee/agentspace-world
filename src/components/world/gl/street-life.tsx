@@ -6,6 +6,7 @@ import { TILE, h, wx, wz } from "@/lib/coords";
 import { expandedRect, getPlot, pointInRect } from "@/lib/plots";
 import { SCENERY } from "@/lib/scenery";
 import { FIRST_DISTRICT } from "@/components/world/gl/streets";
+import { inAuthoredEnv } from "@/lib/env-district";
 import { useWorld } from "@/components/world/world-store";
 
 function inFirst(x: number, y: number) {
@@ -87,6 +88,7 @@ export function StreetLife() {
   const items = useMemo(() => {
     return SCENERY.filter((s) => {
       if (!inFirst(s.x, s.y)) return false;
+      if (inAuthoredEnv(s.x, s.y)) return false;
       if (s.kind !== "bench" && s.kind !== "planter" && s.kind !== "car" && s.kind !== "sign") return false;
       const ix = Math.floor(s.x);
       const iy = Math.floor(s.y);

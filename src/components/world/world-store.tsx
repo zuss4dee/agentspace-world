@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { catalogById } from "@/lib/catalog";
+import { type ArchView } from "@/lib/arch-viz";
 import {
   createSnapshot,
   directorLine,
@@ -40,21 +41,71 @@ import {
 } from "@/lib/plots";
 import { poiById } from "@/lib/pois";
 import { DISTRICT_SPECS } from "@/lib/district-specs";
+import { gltfUrlForAssetId } from "@/lib/building-gltf";
+import { WORLD_BUILDINGS } from "@/lib/campus";
 import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import type { BuildingSpec } from "@/lib/building-spec";
+import type { CompanyProfile } from "@/lib/company-profile";
 import {
   applyStoredProfiles,
   defaultClaimProfile,
   loadStoredProfiles,
+  mergeProfile,
   occupiedBuilding,
   profilesFromSpecs,
   saveStoredProfiles,
 } from "@/lib/company-profile";
 import { h } from "@/lib/coords";
+import { loadStoredClaims, saveStoredClaims, type StoredClaims } from "@/lib/claimed-lots-storage";
+import {
+  addCrewMember,
+  loadBuildingCrew,
+  parsePlotPoiId,
+  plotPoiId,
+  saveBuildingCrew,
+  type BuildingCrewMap,
+} from "@/lib/building-crew";
 import type { Agent, MapId, RoleId, Vec2, WorldSnapshot } from "@/lib/types";
 
+function restoreClaimSpecs(
+  specs: Record<string, BuildingSpec>,
+  claims: StoredClaims,
+  profiles: Record<string, CompanyProfile>,
+): Record<string, BuildingSpec> {
+  let next = { ...specs };
+  for (const id of claims.claimedPlotIds) {
+    const plot = getPlot(id);
+    if (!plot) continue;
+    const useId = claims.claimedUses[id] ?? "office";
+    const extra = claims.claimedExtras[id] ?? 0;
+    const place = claims.claimedPlaces[id];
+    const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+    const fp = buildingFootprint(plot, use, extra, place);
+    if (!fp) continue;
+    const pal = paletteForUse(useId);
+    const profile = profiles[id]
+      ? mergeProfile(defaultClaimProfile(use.name), profiles[id])
+      : next[id]?.profile;
+    const base =
+      next[id] ?? specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal);
+    next[id] = {
+      ...base,
+      ...(profile
+        ? {
+            profile,
+            signage: profile.name
+              ? { ...base.signage, text: profile.name.slice(0, 18).toUpperCase() }
+              : base.signage,
+          }
+        : {}),
+    };
+  }
+  return next;
+}
+
 export type StudioMode = "quick" | "customise" | "creator";
+export type ClaimSetupStep = "profile" | "placement" | "crew";
 
 type WorldApi = {
   world: WorldSnapshot;
@@ -77,6 +128,7 @@ type WorldApi = {
   connectBot: (input: {
     name: string;
     role: RoleId;
+    plotId?: string;
     endpoint?: string;
     onlineFor?: string;
     idleExtend?: string;
@@ -94,6 +146,10 @@ type WorldApi = {
   zoomBy: (inward: boolean) => void;
   zoomPulse: { id: number; inward: boolean };
   cameraTick: number;
+  archView: ArchView | null;
+  setArchView: (v: ArchView | null) => void;
+  sunHour: number;
+  setSunHour: (h: number) => void;
   mapOverview: boolean;
   showCityOverview: () => void;
   setMapOverview: (v: boolean) => void;
@@ -135,6 +191,30 @@ type WorldApi = {
   setStudioMode: (m: StudioMode) => void;
   saveCreatorPack: (packId: string) => void;
   creatorPacks: string[];
+  claimSetupId: string | null;
+  claimSetupStep: ClaimSetupStep;
+  openClaimSetup: (id: string, step?: ClaimSetupStep) => void;
+  dismissClaimSetup: () => void;
+  saveClaimBuilding: (input: {
+    profile: Partial<CompanyProfile>;
+    useId?: string;
+    place?: LotPlace;
+    extra?: number;
+  }) => void;
+  finishClaimSetup: (input: {
+    profile: Partial<CompanyProfile>;
+    useId?: string;
+    place?: LotPlace;
+    extra?: number;
+  }) => void;
+  buildingCrew: BuildingCrewMap;
+  addBotToBuilding: (plotId: string, input: {
+    name: string;
+    role: RoleId;
+    endpoint?: string;
+    onlineFor?: string;
+    idleExtend?: string;
+  }) => Promise<{ ok: true; agentId: string } | { ok: false; reason: string }>;
 };
 
 const WorldContext = createContext<WorldApi | null>(null);
@@ -154,24 +234,40 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [followAgent, setFollowAgent] = useState(false);
   const [cameraScale, setCameraScaleState] = useState(0.72);
   const [cameraTick, setCameraTick] = useState(0);
+  const [archView, setArchViewState] = useState<ArchView | null>(null);
+  const [sunHour, setSunHour] = useState(15.5);
   const [zoomPulse, setZoomPulse] = useState({ id: 0, inward: true });
   const [interiorId, setInteriorId] = useState<string | null>(null);
-  const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
-  const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>({});
-  const [claimedPlaces, setClaimedPlaces] = useState<Record<string, LotPlace>>({});
-  const [claimedUses, setClaimedUses] = useState<Record<string, string>>({});
+  const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>(
+    () => loadStoredClaims().claimedPlotIds,
+  );
+  const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>(
+    () => loadStoredClaims().claimedExtras,
+  );
+  const [claimedPlaces, setClaimedPlaces] = useState<Record<string, LotPlace>>(
+    () => loadStoredClaims().claimedPlaces,
+  );
+  const [claimedUses, setClaimedUses] = useState<Record<string, string>>(
+    () => loadStoredClaims().claimedUses,
+  );
   const [previewUseId, setPreviewUseId] = useState("office");
   const [plotExpand, setPlotExpand] = useState(0);
   const [buildingPlace, setBuildingPlace] = useState<LotPlace>({ ox: 0, oy: 0 });
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
-  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() =>
-    applyStoredProfiles({ ...DISTRICT_SPECS }, loadStoredProfiles()),
-  );
+  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() => {
+    const profiles = loadStoredProfiles();
+    const claims = loadStoredClaims();
+    const base = applyStoredProfiles({ ...DISTRICT_SPECS }, profiles);
+    return restoreClaimSpecs(base, claims, profiles);
+  });
   const [draftSpec, setDraftSpec] = useState<BuildingSpec | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioMode, setStudioMode] = useState<StudioMode>("quick");
   const [creatorPacks, setCreatorPacks] = useState<string[]>([]);
+  const [claimSetupId, setClaimSetupId] = useState<string | null>(null);
+  const [claimSetupStep, setClaimSetupStep] = useState<ClaimSetupStep>("profile");
+  const [buildingCrew, setBuildingCrew] = useState<BuildingCrewMap>(() => loadBuildingCrew());
   const [mapOverview, setMapOverview] = useState(false);
   const [topView, setTopView] = useState(false);
   const pausedRef = useRef(paused);
@@ -182,6 +278,19 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     saveStoredProfiles(profilesFromSpecs(buildingSpecs));
   }, [buildingSpecs]);
+
+  useEffect(() => {
+    saveBuildingCrew(buildingCrew);
+  }, [buildingCrew]);
+
+  useEffect(() => {
+    saveStoredClaims({
+      claimedPlotIds,
+      claimedExtras,
+      claimedPlaces,
+      claimedUses,
+    });
+  }, [claimedPlotIds, claimedExtras, claimedPlaces, claimedUses]);
 
   const apply = useCallback((fn: (prev: WorldSnapshot) => WorldSnapshot) => {
     const next = fn(liveRef.current);
@@ -258,8 +367,8 @@ export function WorldProvider({ children }: { children: ReactNode }) {
               y: old ? old.y : a.z,
               targetX: a.x,
               targetY: a.z,
-              buildingId: a.poi,
-              stationId: a.poi,
+              buildingId: parsePlotPoiId(a.poi) ?? a.poi,
+              stationId: parsePlotPoiId(a.poi) ?? a.poi,
               organization: "Grok Bot",
               waypoints: [],
               outfitId: "visitor-lanyard",
@@ -375,7 +484,12 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setSelectedPlotId(p?.id ?? null);
       setSelectedPlotIds(p ? [p.id] : []);
       setLandSlice(p ? plotRect(p) : null);
-      setDraftSpec((prev) => buildingSpecs[id] ?? DISTRICT_SPECS[id] ?? prev);
+      const listed = WORLD_BUILDINGS.find((row) => row.id === id);
+      if (listed && gltfUrlForAssetId(listed.assetId)) {
+        setDraftSpec(null);
+      } else {
+        setDraftSpec((prev) => buildingSpecs[id] ?? DISTRICT_SPECS[id] ?? prev);
+      }
     } else {
       setSelectedPlotId(null);
       setSelectedPlotIds([]);
@@ -387,7 +501,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const p = getPlot(id);
     setSelectedAgentId(null);
     setFollowAgent(false);
-    setSelectedBuildingId(p?.buildingId ?? null);
+    setSelectedBuildingId(p?.kind === "owned" && p?.buildingId ? p.buildingId : null);
     setPlotExpand(0);
     if (!p) {
       setBuildingPlace({ ox: 0, oy: 0 });
@@ -407,13 +521,18 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setBuildingPlace(size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
       const fp = buildingFootprint(land, use, 0, size ? centerPlace(land.w, land.h, size.w, size.h) : { ox: 0, oy: 0 });
       const bid = p.buildingId;
-      setDraftSpec(
-        buildingSpecs[p.id] ??
-          (bid ? buildingSpecs[bid] ?? DISTRICT_SPECS[bid] : undefined) ??
-          (fp
-            ? specFromUse(p.id, nextUse, fp.w, fp.h, h(fp.height), paletteForUse(nextUse))
-            : null),
-      );
+      const listed = bid ? WORLD_BUILDINGS.find((row) => row.id === bid) : undefined;
+      if (listed && gltfUrlForAssetId(listed.assetId)) {
+        setDraftSpec(null);
+      } else {
+        setDraftSpec(
+          buildingSpecs[p.id] ??
+            (bid ? buildingSpecs[bid] ?? DISTRICT_SPECS[bid] : undefined) ??
+            (fp
+              ? specFromUse(p.id, nextUse, fp.w, fp.h, h(fp.height), paletteForUse(nextUse))
+              : null),
+        );
+      }
       return nextUse;
     });
   }, [claimedPlotIds, buildingSpecs]);
@@ -564,6 +683,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setSelectedPlotIds([]);
     setSelectedPlotId(null);
     setLandSlice(null);
+    const primaryClaimId = pending[0]?.id ?? null;
     setBuildingSpecs((prev) => {
       const next = { ...prev };
       for (const row of pending) {
@@ -590,8 +710,86 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
+    if (primaryClaimId) {
+      setClaimSetupId(primaryClaimId);
+      setClaimSetupStep("profile");
+    }
     return { ok: true, count: pending.length };
   }, [claimedPlotIds, claimedExtras, selectedPlotId, landSlice, previewUseId, draftSpec]);
+
+  const dismissClaimSetup = useCallback(() => {
+    setClaimSetupId(null);
+    setClaimSetupStep("profile");
+  }, []);
+
+  const openClaimSetup = useCallback((id: string, step: ClaimSetupStep = "profile") => {
+    setClaimSetupId(id);
+    setClaimSetupStep(step);
+  }, []);
+
+  const saveClaimBuilding = useCallback((input: {
+    profile: Partial<CompanyProfile>;
+    useId?: string;
+    place?: LotPlace;
+    extra?: number;
+  }) => {
+    const id = claimSetupId;
+    if (!id) return;
+    const plot = getPlot(id);
+    const useId = input.useId ?? claimedUses[id] ?? previewUseId;
+    const extra = input.extra ?? claimedExtras[id] ?? 0;
+    const place = input.place ?? claimedPlaces[id];
+    const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+    const pal = paletteForUse(useId);
+    const profile = mergeProfile(defaultClaimProfile(use.name), input.profile);
+
+    setClaimedExtras((prev) => ({ ...prev, [id]: extra }));
+    if (place) setClaimedPlaces((prev) => ({ ...prev, [id]: place }));
+    setClaimedUses((prev) => ({ ...prev, [id]: useId }));
+
+    setBuildingSpecs((prev) => {
+      const fp = plot ? buildingFootprint(plot, use, extra, place) : null;
+      const base =
+        prev[id] ??
+        (fp ? specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal) : undefined);
+      if (!base) return prev;
+      return {
+        ...prev,
+        [id]: {
+          ...base,
+          profile,
+          signage: profile.name
+            ? { ...base.signage, text: profile.name.slice(0, 18).toUpperCase() }
+            : base.signage,
+        },
+      };
+    });
+
+    if (plot) {
+      setMapOverview(false);
+      setCameraFocus({ x: plot.x + plot.w / 2, y: plot.y + plot.h / 2 });
+      setCameraScaleState(1.05);
+      setCameraTick((t) => t + 1);
+    }
+    apply((prev) => ({
+      ...prev,
+      events: pushEvent(prev.events, {
+        kind: "work",
+        mapId: "lot",
+        text: `${profile.name || "Your company"} raised a ${use.name.toLowerCase()} on ${plot?.groupLabel ?? "claimed land"}.`,
+      }),
+    }));
+  }, [apply, claimSetupId, claimedExtras, claimedPlaces, claimedUses, previewUseId]);
+
+  const finishClaimSetup = useCallback((input: {
+    profile: Partial<CompanyProfile>;
+    useId?: string;
+    place?: LotPlace;
+    extra?: number;
+  }) => {
+    saveClaimBuilding(input);
+    dismissClaimSetup();
+  }, [dismissClaimSetup, saveClaimBuilding]);
 
   const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string, slice?: TileRect | null) => {
     return claimPlots([id], extra, place, useId, slice ?? landSlice).ok;
@@ -623,6 +821,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const connectBot = useCallback(async (input: {
     name: string;
     role: RoleId;
+    plotId?: string;
     endpoint?: string;
     onlineFor?: string;
     idleExtend?: string;
@@ -640,28 +839,79 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       if (!res.ok) return { ok: false as const, reason: "Airlock refused the session." };
       const data = (await res.json()) as { token: string; agent_id: string };
       const auth = { Authorization: `Bearer ${data.token}`, "Content-Type": "application/json" };
-      const dest = input.role === "visitor" ? "hearth" : "startup";
+      const dest = input.plotId ? plotPoiId(input.plotId) : input.role === "visitor" ? "hearth" : "startup";
       await fetch("/v1/me/go", {
         method: "POST",
         headers: auth,
         body: JSON.stringify({ poi: dest }),
       });
-      const line = input.endpoint
-        ? `South Station hissed. ${input.name} is on the map. Signal ${input.endpoint}.`
-        : `South Station hissed. ${input.name} walked in as a Grok Bot.`;
+      await fetch("/v1/me/sit", {
+        method: "POST",
+        headers: auth,
+        body: JSON.stringify({ poi: dest }),
+      });
+      const plot = input.plotId ? getPlot(input.plotId) : null;
+      const line = input.plotId && plot
+        ? `${input.name} checked in at ${plot.groupLabel}.`
+        : input.endpoint
+          ? `South Station hissed. ${input.name} is on the map. Signal ${input.endpoint}.`
+          : `South Station hissed. ${input.name} walked in as a Grok Bot.`;
       await fetch("/v1/me/speak", {
         method: "POST",
         headers: auth,
         body: JSON.stringify({ text: line }),
       });
-      focusPoi(dest === "hearth" ? "hearth" : "startup");
+      if (plot) {
+        setMapOverview(false);
+        setTopView(false);
+        setCameraFocus({ x: plot.x + plot.w / 2, y: plot.y + plot.h / 2 });
+        setCameraScaleState(1.15);
+        setCameraTick((t) => t + 1);
+      } else {
+        focusPoi(dest === "hearth" ? "hearth" : "startup");
+      }
       return { ok: true as const, agentId: data.agent_id };
     } catch {
       return { ok: false as const, reason: "Could not reach the airlock." };
     }
   }, [focusPoi]);
 
+  const addBotToBuilding = useCallback(async (
+    plotId: string,
+    input: {
+      name: string;
+      role: RoleId;
+      endpoint?: string;
+      onlineFor?: string;
+      idleExtend?: string;
+    },
+  ) => {
+    const result = await connectBot({ ...input, plotId });
+    if (result.ok) {
+      setBuildingCrew((prev) =>
+        addCrewMember(prev, plotId, {
+          name: input.name,
+          role: input.role,
+          liveAgentId: result.agentId,
+          endpoint: input.endpoint,
+        }),
+      );
+      const plot = getPlot(plotId);
+      apply((prev) => ({
+        ...prev,
+        events: pushEvent(prev.events, {
+          kind: "connect",
+          agentId: result.agentId,
+          mapId: "lot",
+          text: `CREW — ${input.name} joined ${plot?.groupLabel ?? "your building"}.`,
+        }),
+      }));
+    }
+    return result;
+  }, [apply, connectBot]);
+
   const focusCoord = useCallback((x: number, y: number, scale = 1.05) => {
+    setArchViewState(null);
     setMapOverview(false);
     setCameraFocus({ x, y });
     setCameraScaleState(scale);
@@ -669,10 +919,23 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const showCityOverview = useCallback(() => {
+    setArchViewState(null);
     setFollowAgent(false);
     setMapOverview(true);
     setCameraFocus({ x: 32, y: 32 });
     setCameraTick((t) => t + 1);
+  }, []);
+
+  const setArchView = useCallback((v: ArchView | null) => {
+    setArchViewState(v);
+    if (v) {
+      setFollowAgent(false);
+      setMapOverview(false);
+      setTopView(false);
+      setSelectedBuildingId("loft");
+      setCameraFocus({ x: 28, y: 3.5 });
+      setCameraTick((t) => t + 1);
+    }
   }, []);
 
   const toggleTopView = useCallback(() => {
@@ -712,6 +975,10 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       zoomBy,
       zoomPulse,
       cameraTick,
+      archView,
+      setArchView,
+      sunHour,
+      setSunHour,
       mapOverview,
       showCityOverview,
       setMapOverview,
@@ -748,6 +1015,14 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setStudioMode,
       saveCreatorPack,
       creatorPacks,
+      claimSetupId,
+      claimSetupStep,
+      openClaimSetup,
+      dismissClaimSetup,
+      saveClaimBuilding,
+      finishClaimSetup,
+      buildingCrew,
+      addBotToBuilding,
     }),
     [
       world,
@@ -774,6 +1049,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       followAgent,
       cameraScale,
       cameraTick,
+      archView,
+      setArchView,
+      sunHour,
       zoomPulse,
       zoomBy,
       mapOverview,
@@ -802,6 +1080,14 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       studioOpen,
       studioMode,
       creatorPacks,
+      claimSetupId,
+      claimSetupStep,
+      openClaimSetup,
+      dismissClaimSetup,
+      saveClaimBuilding,
+      finishClaimSetup,
+      buildingCrew,
+      addBotToBuilding,
     ],
   );
 

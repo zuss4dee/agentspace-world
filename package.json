@@ -6,12 +6,14 @@
     "dev": "next dev --hostname 0.0.0.0 --port 43141",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 43141",
-    "lint": "eslint"
+    "lint": "eslint",
+    "blender:publish": "node scripts/blender/publish.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.7.0",
+    "@react-three/postprocessing": "^3.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.37.0",

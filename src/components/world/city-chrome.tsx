@@ -5,6 +5,7 @@ import { Activity, ArrowDownToLine, Compass, Keyboard, Map, MapPin, Minus, Plus 
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
+import { ClaimSetupWizard } from "@/components/world/claim-setup-wizard";
 import { CompanyProfileCard } from "@/components/world/company-profile";
 import { BuildingStudio } from "@/components/world/building-studio";
 import { useWorld } from "@/components/world/world-store";
@@ -19,8 +20,10 @@ import {
 import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, formatSqFt, getPlot, isLotMultiModifier, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, plotRect, resizeSlice, SALE_STOCK, usesForPlot, workingLand, type PlotZone } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { WORLD_BUILDINGS } from "@/lib/campus";
-import { profileOf } from "@/lib/company-profile";
+import { profileOf, visitSiteUrl } from "@/lib/company-profile";
+import { crewForPlot } from "@/lib/building-crew";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
+import { ARCH_VIEW_LABEL, type ArchView } from "@/lib/arch-viz";
 
 export function CityChrome() {
   const {
@@ -56,7 +59,11 @@ export function CityChrome() {
     showCityOverview,
     topView,
     toggleTopView,
+    archView,
+    setArchView,
     connectBot,
+    openClaimSetup,
+    buildingCrew,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const [keysOpen, setKeysOpen] = useState(false);
@@ -74,10 +81,15 @@ export function CityChrome() {
   const worldBuilding = selectedBuildingId
     ? WORLD_BUILDINGS.find((b) => b.id === selectedBuildingId)
     : undefined;
-  const occupiedId = worldBuilding?.id ?? (pickedClaimed && picked ? picked.id : null);
-  const showCompany = Boolean(occupiedId && !interiorId);
+  const occupiedId =
+    worldBuilding?.id ?? (pickedClaimed && picked && buildingSpecs[picked.id] ? picked.id : null);
+  const showCompany = Boolean(!interiorId && occupiedId);
   const occupiedSpec = occupiedId ? buildingSpecs[occupiedId] : undefined;
   const occupiedProfile = occupiedId ? profileOf(occupiedSpec, occupiedId) : null;
+  const pickedCompanyReady = Boolean(
+    pickedClaimed && picked && buildingSpecs[picked.id]?.profile?.name?.trim(),
+  );
+  const pickedCrewCount = picked ? crewForPlot(buildingCrew, picked.id).length : 0;
   const land = picked ? workingLand(picked, landSlice ?? plotRect(picked)) : undefined;
   const selectedLands = selectedPlotIds
     .map((id) => {
@@ -147,6 +159,7 @@ export function CityChrome() {
         </div>
         <nav className="ns-topnav">
           <Link href="/directory">Directory</Link>
+          <Link href="/bots">Bot floor</Link>
           <button
             type="button"
             className="ns-join-link"
@@ -280,6 +293,19 @@ export function CityChrome() {
 
       <BuildingStudio />
 
+      <div className="ns-arch-views" role="group" aria-label="Echt Studio camera">
+        {(Object.keys(ARCH_VIEW_LABEL) as ArchView[]).map((id) => (
+          <button
+            key={id}
+            type="button"
+            data-on={archView === id ? "1" : "0"}
+            aria-pressed={archView === id}
+            onClick={() => setArchView(archView === id ? null : id)}
+          >
+            {ARCH_VIEW_LABEL[id]}
+          </button>
+        ))}
+      </div>
       <div className="ns-zoom">
         <button type="button" aria-label="Zoom in" onClick={() => zoomBy(true)}>
           <Plus className="size-4" />
@@ -309,8 +335,8 @@ export function CityChrome() {
           className="ns-zoom-top"
           data-on={topView ? "1" : "0"}
           aria-pressed={topView}
-          aria-label={topView ? "Leave top view" : "Look straight down"}
-          title={topView ? "Angle view" : "Top view"}
+          aria-label={topView ? "Leave crew view" : "Crew view (top-down)"}
+          title={topView ? "Angle view" : "Crew view"}
           onClick={() => toggleTopView()}
         >
           <ArrowDownToLine className="size-4" />
@@ -369,10 +395,18 @@ export function CityChrome() {
           owned={Boolean(pickedClaimed && occupiedId === picked?.id)}
           onClose={() => selectPlot(null)}
           onEnter={() => enterBuilding(occupiedId)}
-          onVisit={() => {
-            const b = WORLD_BUILDINGS.find((row) => row.id === occupiedId);
-            if (b) focusCoord(b.origin.x + b.size.x / 2, b.origin.y + b.size.y / 2, 1.55);
-          }}
+          onVisit={
+            visitSiteUrl(occupiedProfile)
+              ? () => {
+                  const url = visitSiteUrl(occupiedProfile);
+                  if (url) window.open(url, "_blank", "noopener,noreferrer");
+                }
+              : () => {
+                  const b = WORLD_BUILDINGS.find((row) => row.id === occupiedId);
+                  if (b) focusCoord(b.origin.x + b.size.x / 2, b.origin.y + b.size.y / 2, 1.55);
+                }
+          }
+          visitLabel={visitSiteUrl(occupiedProfile) ? "Visit site" : "View on map"}
         />
       ) : picked && land && !interiorId ? (
         <PlotSheet
@@ -456,7 +490,7 @@ export function CityChrome() {
             const price = selectedPrice || expandPrice(land, extra);
             if (result.ok)
               toast.success(
-                `${result.count > 1 ? `${result.count} plots` : "Plot"} secured · ${formatUsd(price)}. ${claimedPlotIds.length + result.count}/${MAX_CLAIMS} this session.`,
+                `${result.count > 1 ? `${result.count} plots` : "Plot"} secured · ${formatUsd(price)}. Set up your company, then walk Grok bots in.`,
               );
             else if (result.reason === "cap")
               toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
@@ -466,8 +500,18 @@ export function CityChrome() {
           }}
           onEnter={enterBuilding}
           onBid={() => setBeaconOpen(true)}
+          onSetupCompany={pickedClaimed && picked ? () => openClaimSetup(picked.id) : undefined}
+          companyReady={pickedCompanyReady}
+          crewCount={pickedCrewCount}
+          onAddCrew={
+            pickedClaimed && picked && pickedCompanyReady
+              ? () => openClaimSetup(picked.id, "crew")
+              : undefined
+          }
         />
       ) : null}
+
+      <ClaimSetupWizard />
 
       {beaconOpen ? (
         <div className="ns-bid-scrim" role="presentation" onClick={() => setBeaconOpen(false)}>

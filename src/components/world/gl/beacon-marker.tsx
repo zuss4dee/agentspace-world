@@ -10,8 +10,8 @@ export function BeaconMarker() {
       position={[wx(16.5), 0, wz(4)]}
       onClick={(e) => {
         e.stopPropagation();
-        selectPlot("plot-b-hq");
-        focusCoord(16.5, 4, 1.25);
+        selectPlot("plot-b-loft");
+        focusCoord(28, 3.5, 1.25);
         setBeaconOpen(true);
       }}
     >
