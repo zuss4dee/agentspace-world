@@ -47,6 +47,7 @@ import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import type { BuildingSpec } from "@/lib/building-spec";
 import type { CompanyProfile } from "@/lib/company-profile";
+import { withBrandAccent } from "@/lib/brand-profile";
 import {
   applyStoredProfiles,
   defaultClaimProfile,
@@ -89,7 +90,7 @@ function restoreClaimSpecs(
       : next[id]?.profile;
     const base =
       next[id] ?? specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal);
-    next[id] = {
+    next[id] = withBrandAccent({
       ...base,
       ...(profile
         ? {
@@ -99,7 +100,7 @@ function restoreClaimSpecs(
               : base.signage,
           }
         : {}),
-    };
+    });
   }
   return next;
 }
@@ -238,59 +239,68 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [sunHour, setSunHour] = useState(15.5);
   const [zoomPulse, setZoomPulse] = useState({ id: 0, inward: true });
   const [interiorId, setInteriorId] = useState<string | null>(null);
-  const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>(
-    () => loadStoredClaims().claimedPlotIds,
-  );
-  const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>(
-    () => loadStoredClaims().claimedExtras,
-  );
-  const [claimedPlaces, setClaimedPlaces] = useState<Record<string, LotPlace>>(
-    () => loadStoredClaims().claimedPlaces,
-  );
-  const [claimedUses, setClaimedUses] = useState<Record<string, string>>(
-    () => loadStoredClaims().claimedUses,
-  );
+  // SSR-safe defaults — localStorage is restored after mount to avoid hydration mismatch.
+  const [claimedPlotIds, setClaimedPlotIds] = useState<string[]>([]);
+  const [claimedExtras, setClaimedExtras] = useState<Record<string, number>>({});
+  const [claimedPlaces, setClaimedPlaces] = useState<Record<string, LotPlace>>({});
+  const [claimedUses, setClaimedUses] = useState<Record<string, string>>({});
   const [previewUseId, setPreviewUseId] = useState("office");
   const [plotExpand, setPlotExpand] = useState(0);
   const [buildingPlace, setBuildingPlace] = useState<LotPlace>({ ox: 0, oy: 0 });
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
-  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(() => {
-    const profiles = loadStoredProfiles();
-    const claims = loadStoredClaims();
-    const base = applyStoredProfiles({ ...DISTRICT_SPECS }, profiles);
-    return restoreClaimSpecs(base, claims, profiles);
-  });
+  const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(
+    () => ({ ...DISTRICT_SPECS }),
+  );
   const [draftSpec, setDraftSpec] = useState<BuildingSpec | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
   const [studioMode, setStudioMode] = useState<StudioMode>("quick");
   const [creatorPacks, setCreatorPacks] = useState<string[]>([]);
   const [claimSetupId, setClaimSetupId] = useState<string | null>(null);
   const [claimSetupStep, setClaimSetupStep] = useState<ClaimSetupStep>("profile");
-  const [buildingCrew, setBuildingCrew] = useState<BuildingCrewMap>(() => loadBuildingCrew());
+  const [buildingCrew, setBuildingCrew] = useState<BuildingCrewMap>({});
   const [mapOverview, setMapOverview] = useState(false);
   const [topView, setTopView] = useState(false);
+  const [storageReady, setStorageReady] = useState(false);
   const pausedRef = useRef(paused);
   useEffect(() => {
     pausedRef.current = paused;
   }, [paused]);
 
   useEffect(() => {
+    const claims = loadStoredClaims();
+    const profiles = loadStoredProfiles();
+    setClaimedPlotIds(claims.claimedPlotIds);
+    setClaimedExtras(claims.claimedExtras);
+    setClaimedPlaces(claims.claimedPlaces);
+    setClaimedUses(claims.claimedUses);
+    setBuildingSpecs((prev) => {
+      const base = applyStoredProfiles({ ...prev }, profiles);
+      return restoreClaimSpecs(base, claims, profiles);
+    });
+    setBuildingCrew(loadBuildingCrew());
+    setStorageReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!storageReady) return;
     saveStoredProfiles(profilesFromSpecs(buildingSpecs));
-  }, [buildingSpecs]);
+  }, [buildingSpecs, storageReady]);
 
   useEffect(() => {
+    if (!storageReady) return;
     saveBuildingCrew(buildingCrew);
-  }, [buildingCrew]);
+  }, [buildingCrew, storageReady]);
 
   useEffect(() => {
+    if (!storageReady) return;
     saveStoredClaims({
       claimedPlotIds,
       claimedExtras,
       claimedPlaces,
       claimedUses,
     });
-  }, [claimedPlotIds, claimedExtras, claimedPlaces, claimedUses]);
+  }, [claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, storageReady]);
 
   const apply = useCallback((fn: (prev: WorldSnapshot) => WorldSnapshot) => {
     const next = fn(liveRef.current);
@@ -755,13 +765,13 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       if (!base) return prev;
       return {
         ...prev,
-        [id]: {
+        [id]: withBrandAccent({
           ...base,
           profile,
           signage: profile.name
             ? { ...base.signage, text: profile.name.slice(0, 18).toUpperCase() }
             : base.signage,
-        },
+        }),
       };
     });
 

@@ -2175,6 +2175,179 @@
 .ns-claim-fields {
   margin: 0 0 12px;
 }
+.ns-brand-url-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+.ns-brand-url-row input {
+  flex: 1;
+  min-width: 0;
+}
+.ns-brand-pull {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 0 10px;
+  border: 1.5px solid #111;
+  border-radius: 8px;
+  background: #111;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.ns-brand-pull:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ns-spin {
+  animation: ns-spin 0.9s linear infinite;
+}
+@keyframes ns-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.ns-brand-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid #333;
+  border-radius: 12px;
+  background: #141414;
+}
+.ns-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+}
+.ns-brand-label {
+  flex-shrink: 0;
+  width: 44px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #888;
+}
+.ns-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ns-swatches li {
+  position: relative;
+}
+.ns-swatch {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1.5px solid #333;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px #00000033;
+}
+.ns-swatches li[data-primary="1"] .ns-swatch {
+  width: 34px;
+  border-color: #f5f5f5;
+}
+.ns-swatch-x {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border: 1px solid #333;
+  border-radius: 999px;
+  background: #f5f5f5;
+  color: #111;
+  cursor: pointer;
+  padding: 0;
+}
+.ns-swatches li:hover .ns-swatch-x,
+.ns-swatches li:focus-within .ns-swatch-x {
+  display: inline-flex;
+}
+.ns-segmented {
+  display: inline-flex;
+  padding: 2px;
+  border: 1.5px solid #333;
+  border-radius: 999px;
+  background: #1a1a1a;
+}
+.ns-segmented button {
+  padding: 3px 9px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #bbb;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-segmented button[data-on="1"] {
+  background: #f5f5f5;
+  color: #111;
+}
+.ns-brand-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ns-claim-setup .ns-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1.5px solid #333;
+  border-radius: 999px;
+  background: #1a1a1a;
+  color: #ddd;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ns-claim-setup .ns-chip[data-on="1"] {
+  background: #fff;
+  color: #111;
+  border-color: #fff;
+}
+.ns-brand-export {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 4px 0 0;
+}
+.ns-brand-export .ns-ghost {
+  align-self: flex-start;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.ns-brand-export code,
+.ns-plot-sheet .ns-brand-export code {
+  font-size: 10px;
+  word-break: break-all;
+}
+.ns-plot-sheet .ns-brand-export {
+  margin: 8px 0 0;
+}
 .ns-claim-upload input[type="file"] {
   font-size: 11px;
   color: #bbb;

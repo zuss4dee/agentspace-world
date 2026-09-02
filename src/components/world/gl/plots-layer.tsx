@@ -34,6 +34,7 @@ import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
 import { BUILDINGS_ENABLED, CLAIMED_LOT_PREVIEW_ENABLED } from "@/lib/architecture-stage";
 import type { BuildingSpec } from "@/lib/building-spec";
 import { letterMark } from "@/lib/company-profile";
+import { withBrandAccent } from "@/lib/brand-profile";
 import { useWorld } from "@/components/world/world-store";
 
 /** Empty/unclaimed = muted grey lawn. Claimed = maintained green. Edges stay close to the pad. */
@@ -479,6 +480,9 @@ export function ClaimedMarks() {
         const z0 = wz(r.y);
         const x1 = wx(r.x + r.w);
         const z1 = wz(r.y + r.h);
+        const spec = fp
+          ? withBrandAccent(buildingSpecs[id] ?? specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id)))
+          : null;
         return (
           <group
             key={id}
@@ -504,24 +508,13 @@ export function ClaimedMarks() {
               transparent
               opacity={0.4}
             />
-            {fp && CLAIMED_LOT_PREVIEW_ENABLED ? (
+            {fp && spec && CLAIMED_LOT_PREVIEW_ENABLED ? (
               <>
                 <SitLandmark fp={fp} />
                 <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
-                  <BuildingFromSpec
-                    spec={
-                      buildingSpecs[id] ??
-                      specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id))
-                    }
-                  />
+                  <BuildingFromSpec spec={spec} />
                 </group>
-                <ClaimedCompanyPin
-                  spec={
-                    buildingSpecs[id] ??
-                    specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id))
-                  }
-                  fp={fp}
-                />
+                <ClaimedCompanyPin spec={spec} fp={fp} />
               </>
             ) : null}
           </group>

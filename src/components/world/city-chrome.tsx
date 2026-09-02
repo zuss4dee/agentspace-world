@@ -21,6 +21,7 @@ import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCov
 import { formatUsd } from "@/lib/companies";
 import { WORLD_BUILDINGS } from "@/lib/campus";
 import { profileOf, visitSiteUrl } from "@/lib/company-profile";
+import { brandProfileFileName, brandProfileFromCompanyProfile, downloadBrandProfile } from "@/lib/brand-profile";
 import { crewForPlot } from "@/lib/building-crew";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 import { ARCH_VIEW_LABEL, type ArchView } from "@/lib/arch-viz";
@@ -90,6 +91,16 @@ export function CityChrome() {
     pickedClaimed && picked && buildingSpecs[picked.id]?.profile?.name?.trim(),
   );
   const pickedCrewCount = picked ? crewForPlot(buildingCrew, picked.id).length : 0;
+  const ownedBrand =
+    pickedClaimed && picked && pickedCompanyReady && occupiedProfile && occupiedId === picked.id
+      ? brandProfileFromCompanyProfile(picked.id, occupiedProfile)
+      : null;
+  const exportOwnedBrand = ownedBrand
+    ? () => {
+        downloadBrandProfile(ownedBrand);
+        toast.success(`${brandProfileFileName(ownedBrand)} downloaded.`);
+      }
+    : undefined;
   const land = picked ? workingLand(picked, landSlice ?? plotRect(picked)) : undefined;
   const selectedLands = selectedPlotIds
     .map((id) => {
@@ -407,6 +418,8 @@ export function CityChrome() {
                 }
           }
           visitLabel={visitSiteUrl(occupiedProfile) ? "Visit site" : "View on map"}
+          onExportBrand={exportOwnedBrand}
+          exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
         />
       ) : picked && land && !interiorId ? (
         <PlotSheet
@@ -502,6 +515,8 @@ export function CityChrome() {
           onBid={() => setBeaconOpen(true)}
           onSetupCompany={pickedClaimed && picked ? () => openClaimSetup(picked.id) : undefined}
           companyReady={pickedCompanyReady}
+          onExportBrand={exportOwnedBrand}
+          exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
           crewCount={pickedCrewCount}
           onAddCrew={
             pickedClaimed && picked && pickedCompanyReady

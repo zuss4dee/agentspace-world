@@ -1,4 +1,5 @@
 import type { Building } from "./types";
+import type { BrandProfile, CompanyTier } from "./brand-profile";
 
 export type CompanyProfile = {
   name: string;
@@ -9,6 +10,11 @@ export type CompanyProfile = {
   founder: string;
   team: string;
   visitorMessage: string;
+  /** Brand fields pulled from the company website and confirmed in the claim wizard. */
+  tier?: CompanyTier;
+  /** #rrggbb, primary first — palette[0] is the map accent. */
+  palette?: string[];
+  brand?: Partial<BrandProfile>;
 };
 
 export type ArchFamily =
@@ -210,6 +216,10 @@ export const BUILDING_SPEC_SCHEMA = {
       properties: {
         name: { type: "string" },
         logo: { type: "string" },
+        website: { type: "string" },
+        tier: { type: "string", enum: ["enterprise", "smb", "startup"] },
+        palette: { type: "array", items: { type: "string" } },
+        brand: { type: "object" },
         does: { type: "string" },
         description: { type: "string" },
         founder: { type: "string" },

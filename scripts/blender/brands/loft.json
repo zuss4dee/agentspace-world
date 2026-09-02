@@ -1,0 +1,12 @@
+{
+  "companyId": "loft",
+  "companyName": "Loft Labs",
+  "tier": "startup",
+  "logo": { "wordmark": "LOFT" },
+  "primaryColours": ["#0ca678", "#38d9a9"],
+  "secondaryColours": ["#fab005"],
+  "industry": "creative",
+  "styleKeywords": ["creative", "industrial"],
+  "personality": ["playful"],
+  "animations": { "hasMotion": true, "keyframes": 8 }
+}

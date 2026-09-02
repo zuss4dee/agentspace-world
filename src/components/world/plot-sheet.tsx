@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, X } from "lucide-react";
+import { Download, Minus, Plus, X } from "lucide-react";
 import { LOT_BUILDINGS } from "@/lib/campus";
 import { companyForBuilding, formatUsd, isCivicBuilding } from "@/lib/companies";
 import { ZONE_THEME } from "@/lib/city-shop";
@@ -59,6 +59,8 @@ export function PlotSheet({
   onAddAdjoining,
   onSetupCompany,
   onAddCrew,
+  onExportBrand,
+  exportBrandName,
   crewCount = 0,
   companyReady = false,
 }: {
@@ -90,6 +92,9 @@ export function PlotSheet({
   onAddAdjoining: () => void;
   onSetupCompany?: () => void;
   onAddCrew?: () => void;
+  /** Owners of a set-up company can download the Blender brand JSON. */
+  onExportBrand?: () => void;
+  exportBrandName?: string;
   crewCount?: number;
   companyReady?: boolean;
 }) {
@@ -290,6 +295,18 @@ export function PlotSheet({
           {owned && inside.length ? <p className="ns-plot-mute">{inside.length} on site</p> : null}
 
           {warn ? <p className="ns-plot-warn">{warn}</p> : null}
+
+          {claimed && companyReady && onExportBrand ? (
+            <div className="ns-brand-export">
+              <button type="button" className="ns-ghost" onClick={onExportBrand}>
+                <Download className="size-3.5" />
+                Export brand JSON
+              </button>
+              <p className="ns-plot-hint">
+                Feeds the Blender build: <code>build_company_from_brand.py -- --brand {exportBrandName ?? "brand.json"}</code>
+              </p>
+            </div>
+          ) : null}
 
           <div className="ns-plot-actions">
             {park ? null : plot.zone === "ultimate" ? (

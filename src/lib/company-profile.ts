@@ -3,6 +3,7 @@ import type { BuildingSpec, CompanyProfile } from "./building-spec";
 import { COMPANIES, companyForBuilding } from "./companies";
 import { getPlot } from "./plots";
 import type { Building } from "./types";
+import { cleanPalette, isCompanyTier } from "./brand-profile";
 
 export type { CompanyProfile } from "./building-spec";
 
@@ -203,14 +204,21 @@ export function profileFromCompany(companyId?: string): CompanyProfile | undefin
   };
 }
 
+const TEXT_KEYS = Object.keys(EMPTY_PROFILE) as Array<
+  "name" | "logo" | "website" | "does" | "description" | "founder" | "team" | "visitorMessage"
+>;
+
 export function mergeProfile(...parts: Array<Partial<CompanyProfile> | undefined>): CompanyProfile {
   const out: CompanyProfile = { ...EMPTY_PROFILE };
   for (const part of parts) {
     if (!part) continue;
-    for (const key of Object.keys(EMPTY_PROFILE) as (keyof CompanyProfile)[]) {
+    for (const key of TEXT_KEYS) {
       const v = part[key];
       if (typeof v === "string" && v.trim()) out[key] = v;
     }
+    if (isCompanyTier(part.tier)) out.tier = part.tier;
+    if (Array.isArray(part.palette)) out.palette = cleanPalette(part.palette);
+    if (part.brand && typeof part.brand === "object") out.brand = { ...out.brand, ...part.brand };
   }
   return out;
 }

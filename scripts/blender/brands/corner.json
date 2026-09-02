@@ -1,0 +1,11 @@
+{
+  "companyId": "corner",
+  "companyName": "Corner Cafe",
+  "tier": "smb",
+  "logo": { "wordmark": "CORNER" },
+  "primaryColours": ["#e8590c", "#ff922b"],
+  "secondaryColours": ["#212529"],
+  "industry": "food",
+  "styleKeywords": ["warm", "playful"],
+  "personality": ["friendly"]
+}

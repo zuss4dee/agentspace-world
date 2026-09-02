@@ -1,0 +1,11 @@
+{
+  "companyId": "nova",
+  "companyName": "Nova Systems",
+  "tier": "enterprise",
+  "logo": { "wordmark": "NOVA" },
+  "primaryColours": ["#3b5bdb", "#748ffc"],
+  "secondaryColours": ["#ff6b6b"],
+  "industry": "software",
+  "styleKeywords": ["tech", "minimal"],
+  "personality": ["bold"]
+}

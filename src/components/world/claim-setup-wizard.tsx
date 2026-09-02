@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, X } from "lucide-react";
+import { Download, ExternalLink, Loader2, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { useWorld, type ClaimSetupStep } from "@/components/world/world-store";
 import {
@@ -21,7 +21,25 @@ import {
   type Plot,
 } from "@/lib/plots";
 import { crewForPlot } from "@/lib/building-crew";
-import { letterMark, mergeProfile, visitSiteUrl, type CompanyProfile } from "@/lib/company-profile";
+import {
+  defaultClaimProfile,
+  letterMark,
+  mergeProfile,
+  normalizeWebsiteUrl,
+  visitSiteUrl,
+  type CompanyProfile,
+} from "@/lib/company-profile";
+import {
+  COMPANY_TIERS,
+  STYLE_KEYWORDS,
+  TIER_LABELS,
+  brandProfileFileName,
+  brandProfileFromCompanyProfile,
+  cleanPalette,
+  downloadBrandProfile,
+  type CompanyTier,
+  type DerivedBrandProfile,
+} from "@/lib/brand-profile";
 import { roleLabel } from "@/lib/playbooks";
 import type { RoleId } from "@/lib/types";
 
@@ -38,6 +56,15 @@ const CREW_ROLES: RoleId[] = [
   "security",
   "visitor",
 ];
+
+function hostOf(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
 
 export function ClaimSetupWizard() {
   const { claimSetupId } = useWorld();
@@ -74,7 +101,10 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
   const [botRole, setBotRole] = useState<RoleId>("ceo");
   const [botEndpoint, setBotEndpoint] = useState("");
   const [walkingIn, setWalkingIn] = useState(false);
+  const [deriving, setDeriving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const lastDerivedUrl = useRef<string | null>(profile.brand?.derivedFrom?.url ?? null);
+  const deriveSeq = useRef(0);
 
   useEffect(() => {
     setStep(claimSetupStep);
@@ -99,6 +129,63 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
       : `${use.name} · ${bldg.w}×${bldg.h} tiles${fillsLot ? " · full lot" : ""}`;
 
   const setProfileField = (patch: Partial<CompanyProfile>) => setProfile((prev) => mergeProfile(prev, patch));
+  const setPalette = (palette: string[]) => setProfile((prev) => ({ ...prev, palette }));
+  const setTier = (tier: CompanyTier) => setProfile((prev) => ({ ...prev, tier }));
+  const toggleKeyword = (kw: string) =>
+    setProfile((prev) => {
+      const current = prev.brand?.styleKeywords ?? [];
+      const next = current.includes(kw) ? current.filter((k) => k !== kw) : [...current, kw];
+      return { ...prev, brand: { ...prev.brand, styleKeywords: next } };
+    });
+
+  const palette = profile.palette ?? [];
+  const keywords = profile.brand?.styleKeywords ?? [];
+  const brandPulled = Boolean(profile.brand?.derivedFrom);
+  const derivedHost = hostOf(profile.brand?.derivedFrom?.url) ?? "your site";
+  const defaultName = defaultClaimProfile(use?.name).name;
+
+  const pullFromWebsite = async (force = false) => {
+    const url = normalizeWebsiteUrl(profile.website ?? "");
+    if (!url) {
+      if (force) toast.error("Enter a website URL first.");
+      return;
+    }
+    if (!force && lastDerivedUrl.current === url) return;
+    lastDerivedUrl.current = url;
+    const seq = ++deriveSeq.current;
+    setDeriving(true);
+    try {
+      const res = await fetch(`/v1/brand/derive?url=${encodeURIComponent(url)}`);
+      const { error, ...derived } = (await res.json()) as DerivedBrandProfile;
+      if (seq !== deriveSeq.current) return;
+      if (error) {
+        toast.error(`Couldn't read that site (${error.replace(/_/g, " ")}). You can still fill it in by hand.`);
+      }
+      setProfile((prev) => {
+        const nameEmpty = !prev.name.trim() || prev.name === defaultName;
+        const derivedPalette = cleanPalette([...derived.primaryColours, ...derived.secondaryColours]);
+        return {
+          ...prev,
+          name: nameEmpty && derived.companyName && !error ? derived.companyName : prev.name,
+          logo: !prev.logo.trim() && derived.logo.imageUrl ? derived.logo.imageUrl : prev.logo,
+          tier: error ? prev.tier : derived.tier,
+          palette: derivedPalette.length ? derivedPalette : prev.palette,
+          brand: derived,
+        };
+      });
+      if (!error) toast.success(`Pulled brand from ${new URL(url).hostname}.`);
+    } catch {
+      if (seq === deriveSeq.current) toast.error("Couldn't reach the brand service.");
+    } finally {
+      if (seq === deriveSeq.current) setDeriving(false);
+    }
+  };
+
+  const exportName = brandProfileFileName(brandProfileFromCompanyProfile(claimSetupId, profile));
+  const exportBrand = () => {
+    downloadBrandProfile(brandProfileFromCompanyProfile(claimSetupId, profile));
+    toast.success(`${exportName} downloaded.`);
+  };
 
   const onLogoFile = (file: File | undefined) => {
     if (!file || !file.type.startsWith("image/")) return;
@@ -218,14 +305,109 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
               </label>
               <label>
                 Website URL
-                <input
-                  value={profile.website ?? ""}
-                  onChange={(e) => setProfileField({ website: e.target.value })}
-                  placeholder="https://yourcompany.com"
-                  inputMode="url"
-                />
+                <div className="ns-brand-url-row">
+                  <input
+                    value={profile.website ?? ""}
+                    onChange={(e) => setProfileField({ website: e.target.value })}
+                    onBlur={() => void pullFromWebsite(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void pullFromWebsite(true);
+                      }
+                    }}
+                    placeholder="https://yourcompany.com"
+                    inputMode="url"
+                  />
+                  <button
+                    type="button"
+                    className="ns-ghost ns-brand-pull"
+                    disabled={deriving || !normalizeWebsiteUrl(profile.website ?? "")}
+                    onClick={() => void pullFromWebsite(true)}
+                    title="Read colours, logo, and style from your website"
+                  >
+                    {deriving ? <Loader2 className="size-3.5 ns-spin" /> : <Sparkles className="size-3.5" />}
+                    {deriving ? "Reading…" : "Pull from website"}
+                  </button>
+                </div>
               </label>
             </div>
+            {brandPulled || palette.length > 0 ? (
+              <div className="ns-brand-panel">
+                <div className="ns-brand-row">
+                  <span className="ns-brand-label">Palette</span>
+                  {palette.length ? (
+                    <ul className="ns-swatches" aria-label="Brand palette — click a colour to make it primary">
+                      {palette.map((hex, i) => (
+                        <li key={hex} data-primary={i === 0 ? "1" : "0"}>
+                          <button
+                            type="button"
+                            className="ns-swatch"
+                            style={{ background: hex }}
+                            title={`${hex}${i === 0 ? " · primary" : " · click to make primary"}`}
+                            aria-label={`${hex}${i === 0 ? ", primary colour" : ", make primary"}`}
+                            onClick={() => {
+                              if (i === 0) return;
+                              setPalette([hex, ...palette.filter((c) => c !== hex)]);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="ns-swatch-x"
+                            aria-label={`Remove ${hex}`}
+                            onClick={() => setPalette(palette.filter((c) => c !== hex))}
+                          >
+                            <X className="size-2.5" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="ns-plot-hint">No brand colours found — the map keeps the default accent.</span>
+                  )}
+                </div>
+                <div className="ns-brand-row">
+                  <span className="ns-brand-label">Size</span>
+                  <div className="ns-segmented" role="radiogroup" aria-label="Company size">
+                    {COMPANY_TIERS.map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        role="radio"
+                        aria-checked={(profile.tier ?? "smb") === t}
+                        data-on={(profile.tier ?? "smb") === t ? "1" : "0"}
+                        onClick={() => setTier(t)}
+                      >
+                        {TIER_LABELS[t]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="ns-brand-row">
+                  <span className="ns-brand-label">Style</span>
+                  <ul className="ns-brand-chips" aria-label="Style keywords">
+                    {STYLE_KEYWORDS.map((kw) => (
+                      <li key={kw}>
+                        <button
+                          type="button"
+                          className="ns-chip"
+                          data-on={keywords.includes(kw) ? "1" : "0"}
+                          onClick={() => toggleKeyword(kw)}
+                        >
+                          {kw}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {profile.brand?.derivedFrom ? (
+                  <p className="ns-plot-hint">
+                    Read from {derivedHost} · confidence {Math.round(profile.brand.derivedFrom.confidence * 100)}%. Adjust
+                    anything that looks off.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="ns-bid-actions">
               <button type="button" className="ns-ghost" onClick={() => dismissClaimSetup()}>
                 Later
@@ -365,6 +547,15 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
                   inputMode="url"
                 />
               </label>
+            </div>
+            <div className="ns-brand-export">
+              <button type="button" className="ns-ghost" onClick={exportBrand}>
+                <Download className="size-3.5" />
+                Export brand JSON
+              </button>
+              <p className="ns-plot-hint">
+                Feeds the Blender build: <code>scripts/blender/build_company_from_brand.py -- --brand {exportName}</code>
+              </p>
             </div>
             <div className="ns-bid-actions">
               <button type="button" className="ns-ghost" onClick={() => setStep("placement")}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { DoorOpen, X } from "lucide-react";
+import { DoorOpen, Download, X } from "lucide-react";
 import { letterMark, type CompanyProfile } from "@/lib/company-profile";
 
 export function CompanyProfileCard({
@@ -9,6 +9,8 @@ export function CompanyProfileCard({
   onEnter,
   onVisit,
   onClose,
+  onExportBrand,
+  exportBrandName,
   visitLabel = "Visit",
 }: {
   profile: CompanyProfile;
@@ -16,6 +18,9 @@ export function CompanyProfileCard({
   onEnter: () => void;
   onVisit?: () => void;
   onClose: () => void;
+  /** Owners can download the Blender brand JSON for their house. */
+  onExportBrand?: () => void;
+  exportBrandName?: string;
   visitLabel?: string;
 }) {
   const mark = letterMark(profile.name || "Co");
@@ -58,6 +63,18 @@ export function CompanyProfileCard({
               <span>For visitors</span>
               {profile.visitorMessage}
             </blockquote>
+          ) : null}
+
+          {owned && onExportBrand ? (
+            <div className="ns-brand-export">
+              <button type="button" className="ns-ghost" onClick={onExportBrand}>
+                <Download className="size-3.5" />
+                Export brand JSON
+              </button>
+              <p className="ns-plot-hint">
+                Feeds the Blender build: <code>build_company_from_brand.py -- --brand {exportBrandName ?? "brand.json"}</code>
+              </p>
+            </div>
           ) : null}
 
           <div className="ns-plot-actions ns-company-actions">
