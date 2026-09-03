@@ -55,6 +55,25 @@ function GltfModel({ url, remapGlass = true }: { url: string; remapGlass?: boole
   return <primitive object={clone} />;
 }
 
+/** Load any published building GLB by URL (claimed-company HQs). */
+export function BuildingGltfByUrl({
+  url,
+  scale,
+  fallback = null,
+}: {
+  url: string;
+  scale?: [number, number, number];
+  fallback?: ReactNode;
+}) {
+  return (
+    <Suspense fallback={fallback}>
+      <group scale={scale}>
+        <GltfModel url={url} remapGlass={false} />
+      </group>
+    </Suspense>
+  );
+}
+
 /** Load a published pack GLB by assetId. Traffic still owns position/route. */
 export function PackGltf({
   assetId,

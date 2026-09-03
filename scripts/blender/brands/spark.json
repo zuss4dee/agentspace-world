@@ -1,0 +1,13 @@
+{
+  "companyId": "spark",
+  "companyName": "Spark AI",
+  "tier": "startup",
+  "logo": { "wordmark": "SPARK" },
+  "primaryColours": ["#e64980", "#f06595"],
+  "secondaryColours": ["#15aabf"],
+  "industry": "ai",
+  "styleKeywords": ["tech", "playful"],
+  "personality": ["bold"],
+  "avatars": ["https://example.com/a.png", "https://example.com/b.png"],
+  "animations": { "hasMotion": true, "keyframes": 6 }
+}

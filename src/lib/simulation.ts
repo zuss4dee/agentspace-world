@@ -269,9 +269,23 @@ export function seedEvents(): DirectorEvent[] {
 }
 
 export function createSnapshot(): WorldSnapshot {
-  const anchor = LOT_BUILDINGS[0]!;
+  const anchor = LOT_BUILDINGS[0];
   const agents = [...DEMO_AGENTS, ...PLAZA_AGENTS].map((a, i) => {
-    if (LOT_BUILDINGS.some((b) => b.id === a.buildingId)) return a;
+    if (anchor && LOT_BUILDINGS.some((b) => b.id === a.buildingId)) return a;
+    if (!anchor) {
+      const ox = 24 + (i % 6) * 0.55;
+      const oy = 24 + Math.floor(i / 6) * 0.45;
+      return {
+        ...a,
+        buildingId: "",
+        stationId: "",
+        status: "idle" as const,
+        x: ox,
+        y: oy,
+        targetX: ox,
+        targetY: oy,
+      };
+    }
     const ox = anchor.origin.x + 0.8 + (i % 5) * 0.55;
     const oy = anchor.origin.y + 0.8 + Math.floor(i / 5) * 0.45;
     return {
@@ -314,7 +328,17 @@ export function assignNewTask(agent: Agent): Agent {
   const play = pick(tasksFor(agent.role));
   const home = LOT_BUILDINGS.find((b) => b.id === agent.buildingId);
   const others = LOT_BUILDINGS.filter((b) => b.stations.length);
-  const destBuilding = Math.random() < 0.55 ? pick(others) : home;
+  if (!home && others.length === 0) {
+    return {
+      ...agent,
+      task: play.task,
+      thought: play.thought,
+      status: "idle",
+      speech: undefined,
+      waypoints: [],
+    };
+  }
+  const destBuilding = Math.random() < 0.55 && others.length ? pick(others) : home ?? pick(others);
   const station = destBuilding ? pick(destBuilding.stations) : undefined;
   const tx = station?.x ?? agent.x;
   const ty = station?.y ?? agent.y;

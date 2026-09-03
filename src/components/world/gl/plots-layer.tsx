@@ -26,12 +26,15 @@ import {
   type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
-import { isOccupiedPlot } from "@/lib/lot-footprint";
+import { isOccupiedPlot, claimedBuildingPlacementFromPlot } from "@/lib/lot-footprint";
 import { BuildingFromSpec } from "@/components/world/gl/architecture";
+import { BuildingGltfByUrl } from "@/components/world/gl/vehicle-gltf";
+import { gltfUrlForAssetId, placementMetersForClaim } from "@/lib/building-gltf";
+import { TIER_FOOTPRINT_METERS } from "@/lib/building-meters";
 import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import { LOT_DEPTH, LOT_FILL } from "@/lib/architecture";
-import { BUILDINGS_ENABLED, CLAIMED_LOT_PREVIEW_ENABLED } from "@/lib/architecture-stage";
+import { BUILDINGS_ENABLED, CLAIMED_BUILDING_GLB_ENABLED, CLAIMED_LOT_PREVIEW_ENABLED } from "@/lib/architecture-stage";
 import type { BuildingSpec } from "@/lib/building-spec";
 import { letterMark } from "@/lib/company-profile";
 import { withBrandAccent } from "@/lib/brand-profile";
@@ -450,6 +453,8 @@ function ClaimedCompanyPin({
   const cx = wx(fp.x + fp.w / 2);
   const cz = wz(fp.y + fp.h / 2);
   const labelY = h(fp.height) + h(0.85);
+  const status = profile?.buildingStatus;
+  const hasBuilding = profile?.buildingAssetId && status === "ready";
 
   return (
     <Html position={[cx, labelY, cz]} center distanceFactor={14} occlude={false} pointerEvents="none">
@@ -460,8 +465,42 @@ function ClaimedCompanyPin({
           <span className="ns-claimed-pin-mark">{mark}</span>
         )}
         <span className="ns-claimed-pin-name">{name}</span>
+        {hasBuilding ? (
+          <span className="ns-claimed-pin-status">HQ on map</span>
+        ) : status === "building" ? (
+          <span className="ns-claimed-pin-status">Building HQ…</span>
+        ) : status === "failed" ? (
+          <span className="ns-claimed-pin-status">Build failed — retry from plot</span>
+        ) : profile?.name?.trim() && profile.brand ? (
+          <span className="ns-claimed-pin-status">Finish Build HQ in wizard</span>
+        ) : profile?.name?.trim() ? (
+          <span className="ns-claimed-pin-status">Complete your profile</span>
+        ) : null}
       </div>
     </Html>
+  );
+}
+
+function ClaimedBuildingGltf({
+  assetId,
+  fp,
+  profileMeters,
+  tier,
+}: {
+  assetId: string;
+  fp: { x: number; y: number; w: number; h: number };
+  profileMeters?: { width: number; depth: number; height: number };
+  tier?: "enterprise" | "smb" | "startup";
+}) {
+  const url = gltfUrlForAssetId(assetId);
+  const tierFallback = tier ? TIER_FOOTPRINT_METERS[tier] : undefined;
+  const meters = placementMetersForClaim(assetId, profileMeters ?? tierFallback);
+  const place = claimedBuildingPlacementFromPlot(fp, meters);
+  if (!url || !place) return null;
+  return (
+    <group position={[place.cx, 0, place.cz]}>
+      <BuildingGltfByUrl url={url} scale={[place.scale, place.scale, place.scale]} />
+    </group>
   );
 }
 
@@ -514,9 +553,17 @@ export function ClaimedMarks() {
                 <group position={[wx(fp.x + fp.w / 2), 0, wz(fp.y + fp.h / 2)]}>
                   <BuildingFromSpec spec={spec} />
                 </group>
-                <ClaimedCompanyPin spec={spec} fp={fp} />
               </>
             ) : null}
+            {spec?.profile?.buildingAssetId && CLAIMED_BUILDING_GLB_ENABLED ? (
+              <ClaimedBuildingGltf
+                assetId={spec.profile.buildingAssetId}
+                fp={{ x: r.x, y: r.y, w: r.w, h: r.h }}
+                profileMeters={spec.profile.buildingMeters}
+                tier={spec.profile.tier}
+              />
+            ) : null}
+            {fp && spec ? <ClaimedCompanyPin spec={spec} fp={fp} /> : null}
           </group>
         );
       })}

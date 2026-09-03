@@ -15,6 +15,21 @@ export const COMPANIES: Record<string, Company> = {
     name: "Echt",
     does: "A startup on Agentspace. Ships product from Echt House — desks downstairs, founder room on the glass.",
   },
+  nova: {
+    id: "nova",
+    name: "Nova Systems",
+    does: "Enterprise Silicon City demo HQ.",
+  },
+  corner: {
+    id: "corner",
+    name: "Corner Cafe",
+    does: "SMB Silicon City demo on the creative block.",
+  },
+  loft: {
+    id: "loft",
+    name: "Loft Labs",
+    does: "Startup Silicon City demo loft.",
+  },
   seed: {
     id: "seed",
     name: "Seed",
@@ -64,7 +79,9 @@ export const BUILDING_OWNER: Record<string, string> = {
   hq: "agentspace",
   finance: "agentspace",
   hall: "civic",
-  loft: "echt",
+  loft: "loft",
+  nova: "nova",
+  corner: "corner",
   "seed-cafe": "seed",
   incubator: "echt",
   studio: "signal",

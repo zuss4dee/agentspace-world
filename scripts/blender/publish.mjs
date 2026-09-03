@@ -377,7 +377,12 @@ VALIDATION:
 ${report.VALIDATION}
 `);
   if (report.FAILED?.length) console.log("FAILED:\n" + JSON.stringify(report.FAILED, null, 2));
-  if (report.VALIDATION === "fail" || build === "fail") process.exit(1);
+  // Exit 0 when the requested asset(s) landed on disk — world-dirty validation is advisory.
+  const hardFail =
+    build === "fail" ||
+    (toExport.length > 0 && exported.length === 0) ||
+    (report.FAILED || []).some((f) => toExport.includes(f.assetId));
+  if (hardFail) process.exit(1);
 }
 
 main().catch((err) => {

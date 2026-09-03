@@ -92,4 +92,6 @@ export function BuildingsLayer() {
   );
 }
 
-useGLTF.preload(PACK_GLTF[CANONICAL_BUILDING_ASSET_ID]);
+if (BUILDINGS_ENABLED) {
+  useGLTF.preload(PACK_GLTF[CANONICAL_BUILDING_ASSET_ID]);
+}

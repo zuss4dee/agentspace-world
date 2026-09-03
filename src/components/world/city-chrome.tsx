@@ -11,18 +11,16 @@ import { BuildingStudio } from "@/components/world/building-studio";
 import { useWorld } from "@/components/world/world-store";
 import {
   BEACON_NEXT_BID,
-  ZONE_TABLE,
   ZONE_THEME,
   beaconPlot,
   relativePurchase,
   shopActivity,
 } from "@/lib/city-shop";
-import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, formatSqFt, getPlot, isLotMultiModifier, LAND_ORIGIN, LAND_USES, MAX_CLAIMS, listSalePlots, maxExpandFor, openSaleCount, plotArea, plotRect, resizeSlice, SALE_STOCK, usesForPlot, workingLand, type PlotZone } from "@/lib/plots";
+import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, getPlot, LAND_USES, MAX_CLAIMS, maxExpandFor, plotArea, plotRect, resizeSlice, usesForPlot, workingLand } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { WORLD_BUILDINGS } from "@/lib/campus";
 import { profileOf, visitSiteUrl } from "@/lib/company-profile";
 import { brandProfileFileName, brandProfileFromCompanyProfile, downloadBrandProfile } from "@/lib/brand-profile";
-import { crewForPlot } from "@/lib/building-crew";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 import { ARCH_VIEW_LABEL, type ArchView } from "@/lib/arch-viz";
 
@@ -64,18 +62,14 @@ export function CityChrome() {
     setArchView,
     connectBot,
     openClaimSetup,
-    buildingCrew,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const [keysOpen, setKeysOpen] = useState(false);
   const [walkingIn, setWalkingIn] = useState(false);
-  const [band, setBand] = useState<"all" | PlotZone>("all");
   const occupied = useMemo(
     () => coverageOfClaims(claimedPlotIds, claimedExtras),
     [claimedPlotIds, claimedExtras],
   );
-  const listings = useMemo(() => listSalePlots(claimedPlotIds, band, 36, occupied), [claimedPlotIds, band, occupied]);
-  const openLots = useMemo(() => openSaleCount(claimedPlotIds), [claimedPlotIds]);
   const activity = useMemo(() => shopActivity(), []);
   const picked = getPlot(selectedPlotId);
   const pickedClaimed = Boolean(picked && claimedCoversPlot(picked.id, claimedPlotIds));
@@ -90,7 +84,9 @@ export function CityChrome() {
   const pickedCompanyReady = Boolean(
     pickedClaimed && picked && buildingSpecs[picked.id]?.profile?.name?.trim(),
   );
-  const pickedCrewCount = picked ? crewForPlot(buildingCrew, picked.id).length : 0;
+  const pickedProfile = pickedClaimed && picked ? buildingSpecs[picked.id]?.profile : undefined;
+  const pickedBuildingReady = Boolean(pickedProfile?.buildingAssetId);
+  const pickedBuildingFailed = pickedProfile?.buildingStatus === "failed";
   const ownedBrand =
     pickedClaimed && picked && pickedCompanyReady && occupiedProfile && occupiedId === picked.id
       ? brandProfileFromCompanyProfile(picked.id, occupiedProfile)
@@ -230,78 +226,6 @@ export function CityChrome() {
         </div>
       </aside>
 
-      <aside className="ns-avail" aria-label="Plots Available">
-        <div className="ns-card ns-pad">
-          <div className="ns-avail-head">
-            <p>Land for sale</p>
-            <span>
-              {claimedPlotIds.length}/{MAX_CLAIMS} held
-            </span>
-          </div>
-          <p className="ns-avail-hint">
-            {openLots.toLocaleString()} lots open · {SALE_STOCK.toLocaleString()} in the south field at opening. White
-            pads are empty. You can claim up to {MAX_CLAIMS} this session. Shift-click (or Ctrl-click) to select
-            multiple lots.
-          </p>
-          <button
-            type="button"
-            className="ns-avail-jump"
-            onClick={() => {
-              selectPlot("l-0");
-              focusCoord(LAND_ORIGIN.x + 8, LAND_ORIGIN.y + 6, 0.78);
-            }}
-          >
-            Fly to the south field
-          </button>
-          <div className="ns-avail-filters">
-            <button type="button" data-on={band === "all" ? "1" : "0"} onClick={() => setBand("all")}>
-              All
-            </button>
-            {ZONE_TABLE.filter((row) => row.key !== "ultimate").map((row) => (
-              <button
-                key={row.key}
-                type="button"
-                data-on={band === row.key ? "1" : "0"}
-                onClick={() => setBand(row.key)}
-              >
-                {row.zone}
-              </button>
-            ))}
-          </div>
-          <div className="ns-avail-rows">
-            {listings.map((p) => {
-              const area = plotArea(p);
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  className="ns-avail-row"
-                  data-on={selectedPlotIds.includes(p.id) || selectedPlotId === p.id ? "1" : "0"}
-                  onClick={(e) => {
-                    selectPlot(p.id, { additive: isLotMultiModifier(e) });
-                    focusCoord(p.x + p.w / 2, p.y + p.h / 2, 0.95);
-                  }}
-                >
-                  <span className="ns-avail-zone">
-                    <i className="ns-dot ns-dot-downtown" />
-                    <span className="ns-avail-lot">
-                      <strong>{p.groupLabel}</strong>
-                      <em>
-                        {formatSqFt(area.sqft)} · {ZONE_THEME[p.zone].label}
-                      </em>
-                    </span>
-                  </span>
-                  <span className="ns-avail-nums">
-                    <em>{formatUsd(p.price)}</em>
-                  </span>
-                </button>
-              );
-            })}
-            {listings.length === 0 ? <p className="ns-avail-empty">No open lots in this band.</p> : null}
-          </div>
-        </div>
-      </aside>
-
       <BuildingStudio />
 
       <div className="ns-arch-views" role="group" aria-label="Echt Studio camera">
@@ -420,6 +344,11 @@ export function CityChrome() {
           visitLabel={visitSiteUrl(occupiedProfile) ? "Visit site" : "View on map"}
           onExportBrand={exportOwnedBrand}
           exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
+          onBuildHq={
+            pickedClaimed && picked && occupiedId === picked.id && !pickedBuildingReady
+              ? () => openClaimSetup(picked.id, "build")
+              : undefined
+          }
         />
       ) : picked && land && !interiorId ? (
         <PlotSheet
@@ -503,7 +432,7 @@ export function CityChrome() {
             const price = selectedPrice || expandPrice(land, extra);
             if (result.ok)
               toast.success(
-                `${result.count > 1 ? `${result.count} plots` : "Plot"} secured · ${formatUsd(price)}. Set up your company, then walk Grok bots in.`,
+                `${result.count > 1 ? `${result.count} plots` : "Plot"} secured · ${formatUsd(price)}. Set up your company, then build your HQ from your website brand.`,
               );
             else if (result.reason === "cap")
               toast.error(`Lot cap reached — ${MAX_CLAIMS} per session.`);
@@ -515,12 +444,13 @@ export function CityChrome() {
           onBid={() => setBeaconOpen(true)}
           onSetupCompany={pickedClaimed && picked ? () => openClaimSetup(picked.id) : undefined}
           companyReady={pickedCompanyReady}
+          buildingReady={pickedBuildingReady}
+          buildingFailed={pickedBuildingFailed}
           onExportBrand={exportOwnedBrand}
           exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
-          crewCount={pickedCrewCount}
-          onAddCrew={
+          onBuildHq={
             pickedClaimed && picked && pickedCompanyReady
-              ? () => openClaimSetup(picked.id, "crew")
+              ? () => openClaimSetup(picked.id, "build")
               : undefined
           }
         />

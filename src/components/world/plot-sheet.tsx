@@ -58,11 +58,12 @@ export function PlotSheet({
   onResizeLand,
   onAddAdjoining,
   onSetupCompany,
-  onAddCrew,
+  onBuildHq,
   onExportBrand,
   exportBrandName,
-  crewCount = 0,
   companyReady = false,
+  buildingReady = false,
+  buildingFailed = false,
 }: {
   plot: Plot;
   land: Plot;
@@ -91,12 +92,14 @@ export function PlotSheet({
   onResizeLand: (delta: number) => void;
   onAddAdjoining: () => void;
   onSetupCompany?: () => void;
-  onAddCrew?: () => void;
+  /** Re-open claim wizard on the Build step for a company already profiled. */
+  onBuildHq?: () => void;
   /** Owners of a set-up company can download the Blender brand JSON. */
   onExportBrand?: () => void;
   exportBrandName?: string;
-  crewCount?: number;
   companyReady?: boolean;
+  buildingReady?: boolean;
+  buildingFailed?: boolean;
 }) {
   const theme = ZONE_THEME[plot.zone];
   const building = plot.buildingId ? LOT_BUILDINGS.find((b) => b.id === plot.buildingId) : undefined;
@@ -178,11 +181,13 @@ export function PlotSheet({
           <p className="ns-plot-copy">{sizeLine}</p>
           {claimed ? (
             <p className="ns-plot-hint">
-              {companyReady
-                ? crewCount > 0
-                  ? `${crewCount} Grok bot${crewCount === 1 ? "" : "s"} inside your building.`
-                  : "Building is up — walk Grok bots in to staff it."
-                : "Your pad is secured. Finish company setup and place your building."}
+              {companyReady && buildingReady
+                ? "Your HQ is on the map."
+                : companyReady && buildingFailed
+                  ? "HQ build failed — open Build HQ to retry (Blender + MCP must be running)."
+                  : companyReady
+                    ? "Brand locked — click Build HQ to generate and place your building on the map."
+                    : "Your pad is secured. Finish company setup and place your building."}
             </p>
           ) : listed ? (
             <p className="ns-plot-hint">Claim this pad, then build. Shift or Ctrl-click to add lots.</p>
@@ -321,9 +326,9 @@ export function PlotSheet({
               <button type="button" className="ns-game-btn" onClick={() => onEnter(building.id)}>
                 Enter
               </button>
-            ) : claimed && companyReady && onAddCrew ? (
-              <button type="button" className="ns-game-btn" onClick={onAddCrew}>
-                {crewCount > 0 ? "Add Grok bot" : "Walk in first bot"}
+            ) : claimed && companyReady && !buildingReady && onBuildHq ? (
+              <button type="button" className="ns-game-btn" onClick={onBuildHq}>
+                {buildingFailed ? "Retry Build HQ" : "Build HQ"}
               </button>
             ) : claimed && onSetupCompany ? (
               <button type="button" className="ns-game-btn" onClick={onSetupCompany}>

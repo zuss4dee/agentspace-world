@@ -3,6 +3,12 @@
 bpy-free so it can be unit-tested outside Blender. Consumed by
 `agentspace.siliconcity.builder` (Silicon City daylight toy-diorama archetypes).
 
+Uniqueness contract (hard):
+  Same companyId (+ asset_id) → identical massing / materials / logo placement
+  (ParamRNG seeded via deterministic_seed). Different companyId → different
+  within-family silhouette even at the same tier — never recreate another
+  company's building.
+
 JSON contract (camelCase, everything optional except companyId/companyName):
 
     {
@@ -22,6 +28,7 @@ JSON contract (camelCase, everything optional except companyId/companyName):
 from __future__ import annotations
 
 import colorsys
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -29,6 +36,7 @@ from pathlib import Path
 from typing import Any
 
 from .company_building_spec import BrandLogoSpec, BrandSpec, GeneratedBuildingSpec
+from .param_rng import ParamRNG, deterministic_seed
 from .toy_font import sanitize_wordmark
 
 RGB = tuple[float, float, float]
@@ -226,7 +234,7 @@ def to_brand_spec(profile: BrandProfile) -> BrandSpec:
         secondary_colours=list(profile.secondary_colours),
         visual_style=profile.visual_style,
         architectural_direction=f"siliconcity {archetype_for_tier(profile.tier)}",
-        signage_direction="wordmark block letters + official logo plaque (roof + facade)",
+        signage_direction="3D logo mark (totem/blade/roof) + wordmark + roof/facade plaque",
         logo=BrandLogoSpec(wordmark=profile.wordmark(), asset_path=profile.logo.asset_path),
     )
 
@@ -350,18 +358,18 @@ def pick_brand_colours(profile: BrandProfile) -> tuple[RGB, RGB]:
     else:
         brand = max(candidates, key=lambda c: saturation(c) * 0.75 + value(c) * 0.25)
     assert brand is not None
-    # Saturated toy body: lift weak saturation, keep value readable.
+    # Silicon City toy bodies: punch saturation so Slack/Stripe/YC-style brands read at city scale.
     h, s, v = _hsv(brand)
-    brand = colorsys.hsv_to_rgb(h, max(s, 0.55), max(0.3, min(v, 0.95)))
+    brand = colorsys.hsv_to_rgb(h, max(s, 0.72), max(0.38, min(v, 0.92)))
 
     others = [c for c in prim + sec if usable(c) and hue_distance(c, brand) > 22.0]
     if others:
         accent = max(others, key=lambda c: saturation(c))
         h, s, v = _hsv(accent)
-        accent = colorsys.hsv_to_rgb(h, max(s, 0.5), max(0.35, min(v, 0.96)))
+        accent = colorsys.hsv_to_rgb(h, max(s, 0.68), max(0.40, min(v, 0.94)))
     else:
         accent = rotate_hue(brand, 40.0)
-        accent = with_sv(accent, s=max(saturation(accent), 0.55), v=min(0.96, value(accent) * 1.1 + 0.05))
+        accent = with_sv(accent, s=max(saturation(accent), 0.70), v=min(0.94, value(accent) * 1.12 + 0.06))
     return brand, accent
 
 
@@ -437,12 +445,174 @@ def derive_mat_defs(profile: BrandProfile) -> dict[str, dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Style params
+# Style params + within-family uniqueness
 # ---------------------------------------------------------------------------
 
+# Roof modules available within each tier family (archetype still picks family).
+ROOF_MODULES_BY_TIER = {
+    "enterprise": ("flat", "parapet", "helipad", "pitch"),
+    "smb": ("flat", "parapet", "pitch", "barrel"),
+    "startup": ("barrel", "flat", "parapet", "pitch"),
+}
 
-def style_params(profile: BrandProfile) -> dict[str, Any]:
-    """Map keywords / personality / industry / animations → archetype params."""
+ENTRANCE_SIDES = ("front", "left", "right")
+LOGO_MODES = ("plaza_totem", "facade_blade", "roof_deck", "dual_plaque_totem")
+
+
+def uniqueness_key(
+    company_id: str,
+    tier: str,
+    style: dict[str, Any],
+    mat_defs: dict[str, dict[str, Any]] | None = None,
+) -> str:
+    """Stable fingerprint of companyId + tier + massing/style slots + colour slots.
+
+    Printed in ASW_BUILD_JSON / build reports so operators can confirm two
+    companies never share a silhouette fingerprint.
+    """
+    colour_slots = {}
+    if mat_defs:
+        for slot in ("brand", "coral", "cream", "sign"):
+            d = mat_defs.get(slot) or {}
+            colour_slots[slot] = d.get("color")
+    payload = {
+        "companyId": company_id,
+        "tier": tier,
+        "storey_count": style.get("storey_count"),
+        "wing_offset_x": style.get("wing_offset_x"),
+        "wing_offset_y": style.get("wing_offset_y"),
+        "roof_module": style.get("roof_module"),
+        "entrance_side": style.get("entrance_side"),
+        "window_cols": style.get("window_cols"),
+        "window_density": style.get("window_density"),
+        "prop_layout": style.get("prop_layout"),
+        "sculpture_count": style.get("sculpture_count"),
+        "logo_mode": style.get("logo_mode"),
+        "asymmetry": style.get("asymmetry"),
+        "skew": style.get("skew"),
+        "facade_style": style.get("facade_style"),
+        "tower_style": style.get("tower_style"),
+        "corner_style": style.get("corner_style"),
+        "motion_accent": style.get("motion_accent"),
+        "colours": colour_slots,
+    }
+    raw = json.dumps(payload, sort_keys=True, default=str).encode()
+    return hashlib.sha256(raw).hexdigest()[:16]
+
+
+def _logo_mode_for_tier(tier: str, rng: ParamRNG, bag: set[str]) -> str:
+    """Pick a 3D logo placement that complements the building.
+
+    retail/smb → plaza totem; enterprise → facade blade (+ roof plaque);
+    startup → roof deck sculpture. Always prefer dual when logo/wordmark exists
+    (handled by archetypes placing roof plaque + plaza/entrance mark).
+    """
+    retail = bool(bag & {"retail", "shop", "store", "food", "cafe", "bakery", "restaurant"})
+    if tier == "smb" or retail:
+        return rng.weighted_choice(
+            "logo_mode",
+            ["plaza_totem", "dual_plaque_totem", "facade_blade"],
+            [2.4, 1.6, 0.6],
+        )
+    if tier == "enterprise":
+        return rng.weighted_choice(
+            "logo_mode",
+            ["facade_blade", "dual_plaque_totem", "roof_deck"],
+            [2.2, 1.8, 0.5],
+        )
+    # startup
+    return rng.weighted_choice(
+        "logo_mode",
+        ["roof_deck", "dual_plaque_totem", "plaza_totem"],
+        [2.2, 1.5, 0.8],
+    )
+
+
+def unique_massing_params(profile: BrandProfile, rng: ParamRNG, *, tier: str) -> dict[str, Any]:
+    """Within-family silhouette knobs seeded from companyId — never collide across companies."""
+    bag = profile.keyword_bag()
+    playful = bool(bag & PLAYFUL_KEYWORDS)
+    creative = bool(bag & CREATIVE_KEYWORDS)
+    minimal = bool(bag & MINIMAL_KEYWORDS)
+    finance = bool(bag & FINANCE_KEYWORDS)
+
+    if tier == "enterprise":
+        storey_count = rng.randint("storeys", 4, 7)
+        wing_ox = round(rng.uniform("wing_ox", -2.4, 2.4), 3)
+        wing_oy = round(rng.uniform("wing_oy", -1.8, 1.8), 3)
+        window_cols = rng.randint("win_cols", 3, 5)
+        window_density = round(rng.uniform("win_dens", 0.55, 0.95), 3)
+    elif tier == "startup":
+        storey_count = rng.randint("storeys", 2, 4)
+        wing_ox = round(rng.uniform("wing_ox", -3.2, 3.2), 3)
+        wing_oy = round(rng.uniform("wing_oy", -2.4, 2.4), 3)
+        window_cols = rng.randint("win_cols", 3, 6)
+        window_density = round(rng.uniform("win_dens", 0.5, 0.92), 3)
+    else:  # smb
+        storey_count = rng.randint("storeys", 2, 3)
+        wing_ox = round(rng.uniform("wing_ox", -1.6, 1.6), 3)
+        wing_oy = round(rng.uniform("wing_oy", -1.2, 1.2), 3)
+        window_cols = rng.randint("win_cols", 3, 5)
+        window_density = round(rng.uniform("win_dens", 0.48, 0.88), 3)
+
+    roofs = list(ROOF_MODULES_BY_TIER.get(tier, ROOF_MODULES_BY_TIER["smb"]))
+    # Bias roof from style keywords / existing roof_style preference
+    if "industrial" in bag and "sawtooth" not in roofs:
+        roofs = roofs + ["pitch"]
+    roof_module = rng.choice("roof_module", roofs)
+
+    entrance_weights = [2.6, 0.7, 0.7]  # front biased
+    if creative or playful:
+        entrance_weights = [1.6, 1.2, 1.0]
+    if finance or minimal:
+        entrance_weights = [3.2, 0.4, 0.4]
+    entrance_side = rng.weighted_choice("entrance_side", list(ENTRANCE_SIDES), entrance_weights)
+
+    prop_layout = rng.weighted_choice(
+        "prop_layout",
+        ["sparse", "balanced", "crowded", "landmark"],
+        [0.7, 1.6, 1.2, 0.9],
+    )
+
+    # Avatars → plaza/roof sculptures; animations → motion accent (already in style_params).
+    sculpture_count = min(4, max(len(profile.avatars), rng.randint("sculpt_base", 0, 2)))
+    if creative or playful:
+        sculpture_count = min(4, sculpture_count + 1)
+
+    asymmetry = round(rng.uniform("asymmetry", 0.05, 0.95), 3)
+    if creative or playful:
+        asymmetry = max(asymmetry, 0.45)
+    if finance or minimal:
+        asymmetry = min(asymmetry, 0.35)
+
+    logo_mode = _logo_mode_for_tier(tier, rng, bag)
+    # Prefer dual complement whenever a logo image or wordmark exists.
+    if profile.logo.asset_path or profile.logo.image_url or profile.wordmark():
+        if logo_mode in ("plaza_totem", "facade_blade", "roof_deck") and rng.uniform("logo_dual", 0.0, 1.0) > 0.35:
+            logo_mode = "dual_plaque_totem"
+
+    return {
+        "storey_count": storey_count,
+        "wing_offset_x": wing_ox,
+        "wing_offset_y": wing_oy,
+        "roof_module": roof_module,
+        "entrance_side": entrance_side,
+        "window_cols": window_cols,
+        "window_density": window_density,
+        "prop_layout": prop_layout,
+        "sculpture_count": sculpture_count,
+        "asymmetry": asymmetry,
+        "logo_mode": logo_mode,
+    }
+
+
+def style_params(profile: BrandProfile, *, rng: ParamRNG | None = None) -> dict[str, Any]:
+    """Map keywords / personality / industry / animations → archetype params.
+
+    When `rng` is provided (seeded from companyId+asset_id), also expands
+    within-family uniqueness knobs so two companies at the same tier never
+    share a silhouette.
+    """
     bag = profile.keyword_bag()
     playful = bool(bag & PLAYFUL_KEYWORDS)
     minimal = bool(bag & MINIMAL_KEYWORDS)
@@ -525,7 +695,7 @@ def style_params(profile: BrandProfile) -> dict[str, Any]:
     if playful or creative:
         roof_style = "barrel"
 
-    return {
+    params: dict[str, Any] = {
         "roundness": round(roundness, 3),
         "glass_bias": round(glass_bias, 3),
         "facade_style": facade_style,
@@ -557,6 +727,31 @@ def style_params(profile: BrandProfile) -> dict[str, Any]:
         ),
     }
 
+    if rng is not None:
+        tier = profile.tier if profile.tier in TIERS else "smb"
+        unique = unique_massing_params(profile, rng, tier=tier)
+        params.update(unique)
+        # Fold asymmetry into skew so existing archetype math picks it up.
+        params["skew"] = round(min(1.0, max(0.0, params["skew"] + (unique["asymmetry"] - 0.5) * 0.35)), 3)
+        # Sculpture count supersedes avatar_count when larger.
+        params["avatar_count"] = max(avatar_count, unique["sculpture_count"])
+        # Align legacy roof_style with roof_module when compatible.
+        rm = unique["roof_module"]
+        if rm == "barrel":
+            params["roof_style"] = "barrel"
+        elif rm == "pitch":
+            params["roof_style"] = "sawtooth" if industrial else "pitch"
+        # Prop density from layout
+        layout = unique["prop_layout"]
+        if layout == "sparse":
+            params["prop_density"] = min(params["prop_density"], 0.45)
+        elif layout == "crowded":
+            params["prop_density"] = max(params["prop_density"], 0.9)
+        elif layout == "landmark":
+            params["prop_density"] = max(params["prop_density"], 0.75)
+
+    return params
+
 
 # ---------------------------------------------------------------------------
 # Spec assembly
@@ -581,7 +776,11 @@ def build_spec_from_profile(
     footprint: tuple[float, float] | None = None,
     tier: str | None = None,
 ) -> GeneratedBuildingSpec:
-    """Tier defaults + brand-derived params → GeneratedBuildingSpec (bpy-free)."""
+    """Tier defaults + brand-derived params → GeneratedBuildingSpec (bpy-free).
+
+    Same companyId (+ asset_id) always rebuilds identically; different companyId
+    yields different within-family massing via ParamRNG(deterministic_seed).
+    """
     tier = tier or profile.tier
     if tier not in TIER_DEFAULTS:
         tier = "smb"
@@ -590,12 +789,17 @@ def build_spec_from_profile(
     if plot_grid is None:
         tw, th = defaults["plot_tiles"]
         plot_grid = {"x": 0, "y": 0, "w": tw, "h": th}
-    params = style_params(profile)
+    aid = asset_id or default_asset_id(profile)
+    seed = deterministic_seed(profile.company_id, aid)
+    rng = ParamRNG(seed)
+    params = style_params(profile, rng=rng)
     params["tier"] = tier
     params["wordmark"] = profile.wordmark()
     params["initial"] = profile.initial()
+    mat_defs = derive_mat_defs(profile)
+    params["uniquenessKey"] = uniqueness_key(profile.company_id, tier, params, mat_defs)
     return GeneratedBuildingSpec(
-        asset_id=asset_id or default_asset_id(profile),
+        asset_id=aid,
         building_id=f"{profile.slug}-{tier}",
         parcel_id=f"plot-{profile.slug}",
         brand=to_brand_spec(profile),
@@ -605,9 +809,9 @@ def build_spec_from_profile(
         footprint_w=float(fw),
         footprint_d=float(fd),
         site_z=0.3,
-        roof_kind="flat",
+        roof_kind=str(params.get("roof_module") or "flat"),
         glass_ratio=float(params["glass_bias"]),
-        mat_defs=derive_mat_defs(profile),
+        mat_defs=mat_defs,
         recipe_params=params,
         plot_grid=plot_grid,
         runtime_export_kinds=[

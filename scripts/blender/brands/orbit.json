@@ -1,0 +1,11 @@
+{
+  "companyId": "orbit",
+  "companyName": "Orbit Labs",
+  "tier": "startup",
+  "logo": { "wordmark": "ORBIT" },
+  "primaryColours": ["#7048e8", "#9775fa"],
+  "secondaryColours": ["#ff922b"],
+  "industry": "saas",
+  "styleKeywords": ["minimal", "tech"],
+  "personality": ["precise"]
+}

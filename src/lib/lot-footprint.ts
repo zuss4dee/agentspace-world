@@ -120,8 +120,10 @@ export function lotBuildingFootprint(lot: TileRect): LotFootprint | null {
   };
 }
 
-export function fitMeshInFootprint(fp: LotFootprint, meshMeters: { w: number; d: number }) {
-  const scale = Math.min(fp.w / meshMeters.w, fp.d / meshMeters.d);
+export function fitMeshInFootprint(fp: LotFootprint, meshMeters: { w: number; d: number }, fill = 1) {
+  const targetW = fp.w * fill;
+  const targetD = fp.d * fill;
+  const scale = Math.min(targetW / meshMeters.w, targetD / meshMeters.d);
   return { cx: fp.cx, cz: fp.cz, scale, w: meshMeters.w * scale, d: meshMeters.d * scale };
 }
 
@@ -135,6 +137,31 @@ export function authoredBuildingPlacement(b: Building) {
   const meshMeters = placementMetersForAssetId(b.assetId);
   if (!meshMeters) return null;
   return { ...fitMeshInFootprint(fp, meshMeters), footprint: fp };
+}
+
+export function claimedBuildingPlacement(
+  fp: LotFootprint,
+  meshMeters: { w: number; d: number } | undefined,
+  fill = 0.96,
+) {
+  if (!meshMeters?.w || !meshMeters.d) return null;
+  return { ...fitMeshInFootprint(fp, meshMeters, fill), footprint: fp };
+}
+
+/** Tile-grid building footprint from the claim wizard → lot placement for a GLB. */
+export function claimedBuildingPlacementFromPlot(
+  fp: { x: number; y: number; w: number; h: number },
+  meshMeters: { w: number; d: number } | undefined,
+  fill = 0.96,
+) {
+  const lot: LotFootprint = {
+    tiles: { x: fp.x, y: fp.y, w: fp.w, h: fp.h },
+    cx: wx(fp.x + fp.w / 2),
+    cz: wz(fp.y + fp.h / 2),
+    w: fp.w * TILE,
+    d: fp.h * TILE,
+  };
+  return claimedBuildingPlacement(lot, meshMeters, fill);
 }
 
 export function isOccupiedPlot(p: { kind: string; buildingId?: string }) {

@@ -71,6 +71,18 @@ export function isCompanyTier(v: unknown): v is CompanyTier {
   return v === "enterprise" || v === "smb" || v === "startup";
 }
 
+/** Match Python `slugify` in scripts/blender/agentspace/brand_profile.py */
+export function slugifyCompany(text: string): string {
+  const s = (text || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return s || "company";
+}
+
+/** Deterministic pack asset id for a claimed company HQ. */
+export function defaultBuildingAssetId(profile: Pick<BrandProfile, "companyId" | "companyName">): string {
+  const slug = slugifyCompany(profile.companyId || profile.companyName);
+  return `pack.agentspace.building.${slug}.01`;
+}
+
 export function isStyleKeyword(v: unknown): v is StyleKeyword {
   return typeof v === "string" && (STYLE_KEYWORDS as readonly string[]).includes(v);
 }

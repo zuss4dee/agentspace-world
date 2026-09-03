@@ -4,7 +4,7 @@ Modules:
   materials   brand palette → packed PBR mats, logo texture material
   primitives  chunky bevelled masses, floor lines, window grids, storefronts, awnings, vaults
   props       rooftop + street props (solar, HVAC, dish, tank, billboard, cars, trees…)
-  signage     toy_font wordmarks + logo plaques (roof + facade) + placeholder logos
+  signage     toy_font wordmarks + 3D logo marks (totem/blade/roof) + plaques
   archetypes  enterprise_hq / smb_block / startup_loft
   builder     build_from_profile → tagged library asset + footprint report
   render      daylight 3/4 preview camera + PNG render helpers

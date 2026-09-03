@@ -20,7 +20,6 @@ import {
   usesForPlot,
   type Plot,
 } from "@/lib/plots";
-import { crewForPlot } from "@/lib/building-crew";
 import {
   defaultClaimProfile,
   letterMark,
@@ -36,26 +35,11 @@ import {
   brandProfileFileName,
   brandProfileFromCompanyProfile,
   cleanPalette,
+  defaultBuildingAssetId,
   downloadBrandProfile,
   type CompanyTier,
   type DerivedBrandProfile,
 } from "@/lib/brand-profile";
-import { roleLabel } from "@/lib/playbooks";
-import type { RoleId } from "@/lib/types";
-
-const CREW_ROLES: RoleId[] = [
-  "ceo",
-  "cto",
-  "cfo",
-  "cmo",
-  "coo",
-  "creative",
-  "researcher",
-  "support",
-  "ops",
-  "security",
-  "visitor",
-];
 
 function hostOf(url: string | undefined): string | null {
   if (!url) return null;
@@ -78,11 +62,9 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
   const {
     dismissClaimSetup,
     saveClaimBuilding,
-    openClaimSetup,
+    finishClaimSetup,
     claimSetupStep,
     buildingSpecs,
-    buildingCrew,
-    addBotToBuilding,
     claimedExtras,
     claimedPlaces,
     claimedUses,
@@ -90,18 +72,14 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
 
   const extra = claimedExtras[claimSetupId] ?? 0;
   const spec = buildingSpecs[claimSetupId];
-  const crew = crewForPlot(buildingCrew, claimSetupId);
   const companyName = spec?.profile?.name?.trim() || "Your company";
 
   const [step, setStep] = useState<ClaimSetupStep>(claimSetupStep);
   const [profile, setProfile] = useState<CompanyProfile>(() => mergeProfile(spec?.profile));
   const [useId, setUseId] = useState(claimedUses[claimSetupId] ?? "office");
   const [place, setPlace] = useState(claimedPlaces[claimSetupId] ?? { ox: 0, oy: 0 });
-  const [botName, setBotName] = useState("Grok");
-  const [botRole, setBotRole] = useState<RoleId>("ceo");
-  const [botEndpoint, setBotEndpoint] = useState("");
-  const [walkingIn, setWalkingIn] = useState(false);
   const [deriving, setDeriving] = useState(false);
+  const [buildingHq, setBuildingHq] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const lastDerivedUrl = useRef<string | null>(profile.brand?.derivedFrom?.url ?? null);
   const deriveSeq = useRef(0);
@@ -143,6 +121,7 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
   const brandPulled = Boolean(profile.brand?.derivedFrom);
   const derivedHost = hostOf(profile.brand?.derivedFrom?.url) ?? "your site";
   const defaultName = defaultClaimProfile(use?.name).name;
+  const brandForExport = brandProfileFromCompanyProfile(claimSetupId, profile);
 
   const pullFromWebsite = async (force = false) => {
     const url = normalizeWebsiteUrl(profile.website ?? "");
@@ -181,9 +160,9 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
     }
   };
 
-  const exportName = brandProfileFileName(brandProfileFromCompanyProfile(claimSetupId, profile));
+  const exportName = brandProfileFileName(brandForExport);
   const exportBrand = () => {
-    downloadBrandProfile(brandProfileFromCompanyProfile(claimSetupId, profile));
+    downloadBrandProfile(brandForExport);
     toast.success(`${exportName} downloaded.`);
   };
 
@@ -196,6 +175,69 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
     reader.readAsDataURL(file);
   };
 
+  const buildPayload = {
+    profile,
+    useId,
+    place: pos,
+    extra,
+  };
+
+  const buildHqOnMap = async () => {
+    const name = profile.name.trim() || companyName;
+    saveClaimBuilding({
+      ...buildPayload,
+      profile: { ...profile, buildingStatus: "building" },
+    });
+    setBuildingHq(true);
+    const ac = new AbortController();
+    const timer = window.setTimeout(() => ac.abort(), 210_000);
+    try {
+      const res = await fetch("/v1/brand/build", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plotId: claimSetupId, brand: brandForExport }),
+        signal: ac.signal,
+      });
+      const data = (await res.json()) as {
+        ok: boolean;
+        assetId?: string;
+        url?: string;
+        buildingMeters?: { width: number; depth: number; height: number };
+        error?: string;
+        detail?: string;
+      };
+      if (!data.ok) {
+        throw new Error(data.error ?? "Build failed");
+      }
+      const assetId = data.assetId ?? defaultBuildingAssetId(brandForExport);
+      finishClaimSetup({
+        ...buildPayload,
+        profile: {
+          ...profile,
+          buildingAssetId: assetId,
+          buildingMeters: data.buildingMeters,
+          buildingStatus: "ready",
+        },
+      });
+      toast.success(`${name} HQ built and placed on your lot.`);
+    } catch (e) {
+      const msg =
+        e instanceof DOMException && e.name === "AbortError"
+          ? "Build timed out"
+          : e instanceof Error
+            ? e.message
+            : "Build failed";
+      finishClaimSetup({
+        ...buildPayload,
+        profile: { ...profile, buildingStatus: "failed" },
+      });
+      toast.error(`${msg}. Keep Blender open with the MCP addon, then retry from your plot.`);
+    } finally {
+      window.clearTimeout(timer);
+      setBuildingHq(false);
+    }
+  };
+
   const stepLabel =
     step === "profile" ? "Step 1 of 3" : step === "placement" ? "Step 2 of 3" : "Step 3 of 3";
   const stepTitle =
@@ -203,32 +245,17 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
       ? "Name your company"
       : step === "placement"
         ? "Place your building"
-        : "Staff your building";
-
-  const walkBotIn = async () => {
-    if (!botName.trim()) {
-      toast.error("Name your Grok bot.");
-      return;
-    }
-    setWalkingIn(true);
-    const result = await addBotToBuilding(claimSetupId, {
-      name: botName.trim(),
-      role: botRole,
-      endpoint: botEndpoint.trim() || undefined,
-      onlineFor: "7d",
-      idleExtend: "24h",
-    });
-    setWalkingIn(false);
-    if (!result.ok) toast.error(result.reason);
-    else {
-      toast.success(`${botName.trim()} is inside ${companyName}.`);
-      setBotName("Grok");
-      setBotEndpoint("");
-    }
-  };
+        : "Build your HQ";
 
   return (
-    <div className="ns-bid-scrim" role="presentation" onClick={() => dismissClaimSetup()}>
+    <div
+      className="ns-bid-scrim"
+      role="presentation"
+      onClick={() => {
+        if (buildingHq) return;
+        dismissClaimSetup();
+      }}
+    >
       <div
         className="ns-bid ns-claim-setup"
         role="dialog"
@@ -249,7 +276,7 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
           <>
             <p className="ns-bid-copy">
               You secured {formatSqFt(area.sqft)} on the south field. Before we raise walls, tell visitors who lives
-              here.
+              here — pull your website brand so the HQ is unique to your company.
             </p>
             <div className="ns-claim-preview">
               <div className="ns-company-mark" aria-hidden>
@@ -418,15 +445,15 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
                 disabled={!canContinue}
                 onClick={() => setStep("placement")}
               >
-                Continue to building
+                Continue to placement
               </button>
             </div>
           </>
         ) : step === "placement" ? (
           <>
             <p className="ns-bid-copy">
-              Choose what rises on your pad. Placement updates the preview on the map — procedural generation ships
-              when the city opens the build phase.
+              Choose what rises on your pad. Placement updates the preview on the map — your website brand drives the
+              unique HQ when you build.
             </p>
             <p className="ns-plot-copy">{placementSummary}</p>
             <div className="ns-plot-uses">
@@ -481,91 +508,73 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
                 type="button"
                 className="ns-game-btn"
                 onClick={() => {
-                  saveClaimBuilding({
-                    profile,
-                    useId,
-                    place: pos,
-                    extra,
-                  });
-                  openClaimSetup(claimSetupId, "crew");
+                  saveClaimBuilding(buildPayload);
+                  setStep("build");
                 }}
               >
-                Continue to crew
+                Continue to build
               </button>
             </div>
           </>
         ) : (
           <>
             <p className="ns-bid-copy">
-              Walk Grok bots into <strong>{companyName}</strong>. They spawn inside your building on the map — use crew
-              view to see them Among Us-style from above.
+              Lock in <strong>{profile.name.trim() || companyName}</strong>. We generate your HQ from your website
+              brand in Blender, publish it, and place it on your lot — colours, logo, and unique massing included.
             </p>
-            {crew.length ? (
-              <ul className="ns-crew-roster">
-                {crew.map((member) => (
-                  <li key={member.id}>
-                    <span className="ns-crew-dot" style={{ background: member.color }} aria-hidden />
-                    <span>{member.name}</span>
-                    <em>{roleLabel(member.role)}</em>
-                    {member.liveAgentId ? <strong>live</strong> : null}
+            <div className="ns-claim-preview">
+              <div className="ns-company-mark" aria-hidden>
+                {profile.logo.trim() ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.logo} alt="" />
+                ) : (
+                  <span>{mark}</span>
+                )}
+              </div>
+              <div className="ns-claim-preview-copy">
+                <strong>{profile.name.trim() || companyName}</strong>
+                <span>
+                  {TIER_LABELS[profile.tier ?? brandForExport.tier]} · {placementSummary}
+                </span>
+              </div>
+            </div>
+            {palette.length ? (
+              <ul className="ns-swatches" aria-label="Brand palette">
+                {palette.map((hex, i) => (
+                  <li key={hex} data-primary={i === 0 ? "1" : "0"}>
+                    <span className="ns-swatch" style={{ background: hex }} title={hex} />
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="ns-plot-hint">No crew yet — add your first Grok bot below.</p>
-            )}
-            <div className="ns-studio-profile ns-claim-fields">
-              <label>
-                Bot name
-                <input
-                  value={botName}
-                  onChange={(e) => setBotName(e.target.value)}
-                  placeholder="Grok"
-                  autoFocus
-                />
-              </label>
-              <label>
-                Role
-                <select
-                  value={botRole}
-                  onChange={(e) => setBotRole(e.target.value as RoleId)}
-                  className="ns-crew-role"
-                >
-                  {CREW_ROLES.map((role) => (
-                    <option key={role} value={role}>
-                      {roleLabel(role)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Status endpoint (optional)
-                <input
-                  value={botEndpoint}
-                  onChange={(e) => setBotEndpoint(e.target.value)}
-                  placeholder="https://your-grokbot.example/status"
-                  inputMode="url"
-                />
-              </label>
-            </div>
+            ) : null}
             <div className="ns-brand-export">
               <button type="button" className="ns-ghost" onClick={exportBrand}>
                 <Download className="size-3.5" />
                 Export brand JSON
               </button>
               <p className="ns-plot-hint">
-                Feeds the Blender build: <code>scripts/blender/build_company_from_brand.py -- --brand {exportName}</code>
+                Asset id: <code>{defaultBuildingAssetId(brandForExport)}</code> — requires Blender open with MCP
+                connected.
               </p>
             </div>
             <div className="ns-bid-actions">
               <button type="button" className="ns-ghost" onClick={() => setStep("placement")}>
                 Back
               </button>
-              <button type="button" className="ns-ghost" onClick={() => dismissClaimSetup()}>
-                Done for now
-              </button>
-              <button type="button" className="ns-game-btn" disabled={walkingIn} onClick={() => void walkBotIn()}>
-                {walkingIn ? "Walking in…" : "Walk bot in"}
+              <button
+                type="button"
+                className="ns-game-btn"
+                disabled={buildingHq}
+                onClick={() => void buildHqOnMap()}
+              >
+                {buildingHq ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Building in Blender…
+                  </>
+                ) : (
+                  "Build HQ"
+                )}
               </button>
             </div>
           </>

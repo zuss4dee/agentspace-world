@@ -1,0 +1,50 @@
+{
+  "companyId": "land-campus-1",
+  "companyName": "Echt A.I",
+  "tier": "smb",
+  "logo": {
+    "wordmark": "ECHT",
+    "assetPath": null,
+    "imageUrl": "https://www.useecht.com/icon.svg?icon.0dies.oh8h0xt.svg"
+  },
+  "primaryColours": [
+    "#1447e6",
+    "#16a34a",
+    "#d70011"
+  ],
+  "secondaryColours": [
+    "#90c5ff",
+    "#ff8c00",
+    "#8f1d17"
+  ],
+  "typography": {
+    "display": "Geist Mono",
+    "body": "Inter"
+  },
+  "visualStyle": "light, playful, bold technology brand",
+  "industry": "technology",
+  "personality": [
+    "open",
+    "friendly",
+    "confident",
+    "precise"
+  ],
+  "styleKeywords": [
+    "light",
+    "playful",
+    "bold",
+    "tech"
+  ],
+  "avatars": [],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 34,
+    "libraries": []
+  },
+  "website": "https://www.useecht.com/",
+  "derivedFrom": {
+    "url": "https://www.useecht.com/",
+    "fetchedAt": "2026-09-02T16:42:23.517Z",
+    "confidence": 0.95
+  }
+}

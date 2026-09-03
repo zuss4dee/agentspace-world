@@ -219,6 +219,15 @@ export function mergeProfile(...parts: Array<Partial<CompanyProfile> | undefined
     if (isCompanyTier(part.tier)) out.tier = part.tier;
     if (Array.isArray(part.palette)) out.palette = cleanPalette(part.palette);
     if (part.brand && typeof part.brand === "object") out.brand = { ...out.brand, ...part.brand };
+    if (typeof part.buildingAssetId === "string" && part.buildingAssetId.trim()) {
+      out.buildingAssetId = part.buildingAssetId.trim();
+    }
+    if (part.buildingMeters?.width && part.buildingMeters.depth) {
+      out.buildingMeters = { ...part.buildingMeters };
+    }
+    if (part.buildingStatus === "building" || part.buildingStatus === "ready" || part.buildingStatus === "failed") {
+      out.buildingStatus = part.buildingStatus;
+    }
   }
   return out;
 }

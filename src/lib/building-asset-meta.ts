@@ -10,6 +10,30 @@ export type BuildingAssetMeta = {
 };
 
 export const BUILDING_ASSET_META: Record<string, BuildingAssetMeta> = {
+  "pack.agentspace.building.land-campus-1.01": {
+    buildingId: undefined,
+    brandId: undefined,
+    footprintMeters: { width: 27.897, depth: 18.85 },
+    heightMeters: 15.39,
+  },
+  "pack.agentspace.building.loft.01": {
+    buildingId: "loft",
+    brandId: "loft",
+    footprintMeters: { width: 41.245, depth: 28.5 },
+    heightMeters: 16.692,
+  },
+  "pack.agentspace.building.corner.01": {
+    buildingId: "corner",
+    brandId: "corner",
+    footprintMeters: { width: 27.897, depth: 18.85 },
+    heightMeters: 15.39,
+  },
+  "pack.agentspace.building.nova.01": {
+    buildingId: "nova",
+    brandId: "nova",
+    footprintMeters: { width: 54.812, depth: 39.053 },
+    heightMeters: 51.311,
+  },
   "pack.agentspace.building.echt.02": {
     buildingId: "loft",
     brandId: "echt",

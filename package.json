@@ -8,6 +8,7 @@
     "start": "next start --hostname 0.0.0.0 --port 43141",
     "lint": "eslint",
     "blender:publish": "node scripts/blender/publish.mjs",
+    "blender:build-company": "node scripts/blender/build-company.mjs",
     "building:generate": "blender --background scripts/blender/agentspace-world-multitask.blend --python scripts/blender/generate_building.py --",
     "building:test": "PYTHONPATH=scripts/blender python3 -m unittest agentspace.test_generator_contract",
     "brand:resolve": "tsx scripts/resolve-brand-assets.ts"

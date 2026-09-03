@@ -49,6 +49,10 @@ export const PACK_GLTF = {
   "pack.agentspace.gutter.strip.01": "/assets/gltf/environment/pack.agentspace.gutter.strip.01.glb",
   "pack.agentspace.building.echt.01": "/assets/gltf/buildings/pack.agentspace.building.echt.01.glb?v=4599525ecdd4a9ee",
   "pack.agentspace.building.echt.02": "/assets/gltf/buildings/pack.agentspace.building.echt.02.glb?v=5a65aa054ce4baa2",
+  "pack.agentspace.building.nova.01": "/assets/gltf/buildings/pack.agentspace.building.nova.01.glb?v=6f5a4eb8f097210c",
+  "pack.agentspace.building.corner.01": "/assets/gltf/buildings/pack.agentspace.building.corner.01.glb?v=e3986fa4be970746",
+  "pack.agentspace.building.loft.01": "/assets/gltf/buildings/pack.agentspace.building.loft.01.glb?v=07958a2700e9ec81",
+  "pack.agentspace.building.land-campus-1.01": "/assets/gltf/buildings/pack.agentspace.building.land-campus-1.01.glb?v=5c92d45a9f2f9cfe",
 } as const;
 
 export type PackAssetId = keyof typeof PACK_GLTF;

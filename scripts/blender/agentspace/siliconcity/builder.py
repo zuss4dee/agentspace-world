@@ -292,6 +292,25 @@ def build_from_spec(profile: BrandProfile, spec: GeneratedBuildingSpec, *, logo_
             "companyName": profile.company_name,
             "wordmark": profile.wordmark(),
             "logo": {"path": lpath, "textured": logo_mat is not None},
+            "logoComplements": ctx.anchors.get("logoComplements", []),
+            "uniquenessKey": spec.recipe_params.get("uniquenessKey"),
+            "styleParams": {
+                k: spec.recipe_params.get(k)
+                for k in (
+                    "storey_count",
+                    "wing_offset_x",
+                    "wing_offset_y",
+                    "roof_module",
+                    "entrance_side",
+                    "window_cols",
+                    "window_density",
+                    "prop_layout",
+                    "sculpture_count",
+                    "logo_mode",
+                    "asymmetry",
+                    "motion_accent",
+                )
+            },
             "rootLocal": list(spec.root_local),
             "scale": spec.scale,
             "anchors": {k: list(v) if isinstance(v, (tuple, list)) else v for k, v in ctx.anchors.items()},

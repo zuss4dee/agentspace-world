@@ -15,6 +15,12 @@ export type CompanyProfile = {
   /** #rrggbb, primary first — palette[0] is the map accent. */
   palette?: string[];
   brand?: Partial<BrandProfile>;
+  /** Published Blender GLB asset id once HQ build completes. */
+  buildingAssetId?: string;
+  /** Measured GLB footprint — used for lot placement before registry sync. */
+  buildingMeters?: { width: number; depth: number; height: number };
+  /** HQ generation state from the claim wizard. */
+  buildingStatus?: "building" | "ready" | "failed";
 };
 
 export type ArchFamily =

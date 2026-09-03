@@ -79,7 +79,8 @@ def pack_signature(asset_id: str) -> dict:
     origin_ok = True
     if root:
         d = (Vector(root.matrix_world.translation) - LIBRARY_ORIGIN).length
-        origin_ok = d < 400.0
+        # Gallery pads sit along +X of the library origin; allow the Silicon City row.
+        origin_ok = d < 550.0
         if not origin_ok:
             errors.append("library root far from staging origin")
     return {

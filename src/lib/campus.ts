@@ -9,7 +9,7 @@ export const ROAD_YS = [6, 12, 24, 36, 48, 58];
 export const DISTRICTS: District[] = [
   { id: "parklands", label: "Parklands", blurb: "Lawns, water, and a pavilion.", origin: { x: 0, y: 0 }, size: { x: 11, y: 11 }, theme: "public" },
   { id: "corporate", label: "Corporate", blurb: "HQ, ledgers, landscaped plazas.", origin: { x: 13, y: 0 }, size: { x: 11, y: 11 }, theme: "executive" },
-  { id: "startup", label: "Echt Yard", blurb: "Echt’s house — the startup that ships from this block.", origin: { x: 25, y: 0 }, size: { x: 11, y: 11 }, theme: "tech" },
+  { id: "startup", label: "Startup", blurb: "Loft Labs and room to claim.", origin: { x: 25, y: 0 }, size: { x: 11, y: 11 }, theme: "tech" },
   { id: "creative", label: "Creative", blurb: "Studios, galleries, odd roofs.", origin: { x: 37, y: 0 }, size: { x: 11, y: 23 }, theme: "creative" },
   { id: "research", label: "Research", blurb: "Labs, conference glass, quiet racks.", origin: { x: 49, y: 0 }, size: { x: 15, y: 23 }, theme: "research" },
   { id: "meadow", label: "Meadow", blurb: "Open green between park and works.", origin: { x: 0, y: 13 }, size: { x: 11, y: 11 }, theme: "public" },
@@ -52,25 +52,11 @@ function footprint(
   };
 }
 
-/** Single-building development state — only the active Echt asset on Startup Row. */
-export const WORLD_BUILDINGS: Building[] = [
-  footprint("loft", "Echt Studio", {
-    kind: "office",
-    style: "studio",
-    districtId: "startup",
-    assetId: "pack.agentspace.building.echt.02",
-    origin: { x: 26, y: 0 },
-    size: { x: 7, y: 5 },
-    height: 48,
-    roof: "#111827",
-    wall: "#c8cfc2",
-    wallDark: "#5a6a54",
-    accent: "#6a8a4a",
-    sign: "ECHT",
-    purpose: "Echt’s design loft — campaigns and the product surface.",
-    desks: [["vega-desk", "Campaign desk", 1.6, 1.3]],
-  }),
-];
+/**
+ * Authored world buildings on the map.
+ * Empty while testing claim → Build HQ from a clean city (packs stay in Blender / public GLBs).
+ */
+export const WORLD_BUILDINGS: Building[] = [];
 
 export const ANCHOR_BUILDING_ID = "loft";
 export const LOT_BUILDINGS = WORLD_BUILDINGS;

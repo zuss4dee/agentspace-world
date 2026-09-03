@@ -47,7 +47,7 @@ import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
 import type { BuildingSpec } from "@/lib/building-spec";
 import type { CompanyProfile } from "@/lib/company-profile";
-import { withBrandAccent } from "@/lib/brand-profile";
+import { brandProfileFromCompanyProfile, defaultBuildingAssetId, withBrandAccent } from "@/lib/brand-profile";
 import {
   applyStoredProfiles,
   defaultClaimProfile,
@@ -58,7 +58,7 @@ import {
   saveStoredProfiles,
 } from "@/lib/company-profile";
 import { h } from "@/lib/coords";
-import { loadStoredClaims, saveStoredClaims, type StoredClaims } from "@/lib/claimed-lots-storage";
+import { clearClaimSessionStorage, loadStoredClaims, migrateClaimSessionIfNeeded, saveStoredClaims, type StoredClaims } from "@/lib/claimed-lots-storage";
 import {
   addCrewMember,
   loadBuildingCrew,
@@ -106,7 +106,7 @@ function restoreClaimSpecs(
 }
 
 export type StudioMode = "quick" | "customise" | "creator";
-export type ClaimSetupStep = "profile" | "placement" | "crew";
+export type ClaimSetupStep = "profile" | "placement" | "build";
 
 type WorldApi = {
   world: WorldSnapshot;
@@ -268,6 +268,22 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   }, [paused]);
 
   useEffect(() => {
+    const fresh =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).has("fresh");
+    const wiped = fresh || migrateClaimSessionIfNeeded();
+    if (fresh) clearClaimSessionStorage();
+    if (wiped) {
+      setClaimedPlotIds([]);
+      setClaimedExtras({});
+      setClaimedPlaces({});
+      setClaimedUses({});
+      setBuildingSpecs({});
+      setBuildingCrew({});
+      setStorageReady(true);
+      if (fresh) window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
     const claims = loadStoredClaims();
     const profiles = loadStoredProfiles();
     setClaimedPlotIds(claims.claimedPlotIds);
@@ -281,6 +297,58 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     setBuildingCrew(loadBuildingCrew());
     setStorageReady(true);
   }, []);
+
+  /** Attach published HQ GLBs that finished in Blender but never wrote buildingAssetId (hung Build HQ). */
+  useEffect(() => {
+    if (!storageReady) return;
+    let cancelled = false;
+    const run = async () => {
+      for (const id of claimedPlotIds) {
+        const spec = buildingSpecs[id];
+        const profile = spec?.profile;
+        if (!profile?.name?.trim()) continue;
+        if (profile.buildingStatus === "ready" && profile.buildingAssetId) continue;
+        const brand = brandProfileFromCompanyProfile(id, profile);
+        const assetId = profile.buildingAssetId ?? defaultBuildingAssetId(brand);
+        try {
+          const res = await fetch(`/v1/brand/asset?assetId=${encodeURIComponent(assetId)}`);
+          const data = (await res.json()) as {
+            ok: boolean;
+            assetId?: string;
+            buildingMeters?: { width: number; depth: number; height: number };
+          };
+          if (cancelled || !data.ok || !data.assetId) continue;
+          setBuildingSpecs((prev) => {
+            const cur = prev[id];
+            if (!cur?.profile) return prev;
+            if (cur.profile.buildingStatus === "ready" && cur.profile.buildingAssetId === data.assetId) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [id]: withBrandAccent({
+                ...cur,
+                profile: {
+                  ...cur.profile,
+                  buildingAssetId: data.assetId,
+                  buildingMeters: data.buildingMeters ?? cur.profile.buildingMeters,
+                  buildingStatus: "ready",
+                },
+              }),
+            };
+          });
+        } catch {
+          /* offline */
+        }
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+    // Only re-scan when claims change / storage becomes ready — not on every profile keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageReady, claimedPlotIds.join("|")]);
 
   useEffect(() => {
     if (!storageReady) return;
@@ -751,7 +819,15 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     const place = input.place ?? claimedPlaces[id];
     const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
     const pal = paletteForUse(useId);
-    const profile = mergeProfile(defaultClaimProfile(use.name), input.profile);
+    const merged = mergeProfile(defaultClaimProfile(use.name), input.profile);
+    const brand = brandProfileFromCompanyProfile(id, merged);
+    const palette = [...brand.primaryColours, ...brand.secondaryColours];
+    const profile: CompanyProfile = {
+      ...merged,
+      tier: brand.tier,
+      palette: palette.length ? palette : merged.palette,
+      brand,
+    };
 
     setClaimedExtras((prev) => ({ ...prev, [id]: extra }));
     if (place) setClaimedPlaces((prev) => ({ ...prev, [id]: place }));
@@ -786,7 +862,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       events: pushEvent(prev.events, {
         kind: "work",
         mapId: "lot",
-        text: `${profile.name || "Your company"} raised a ${use.name.toLowerCase()} on ${plot?.groupLabel ?? "claimed land"}.`,
+        text: profile.buildingStatus === "ready"
+          ? `${profile.name || "Your company"} HQ placed on ${plot?.groupLabel ?? "claimed land"}.`
+          : `${profile.name || "Your company"} locked brand for a ${use.name.toLowerCase()} on ${plot?.groupLabel ?? "claimed land"}.`,
       }),
     }));
   }, [apply, claimSetupId, claimedExtras, claimedPlaces, claimedUses, previewUseId]);

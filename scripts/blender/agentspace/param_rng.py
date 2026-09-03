@@ -12,10 +12,15 @@ def deterministic_seed(company_id: str, asset_id: str) -> int:
 
 
 class ParamRNG:
-    """Seeded draws — same company+asset always yields same params."""
+    """Seeded draws — same company+asset always yields same params.
+
+    Sub-keys are hashed against the *stored* seed (not MT getstate()[1][0],
+    which is not unique across seeds in CPython's Mersenne Twister).
+    """
 
     def __init__(self, seed: int):
-        self._rng = random.Random(seed)
+        self.seed = int(seed) & 0xFFFFFFFF
+        self._rng = random.Random(self.seed)
 
     def uniform(self, key: str, lo: float, hi: float) -> float:
         self._rng.seed(self._subseed(key))
@@ -34,7 +39,7 @@ class ParamRNG:
         return self._rng.choices(options, weights=weights, k=1)[0]
 
     def _subseed(self, key: str) -> int:
-        return int(hashlib.sha256(f"{self._rng.getstate()[1][0]}:{key}".encode()).hexdigest()[:8], 16)
+        return int(hashlib.sha256(f"{self.seed}:{key}".encode()).hexdigest()[:8], 16)
 
 
 RECIPE_IDS = (

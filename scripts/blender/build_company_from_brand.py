@@ -26,7 +26,8 @@ if str(ROOT) not in sys.path:
 from agentspace.brand_profile import load_brand_profile
 from agentspace.siliconcity.builder import build_from_profile
 
-MARKER = "ASW_SILICONCITY_JSON:"
+MARKER = "ASW_BUILD_JSON:"
+LEGACY_MARKER = "ASW_SILICONCITY_JSON:"
 
 
 def _parse_xyz(text: str) -> tuple[float, float, float]:
@@ -55,8 +56,16 @@ def main() -> None:
         root_local=_parse_xyz(args.root_local),
         tier=args.tier,
     )
-    print(MARKER + json.dumps(report, default=str))
-    print("BUILD_OK", report.get("assetId"), report.get("archetype"), report.get("rootLocal"))
+    payload = json.dumps(report, default=str)
+    print(MARKER + payload)
+    print(LEGACY_MARKER + payload)
+    print(
+        "BUILD_OK",
+        report.get("assetId"),
+        report.get("archetype"),
+        report.get("uniquenessKey"),
+        report.get("rootLocal"),
+    )
 
 
 if __name__ == "__main__":
