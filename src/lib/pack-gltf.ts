@@ -48,11 +48,17 @@ export const PACK_GLTF = {
   "pack.agentspace.hydrant.city.01": "/assets/gltf/street/pack.agentspace.hydrant.city.01.glb",
   "pack.agentspace.gutter.strip.01": "/assets/gltf/environment/pack.agentspace.gutter.strip.01.glb",
   "pack.agentspace.building.echt.01": "/assets/gltf/buildings/pack.agentspace.building.echt.01.glb?v=4599525ecdd4a9ee",
-  "pack.agentspace.building.echt.02": "/assets/gltf/buildings/pack.agentspace.building.echt.02.glb?v=5a65aa054ce4baa2",
-  "pack.agentspace.building.nova.01": "/assets/gltf/buildings/pack.agentspace.building.nova.01.glb?v=6f5a4eb8f097210c",
-  "pack.agentspace.building.corner.01": "/assets/gltf/buildings/pack.agentspace.building.corner.01.glb?v=e3986fa4be970746",
-  "pack.agentspace.building.loft.01": "/assets/gltf/buildings/pack.agentspace.building.loft.01.glb?v=07958a2700e9ec81",
-  "pack.agentspace.building.land-campus-1.01": "/assets/gltf/buildings/pack.agentspace.building.land-campus-1.01.glb?v=5c92d45a9f2f9cfe",
+  "pack.agentspace.building.echt.02": "/assets/gltf/buildings/pack.agentspace.building.echt.02.glb?v=f3a0bd4efef3c807",
+  "pack.agentspace.building.nova.01": "/assets/gltf/buildings/pack.agentspace.building.nova.01.glb?v=d1fa16c7fccc3a78",
+  "pack.agentspace.building.corner.01": "/assets/gltf/buildings/pack.agentspace.building.corner.01.glb?v=b057632fc7da259b",
+  "pack.agentspace.building.loft.01": "/assets/gltf/buildings/pack.agentspace.building.loft.01.glb?v=1f1230f1facb6d2b",
+  "pack.agentspace.building.land-campus-1.01": "/assets/gltf/buildings/pack.agentspace.building.land-campus-1.01.glb?v=438a017c39e394c3",
+  "pack.agentspace.building.gallery.spark.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.spark.01.glb?v=bbd9a0bfdf089010",
+  "pack.agentspace.building.gallery.nova.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.nova.01.glb?v=18412f3c7ddbdd31",
+  "pack.agentspace.building.gallery.loft.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.loft.01.glb?v=4ada551e35bef4a9",
+  "pack.agentspace.building.gallery.orbit.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.orbit.01.glb?v=80b7a42a2a0c84cf",
+  "pack.agentspace.building.gallery.corner.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.corner.01.glb?v=bf3fa640e8cb061c",
+  "pack.agentspace.building.gallery.forge.01": "/assets/gltf/buildings/pack.agentspace.building.gallery.forge.01.glb?v=90e5e5693c32c9b5",
 } as const;
 
 export type PackAssetId = keyof typeof PACK_GLTF;

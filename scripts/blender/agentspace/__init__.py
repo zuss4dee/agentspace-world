@@ -9,7 +9,6 @@ keyed by assetId. Query components with:
 """
 
 from .contract import load_contract, world_xy, building_height, lot_center_grid
-from .registry import get_component, list_components, set_component, dump_registry
 
 __all__ = [
     "load_contract",
@@ -21,3 +20,16 @@ __all__ = [
     "set_component",
     "dump_registry",
 ]
+
+
+def __getattr__(name: str):
+    if name in {"get_component", "list_components", "set_component", "dump_registry"}:
+        from .registry import get_component, list_components, set_component, dump_registry
+
+        return {
+            "get_component": get_component,
+            "list_components": list_components,
+            "set_component": set_component,
+            "dump_registry": dump_registry,
+        }[name]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

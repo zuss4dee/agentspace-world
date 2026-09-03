@@ -70,7 +70,7 @@ function AuthoredWorldGltf({ url }: { url: string }) {
 
   // glTF Y-up maps Blender +Y to -Z. Flip Z so world_xy matches Three.js wz.
   return (
-    <group scale={[1, 1, -1]}>
+    <group scale={[1, 1, -1]} frustumCulled={false}>
       <primitive object={prepared} />
     </group>
   );

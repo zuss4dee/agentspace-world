@@ -3,6 +3,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { NextResponse } from "next/server";
 import { defaultBuildingAssetId, type BrandProfile } from "@/lib/brand-profile";
+import { getPlot } from "@/lib/plots";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,8 +58,9 @@ export async function POST(request: Request) {
   }
 
   const repo = process.cwd();
-  const assetId = defaultBuildingAssetId(brand);
+  const assetId = defaultBuildingAssetId(brand, plotId);
   const glbPath = path.join(repo, "public/assets/gltf/buildings", `${assetId}.glb`);
+  const plot = plotId ? getPlot(plotId) : undefined;
 
   // Fast path: GLB already published (common after a hung UI retry).
   if (!body.forceRebuild && fs.existsSync(glbPath) && fs.statSync(glbPath).size > 32) {
@@ -84,6 +86,8 @@ export async function POST(request: Request) {
 
   const script = path.join(repo, "scripts/blender/build-company.mjs");
   const args = ["--brand", brandPath, "--asset-id", assetId];
+  if (plotId) args.push("--plot-id", plotId);
+  if (plot) args.push("--plot-grid", `${plot.x},${plot.y},${plot.w},${plot.h}`);
   if (body.publishOnly) args.push("--publish-only");
 
   try {

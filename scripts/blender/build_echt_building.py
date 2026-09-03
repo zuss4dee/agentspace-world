@@ -8,7 +8,6 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agentspace.echt_building import build_echt_building
 from agentspace.echt_building_canonical import build_echt_canonical
 from agentspace.export_runtime import export_runtime_building, verify_placement
 from agentspace.validate_world import validate
@@ -16,7 +15,7 @@ from agentspace.contract import load_contract
 
 
 if __name__ == "__main__":
-    building = build_echt_building()
+    building = build_echt_canonical()
     report = verify_placement(building)
     path = export_runtime_building(building)
     world = validate(load_contract())

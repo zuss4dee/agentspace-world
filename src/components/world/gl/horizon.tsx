@@ -110,8 +110,8 @@ function SkirtGeometry() {
 function WorldSkirt() {
   const geometry = useMemo(() => SkirtGeometry(), []);
   return (
-    <mesh geometry={geometry} receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.96} metalness={0.02} />
+    <mesh geometry={geometry} receiveShadow frustumCulled={false}>
+      <meshStandardMaterial vertexColors roughness={0.96} metalness={0.02} fog />
     </mesh>
   );
 }
@@ -127,11 +127,11 @@ function OceanRim() {
     { x: (hor.x1 + sc.x1) / 2, z: (sc.y0 + sc.y1) / 2, w: Math.max(4, hor.x1 - sc.x1), d: sc.y1 - sc.y0 },
   ];
   return (
-    <group>
+    <group frustumCulled={false}>
       {strips.map((s, i) => (
-        <mesh key={i} rotation-x={-Math.PI / 2} position={[wx(s.x), y, wz(s.z)]} receiveShadow>
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[wx(s.x), y, wz(s.z)]} receiveShadow frustumCulled={false}>
           <planeGeometry args={[s.w * TILE, s.d * TILE]} />
-          <meshStandardMaterial color="#3a5c5e" roughness={0.22} metalness={0.28} />
+          <meshStandardMaterial color="#3a5c5e" roughness={0.22} metalness={0.28} fog />
         </mesh>
       ))}
     </group>
@@ -196,49 +196,105 @@ function RimLakes() {
   );
 }
 
-function SectionRidge() {
+/** Soft shoreline strips — no box berms (those read as a rectangular map edge). */
+function ShoreTransition() {
   const p = playableBounds();
   const cx = wx((p.x0 + p.x1) / 2);
   const cz = wz((p.y0 + p.y1) / 2);
   const w = (p.x1 - p.x0) * TILE;
   const d = (p.y1 - p.y0) * TILE;
-  const t = h(0.55);
-  const sand = h(2.4);
-  const rise = h(0.42);
+  const sand = h(3.8);
+  const strips = [
+    { x: cx, z: wz(p.y0) - sand * 0.45, sw: w + sand * 2, sd: sand, color: "#cbb68a" },
+    { x: cx, z: wz(p.y1) + sand * 0.45, sw: w + sand * 2, sd: sand, color: "#bfc8a8" },
+    { x: wx(p.x0) - sand * 0.45, z: cz, sw: sand, sd: d + sand, color: "#5a6e58" },
+    { x: wx(p.x1) + sand * 0.55, z: cz, sw: sand * 1.1, sd: d + sand, color: "#4a7a44" },
+  ];
   return (
-    <group>
-      <mesh position={[cx, rise * 0.5, wz(p.y0) - t * 0.2]} receiveShadow>
-        <boxGeometry args={[w + sand, rise, t]} />
-        <meshStandardMaterial color="#8a7a5c" roughness={0.92} />
-      </mesh>
-      <mesh position={[cx, rise * 0.45, wz(p.y1) + t * 0.2]} receiveShadow>
-        <boxGeometry args={[w + sand, rise * 0.9, t]} />
-        <meshStandardMaterial color="#7d8a6a" roughness={0.93} />
-      </mesh>
-      <mesh position={[wx(p.x0) - t * 0.2, rise * 0.5, cz]} receiveShadow>
-        <boxGeometry args={[t, rise, d + sand]} />
-        <meshStandardMaterial color="#7a8068" roughness={0.9} />
-      </mesh>
-      <mesh position={[wx(p.x1) + t * 0.2, rise * 0.5, cz]} receiveShadow>
-        <boxGeometry args={[t, rise, d + sand]} />
-        <meshStandardMaterial color="#6a8a58" roughness={0.92} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[cx, h(0.04), wz(p.y0) - sand * 0.55]} receiveShadow>
-        <planeGeometry args={[w + sand * 2, sand]} />
-        <meshStandardMaterial color="#cbb68a" roughness={0.9} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[cx, h(0.03), wz(p.y1) + sand * 0.55]} receiveShadow>
-        <planeGeometry args={[w + sand * 2, sand]} />
-        <meshStandardMaterial color="#bfc8a8" roughness={0.9} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[wx(p.x0) - sand * 0.55, h(0.02), cz]} receiveShadow>
-        <planeGeometry args={[sand, d + sand]} />
-        <meshStandardMaterial color="#5a6e58" roughness={0.55} metalness={0.08} />
-      </mesh>
-      <mesh rotation-x={-Math.PI / 2} position={[wx(p.x1) + sand * 0.7, h(0.05), cz]} receiveShadow>
-        <planeGeometry args={[sand * 1.2, d + sand]} />
-        <meshStandardMaterial color="#4a7a44" roughness={0.94} />
-      </mesh>
+    <group frustumCulled={false}>
+      {strips.map((s, i) => (
+        <mesh key={i} rotation-x={-Math.PI / 2} position={[s.x, h(0.02), s.z]} receiveShadow frustumCulled={false}>
+          <planeGeometry args={[s.sw, s.sd]} />
+          <meshStandardMaterial color={s.color} roughness={0.92} transparent opacity={0.72} fog />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function DistantSilhouettes() {
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const blocks = useRef<THREE.InstancedMesh>(null);
+  const hills = useRef<THREE.InstancedMesh>(null);
+  const play = useMemo(() => playableBounds(), []);
+  const { buildings, hillSpots } = useMemo(() => {
+    const buildings: { gx: number; gy: number; h: number; w: number; d: number }[] = [];
+    const hillSpots: { gx: number; gy: number; h: number; w: number; d: number }[] = [];
+    const cx = (play.x0 + play.x1) / 2;
+    const cy = (play.y0 + play.y1) / 2;
+    const rx = (play.x1 - play.x0) / 2;
+    const ry = (play.y1 - play.y0) / 2;
+    const rings = [
+      { r: SCENERY_MARGIN + 8, n: 48 },
+      { r: SCENERY_MARGIN + 28, n: 56 },
+      { r: SCENERY_MARGIN + HORIZON_PAD * 0.35, n: 40 },
+    ];
+    for (const ring of rings) {
+      for (let i = 0; i < ring.n; i++) {
+        const a = (i / ring.n) * Math.PI * 2 + hash2(i, ring.r) * 0.35;
+        const gx = cx + Math.cos(a) * (rx + ring.r);
+        const gy = cy + Math.sin(a) * (ry + ring.r);
+        const hill = hash2(gx, gy) > 0.62;
+        const spot = {
+          gx,
+          gy,
+          h: hill ? h(1.2 + hash2(gy, gx) * 2.8) : h(2.4 + hash2(gx * 0.2, gy) * 5.5),
+          w: hill ? h(2.8 + hash2(gx, gy) * 4) : h(0.9 + hash2(gy, gx) * 1.4),
+          d: hill ? h(2.4 + hash2(gy, gx) * 3.5) : h(0.8 + hash2(gx, gy) * 1.2),
+        };
+        if (hill) hillSpots.push(spot);
+        else buildings.push(spot);
+      }
+    }
+    return { buildings, hillSpots };
+  }, [play]);
+
+  useLayoutEffect(() => {
+    const b = blocks.current;
+    const hi = hills.current;
+    if (!b || !hi) return;
+    buildings.forEach((s, i) => {
+      dummy.position.set(wx(s.gx), s.h * 0.5, wz(s.gy));
+      dummy.scale.set(s.w, s.h, s.d);
+      dummy.updateMatrix();
+      b.setMatrixAt(i, dummy.matrix);
+    });
+    hillSpots.forEach((s, i) => {
+      dummy.position.set(wx(s.gx), s.h * 0.5, wz(s.gy));
+      dummy.scale.set(s.w, s.h, s.d);
+      dummy.updateMatrix();
+      hi.setMatrixAt(i, dummy.matrix);
+    });
+    b.instanceMatrix.needsUpdate = true;
+    hi.instanceMatrix.needsUpdate = true;
+  }, [buildings, dummy, hillSpots]);
+
+  if (!buildings.length && !hillSpots.length) return null;
+
+  return (
+    <group frustumCulled={false}>
+      {buildings.length ? (
+        <instancedMesh ref={blocks} args={[undefined, undefined, buildings.length]} frustumCulled={false} castShadow>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#7a8488" roughness={0.94} fog transparent opacity={0.82} />
+        </instancedMesh>
+      ) : null}
+      {hillSpots.length ? (
+        <instancedMesh ref={hills} args={[undefined, undefined, hillSpots.length]} frustumCulled={false} castShadow>
+          <coneGeometry args={[1, 1, 5]} />
+          <meshStandardMaterial color="#4a6848" roughness={0.96} fog transparent opacity={0.78} />
+        </instancedMesh>
+      ) : null}
     </group>
   );
 }
@@ -401,13 +457,14 @@ function HorizonClouds() {
 
 export function DistantFills() {
   return (
-    <group>
+    <group frustumCulled={false}>
       <OceanRim />
       <WorldSkirt />
       <RimParks />
       <RimLakes />
       <ParkTrees />
-      <SectionRidge />
+      <ShoreTransition />
+      <DistantSilhouettes />
       <HorizonHaze />
       <HorizonClouds />
     </group>

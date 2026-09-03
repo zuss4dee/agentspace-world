@@ -1,11 +1,16 @@
 import { WORLD_BUILDINGS } from "./campus";
-import type { BuildingSpec, CompanyProfile } from "./building-spec";
+import type { AdImageFrame, BuildingSpec, CompanyProfile, LogoPose } from "./building-spec";
 import { COMPANIES, companyForBuilding } from "./companies";
 import { getPlot } from "./plots";
 import type { Building } from "./types";
 import { cleanPalette, isCompanyTier } from "./brand-profile";
 
-export type { CompanyProfile } from "./building-spec";
+export type { CompanyProfile, LogoPose } from "./building-spec";
+
+/** Profile updates; `logoPose: null` clears a saved outdoor logo placement. */
+export type CompanyProfilePatch = Partial<Omit<CompanyProfile, "logoPose">> & {
+  logoPose?: LogoPose | null;
+};
 
 export const EMPTY_PROFILE: CompanyProfile = {
   name: "",
@@ -16,6 +21,10 @@ export const EMPTY_PROFILE: CompanyProfile = {
   founder: "",
   team: "",
   visitorMessage: "",
+  adHeadline: "",
+  adImage: "",
+  ctaLabel: "",
+  ctaUrl: "",
 };
 
 /** Normalize a user-entered URL for safe external navigation. */
@@ -92,7 +101,7 @@ export const BUILDING_PROFILES: Record<string, CompanyProfile> = {
   },
   incubator: {
     name: "Echt",
-    logo: "",
+    logo: "https://www.useecht.com/icon.svg?icon.0dies.oh8h0xt.svg",
     does: "A startup on Agentspace — desks downstairs, founder room on the glass.",
     description:
       "Echt House is the company building on Startup Row. Floor desks, a ship table, and the front door the city actually uses.",
@@ -205,17 +214,59 @@ export function profileFromCompany(companyId?: string): CompanyProfile | undefin
 }
 
 const TEXT_KEYS = Object.keys(EMPTY_PROFILE) as Array<
-  "name" | "logo" | "website" | "does" | "description" | "founder" | "team" | "visitorMessage"
+  | "name"
+  | "logo"
+  | "website"
+  | "does"
+  | "description"
+  | "founder"
+  | "team"
+  | "visitorMessage"
+  | "adHeadline"
+  | "adImage"
+  | "ctaLabel"
+  | "ctaUrl"
 >;
 
-export function mergeProfile(...parts: Array<Partial<CompanyProfile> | undefined>): CompanyProfile {
+/** Ad fields that may be cleared explicitly (empty string removes prior value). */
+const CLEARABLE_AD_KEYS = ["adHeadline", "adImage", "ctaLabel", "ctaUrl"] as const;
+
+const AD_IMAGE_FRAMES = new Set<AdImageFrame>(["landscape", "square", "portrait"]);
+
+function isAdImageFrame(v: unknown): v is AdImageFrame {
+  return typeof v === "string" && AD_IMAGE_FRAMES.has(v as AdImageFrame);
+}
+
+function normalizeYaw(deg: number): number {
+  const n = deg % 360;
+  return n < 0 ? n + 360 : n;
+}
+
+function parseLogoPose(v: unknown): LogoPose | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const p = v as Record<string, unknown>;
+  if (typeof p.x !== "number" || typeof p.z !== "number" || typeof p.yaw !== "number") return undefined;
+  if (!Number.isFinite(p.x) || !Number.isFinite(p.z) || !Number.isFinite(p.yaw)) return undefined;
+  return { x: p.x, z: p.z, yaw: normalizeYaw(p.yaw) };
+}
+
+export function mergeProfile(...parts: Array<CompanyProfilePatch | undefined>): CompanyProfile {
   const out: CompanyProfile = { ...EMPTY_PROFILE };
   for (const part of parts) {
     if (!part) continue;
     for (const key of TEXT_KEYS) {
+      if ((CLEARABLE_AD_KEYS as readonly string[]).includes(key)) continue;
       const v = part[key];
       if (typeof v === "string" && v.trim()) out[key] = v;
     }
+    for (const key of CLEARABLE_AD_KEYS) {
+      if (!Object.prototype.hasOwnProperty.call(part, key)) continue;
+      const v = part[key];
+      if (typeof v !== "string") continue;
+      if (v.trim()) out[key] = v;
+      else out[key] = "";
+    }
+    if (isAdImageFrame(part.adImageFrame)) out.adImageFrame = part.adImageFrame;
     if (isCompanyTier(part.tier)) out.tier = part.tier;
     if (Array.isArray(part.palette)) out.palette = cleanPalette(part.palette);
     if (part.brand && typeof part.brand === "object") out.brand = { ...out.brand, ...part.brand };
@@ -227,6 +278,14 @@ export function mergeProfile(...parts: Array<Partial<CompanyProfile> | undefined
     }
     if (part.buildingStatus === "building" || part.buildingStatus === "ready" || part.buildingStatus === "failed") {
       out.buildingStatus = part.buildingStatus;
+    }
+    if ("logoPose" in part) {
+      if (part.logoPose === null || part.logoPose === undefined) {
+        delete out.logoPose;
+      } else {
+        const pose = parseLogoPose(part.logoPose);
+        if (pose) out.logoPose = pose;
+      }
     }
   }
   return out;

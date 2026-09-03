@@ -1,4 +1,4 @@
-"""Build a Silicon City company building from a brand JSON profile.
+"""Build a company HQ from brand JSON via procedural grammar pipeline.
 
 Usage (Blender background or MCP):
   blender --background scripts/blender/agentspace-world-multitask.blend \\
@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from agentspace.brand_profile import load_brand_profile
-from agentspace.siliconcity.builder import build_from_profile
+from agentspace.brand_profile import build_spec_from_profile, load_brand_profile
+from agentspace.company_building import build_company_building
 
 MARKER = "ASW_BUILD_JSON:"
 LEGACY_MARKER = "ASW_SILICONCITY_JSON:"
@@ -43,6 +43,7 @@ def main() -> None:
     ap.add_argument("--root-local", default=os.environ.get("ASW_ROOT_LOCAL", "260,200,0"))
     ap.add_argument("--asset-id", default=os.environ.get("ASW_ASSET_ID") or None)
     ap.add_argument("--tier", default=os.environ.get("ASW_TIER") or None)
+    ap.add_argument("--plot-id", default=os.environ.get("ASW_PLOT_ID") or None)
     args, _ = ap.parse_known_args(sys.argv[1:])
 
     brand_path = args.brand
@@ -50,20 +51,25 @@ def main() -> None:
         raise SystemExit("pass --brand path/to/brand.json (or ASW_BRAND_JSON)")
 
     profile = load_brand_profile(brand_path)
-    report = build_from_profile(
+    spec = build_spec_from_profile(
         profile,
         asset_id=args.asset_id,
         root_local=_parse_xyz(args.root_local),
         tier=args.tier,
+        plot_id=args.plot_id,
     )
+    report = build_company_building(spec.brand, spec)
+    report["grammar"] = spec.recipe
+    report["structuralFingerprint"] = spec.recipe_params.get("structuralFingerprint")
+    report["plotId"] = spec.parcel_id
     payload = json.dumps(report, default=str)
     print(MARKER + payload)
     print(LEGACY_MARKER + payload)
     print(
         "BUILD_OK",
         report.get("assetId"),
-        report.get("archetype"),
-        report.get("uniquenessKey"),
+        spec.recipe,
+        report.get("structuralFingerprint") or spec.recipe_params.get("uniquenessKey"),
         report.get("rootLocal"),
     )
 

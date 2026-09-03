@@ -107,21 +107,34 @@ def write_logo_manifest(logo, info: dict, company_id: str | None = None) -> str 
     return str(manifest)
 
 
+def _svg_width_units(path: Path) -> float:
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    viewbox = re.search(r"""viewBox\s*=\s*["']\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)""", raw, re.I)
+    if viewbox:
+        return max(float(viewbox.group(1)), 0.001)
+    width = re.search(r"""width\s*=\s*["']\s*([\d.]+)""", raw, re.I)
+    if width:
+        return max(float(width.group(1)), 0.001)
+    return 120.0
+
+
 def _import_svg(path: Path, prefix, parent, col, asset_id, info, x, y, z, width):
     before = set(bpy.data.objects)
     bpy.ops.import_curve.svg(filepath=str(path))
     imported = [ob for ob in bpy.data.objects if ob not in before]
     if not imported:
         raise RuntimeError("SVG importer produced no objects")
-    min_x = min(ob.bound_box[i][0] for ob in imported for i in range(8))
-    max_x = max(ob.bound_box[i][0] for ob in imported for i in range(8))
-    raw_width = max(0.001, max_x - min_x)
+    raw_width = _svg_width_units(path)
     scale = width / raw_width
     for i, ob in enumerate(imported):
         ob.parent = parent
         ob.location = (x, y, z)
         ob.rotation_euler.x = 1.57079632679
         ob.scale = (scale, scale, scale)
+        if ob.type == "CURVE" and ob.data:
+            ob.data.dimensions = "2D"
+            ob.data.fill_mode = "BOTH"
+            ob.data.resolution_u = 12
         tag(
             ob,
             asset_id=asset_id or str(parent.get("asw_assetId") or ""),
@@ -135,23 +148,71 @@ def _import_svg(path: Path, prefix, parent, col, asset_id, info, x, y, z, width)
         ob["asw_logoSha256"] = info["sha256"]
         ob["asw_logoAspectRatio"] = info["aspectRatio"]
         link(ob, col)
+        if ob.type == "CURVE":
+            bpy.context.view_layer.objects.active = ob
+            ob.select_set(True)
+            bpy.ops.object.convert(target="MESH")
+            ob.select_set(False)
     return len(imported)
 
 
-def apply_logo_surface(part, prefix, logo, x, y, z, parent, col, *, width=3.0, depth=0.12, asset_id=""):
+def create_logo_anchor(parent, col, asset_id: str, x, y, z, *, role: str = "facade") -> bpy.types.Object:
+    """Named empty for intentional logo / landmark attachment (facade, entrance, roof, landmark)."""
+    name = f"{role}.logo_anchor"
+    anchor = bpy.data.objects.new(name, None)
+    anchor.parent = parent
+    anchor.location = (x, y, z)
+    anchor.empty_display_type = "SPHERE"
+    anchor.empty_display_size = 0.12
+    bpy.context.scene.collection.objects.link(anchor)
+    tag(
+        anchor,
+        asset_id=asset_id or str(parent.get("asw_assetId") or ""),
+        component_id=f"{role}.logo_anchor",
+        kind="brand_logo_anchor",
+        runtime=True,
+    )
+    anchor["asw_logoAnchorRole"] = role
+    link(anchor, col)
+    return anchor
+
+
+def apply_logo_surface(
+    part,
+    prefix,
+    logo,
+    x,
+    y,
+    z,
+    parent,
+    col,
+    *,
+    width=3.0,
+    depth=0.12,
+    asset_id="",
+    anchor_role: str | None = None,
+):
     """Place an official logo on a physical sign surface.
 
-    SVGs are first attempted as image-backed surfaces; if Blender cannot load
-    the format, callers receive a structured fallback rather than a fake logo.
+    SVGs import as curve geometry; PNG/JPG become image-backed planes.
+    Creates a named ``{role}.logo_anchor`` empty at the placement origin.
     """
+    role = anchor_role or prefix.split(".")[0] if prefix else "facade"
     info = inspect_logo(logo)
     if not info.get("available"):
         return info
     path = Path(info["path"])
     try:
+        create_logo_anchor(parent, col, asset_id, x, y, z, role=role)
         if path.suffix.lower() == ".svg":
             count = _import_svg(path, prefix, parent, col, asset_id, info, x, y, z, width)
-            return {**info, "placed": True, "componentId": f"{prefix}.official_logo.0", "objects": count}
+            return {
+                **info,
+                "placed": True,
+                "anchorRole": role,
+                "componentId": f"{prefix}.official_logo.0",
+                "objects": count,
+            }
         mat = _image_material(path, f"asw.logo.{asset_id or 'company'}.{prefix}")
         height = width / float(info["aspectRatio"])
         ob = part(
@@ -171,8 +232,6 @@ def apply_logo_surface(part, prefix, logo, x, y, z, parent, col, *, width=3.0, d
         ob["asw_logoSourceUrl"] = info.get("sourceUrl") or ""
         ob["asw_logoSha256"] = info["sha256"]
         ob["asw_logoAspectRatio"] = info["aspectRatio"]
-        return {**info, "placed": True, "componentId": ob.get("asw_componentId")}
+        return {**info, "placed": True, "anchorRole": role, "componentId": ob.get("asw_componentId")}
     except Exception as exc:
-        # Do not invent a replacement. The caller may use the supplied
-        # wordmark and report that it is a fallback.
         return {**info, "available": False, "fallback": True, "placed": False, "reason": str(exc)}

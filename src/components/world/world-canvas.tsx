@@ -3,6 +3,8 @@
 import { Canvas, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { BeaconMarker } from "@/components/world/gl/beacon-marker";
+import { BrandMarkersLayer } from "@/components/world/gl/brand-markers-layer";
+import { LogoPlacementLayer } from "@/components/world/gl/logo-placement-layer";
 import { BuildingsLayer } from "@/components/world/gl/buildings";
 import { BuildingGhost, ClaimedMarks, LatticeField, PlotsLayer, SaleStakes } from "@/components/world/gl/plots-layer";
 import { ExplorerCamera } from "@/components/world/gl/camera-rig";
@@ -14,7 +16,9 @@ import { StreetLife } from "@/components/world/gl/street-life";
 import { AuthoredEnvironmentLayer } from "@/components/world/gl/env-gltf";
 import { AuthoredWorldLayer, preloadAuthoredWorld } from "@/components/world/gl/world-gltf";
 import { StreetsLayer } from "@/components/world/gl/streets";
-import { DistantFills, GrassTufts, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
+import { GrassTufts, TerrainMesh, WaterPlane } from "@/components/world/gl/terrain";
+import { WorldEnvironment } from "@/components/world/gl/world-environment";
+import { atmospherePreset, DEFAULT_ATMOSPHERE } from "@/lib/atmosphere";
 import { useWorld } from "@/components/world/world-store";
 import { GRID, TERRAIN, districtAt } from "@/lib/campus";
 import { TILE, fromWorld, h, wx, wz } from "@/lib/coords";
@@ -66,12 +70,12 @@ function ExteriorScene() {
   const planeD = Math.max(GRID, land.y1) * TILE;
   const planeX = wx(Math.max(GRID, land.x1) / 2);
   const planeZ = wz(Math.max(GRID, land.y1) / 2);
+  const atmos = atmospherePreset(DEFAULT_ATMOSPHERE);
   return (
     <>
-      <color attach="background" args={["#c8c2b6"]} />
-      <fog attach="fog" args={["#cfc8ba", h(280), h(720)]} />
-      <hemisphereLight args={["#e8e4dc", "#5a6458", 0.55]} />
-      <ambientLight intensity={0.18} />
+      <WorldEnvironment atmosphereId={DEFAULT_ATMOSPHERE} />
+      <hemisphereLight args={[atmos.hemisphere.sky, atmos.hemisphere.ground, atmos.hemisphere.intensity]} />
+      <ambientLight intensity={atmos.ambient} />
       <ArchVizLights />
       <ExplorerCamera />
       <mesh
@@ -94,7 +98,6 @@ function ExteriorScene() {
           <AuthoredEnvironmentLayer />
           <StreetsLayer />
           <WaterPlane />
-          <DistantFills />
           <TreeField />
           <BushField />
           <StreetLife />
@@ -108,6 +111,8 @@ function ExteriorScene() {
       <ClaimedMarks />
       <BuildingGhost />
       <BuildingsLayer />
+      <BrandMarkersLayer />
+      <LogoPlacementLayer />
       <BeaconMarker />
       <TrafficLayer />
       <AgentsLayer />
@@ -142,9 +147,8 @@ export function WorldCanvas() {
         toneMapping: THREE.AgXToneMapping,
         toneMappingExposure: ARCH_EXPOSURE,
       }}
-      onCreated={({ gl, scene }) => {
-        gl.setClearColor("#c8c2b6", 1);
-        scene.background = new THREE.Color("#c8c2b6");
+      onCreated={({ gl }) => {
+        gl.setClearColor(atmospherePreset(DEFAULT_ATMOSPHERE).background, 1);
       }}
       className="size-full touch-none cursor-grab active:cursor-grabbing"
     >

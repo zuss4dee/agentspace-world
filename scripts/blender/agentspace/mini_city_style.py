@@ -108,6 +108,97 @@ def stylized_bike(part, prefix, x, y, z, mat_frame, mat_wheel, parent, col):
         )
 
 
+def site_vehicle_fit(ctx) -> float:
+    """Scale site cars so post–lot-fit size matches road-traffic Tesla."""
+    from .vehicle_scale import site_vehicle_fit_for_plot
+
+    grid = getattr(ctx.spec, "plot_grid", None) or {}
+    plot_w = float(grid.get("w") or 6.0)
+    footprint_w = float(ctx.W) or 40.0
+    return site_vehicle_fit_for_plot(plot_w, footprint_w)
+
+
+def stylized_site_car(part, prefix, x, y, z, body_mat, cabin_mat, parent, col, *, fit=1.0, along="y"):
+    """Toy site car — canonical Tesla road scale, corrected for lot-fit GLB scaling."""
+    from .vehicle_scale import (
+        CANONICAL_CAR_BODY_H_M,
+        CANONICAL_CAR_LENGTH_M,
+        CANONICAL_CAR_WIDTH_M,
+        CANONICAL_CAR_WHEEL_R_M,
+    )
+
+    length = CANONICAL_CAR_LENGTH_M * fit
+    width = CANONICAL_CAR_WIDTH_M * fit
+    body_h = CANONICAL_CAR_BODY_H_M * fit
+    wheel_r = CANONICAL_CAR_WHEEL_R_M * fit
+    bw, bd = (width, length) if along == "y" else (length, width)
+    body_z = z + wheel_r + body_h * 0.28
+    part(f"{prefix}.body", bw, bd, body_h, (x, y, body_z), body_mat, parent, col, f"{prefix}.body", bevel=0.1 * fit)
+    part(
+        f"{prefix}.cabin",
+        bw * 0.52,
+        bd * 0.88,
+        body_h * 0.78,
+        (x, y - bd * 0.04, body_z + body_h * 0.52),
+        cabin_mat,
+        parent,
+        col,
+        f"{prefix}.cabin",
+        bevel=0.08 * fit,
+    )
+    part(
+        f"{prefix}.roof",
+        bw * 0.44,
+        bd * 0.82,
+        body_h * 0.14,
+        (x, y - bd * 0.04, body_z + body_h * 0.9),
+        body_mat,
+        parent,
+        col,
+        f"{prefix}.roof",
+        bevel=0.03 * fit,
+    )
+    wheel_d = wheel_r * 2
+    for i, (ox, oy) in enumerate(
+        ((-bw * 0.3, -bd * 0.5), (bw * 0.3, -bd * 0.5), (-bw * 0.3, bd * 0.5), (bw * 0.3, bd * 0.5))
+    ):
+        part(
+            f"{prefix}.wheel.{i}",
+            wheel_d,
+            wheel_d * 0.35,
+            wheel_d,
+            (x + ox, y + oy, z + wheel_r),
+            body_mat,
+            parent,
+            col,
+            f"{prefix}.wheel.{i}",
+            bevel=0.04 * fit,
+        )
+        part(
+            f"{prefix}.hub.{i}",
+            wheel_d * 0.48,
+            wheel_d * 0.2,
+            wheel_d * 0.48,
+            (x + ox, y + oy, z + wheel_r),
+            cabin_mat,
+            parent,
+            col,
+            f"{prefix}.hub.{i}",
+            bevel=0.02 * fit,
+        )
+    part(
+        f"{prefix}.lights",
+        bw * 0.68,
+        0.1 * fit,
+        body_h * 0.14,
+        (x, y + bd / 2 + 0.05 * fit, body_z + body_h * 0.18),
+        cabin_mat,
+        parent,
+        col,
+        f"{prefix}.lights",
+    )
+
+
 def lot_ground(part, prefix, w, d, grass_mat, paver_mat, parent, col, *, plaza_w, plaza_d, plaza_y):
     """Grass lot base + warm paver plaza — no grey foundation slab."""
     part(f"{prefix}.grass", w * 0.98, d * 0.98, 0.14, (0, 0, 0.07), grass_mat, parent, col, f"{prefix}.grass")
@@ -408,27 +499,31 @@ def entrance_hero(
 
 
 def block_sign(part, prefix, text, x, y, z, mat, parent, col, *, s=0.52, t=0.2, d=0.24, gap=0.14):
-    glyphs = {
-        "E": ((0, 0, t, 1.0), (0, 0.85, 0.72, t), (0, 0.42, 0.58, t), (0, 0, 0.72, t)),
-        "C": ((0, 0, t, 1.0), (0, 0.85, 0.72, t), (0, 0, 0.72, t)),
-        "H": ((0, 0, t, 1.0), (0.56, 0, t, 1.0), (0, 0.42, 0.72, t)),
-        "T": ((0, 0.85, 0.78, t), (0.31, 0, t, 1.0)),
-    }
+    from .toy_font import glyph_advance, glyph_rects, sanitize_wordmark
+
+    text = sanitize_wordmark(text or "HQ", max_len=12)
     cursor = 0.0
     for li, ch in enumerate(text):
-        for bi, (lx, lz, lw, lh) in enumerate(glyphs[ch]):
+        if ch == " ":
+            cursor += glyph_advance(ch) * s + gap
+            continue
+        rects = glyph_rects(ch)
+        if not rects:
+            cursor += glyph_advance(ch) * s + gap
+            continue
+        for bi, (lx, lz, lw, lh) in enumerate(rects):
             part(
                 f"{prefix}.sign.{ch}.{bi}",
-                lw * s,
+                max(lw * s, t),
                 d,
-                lh * s,
+                max(lh * s, t),
                 (x + cursor + (lx + lw / 2) * s, y, z + (lz + lh / 2) * s),
                 mat,
                 parent,
                 col,
                 f"{prefix}.sign.{ch.lower()}.{li}.{bi}",
             )
-        cursor += (0.82 if ch != "T" else 0.78) * s + gap
+        cursor += glyph_advance(ch) * s + gap
     return cursor
 
 
@@ -570,6 +665,7 @@ def toy_entrance_portal(
     parent,
     col,
     *,
+    brand=None,
     portal_w=14.0,
     portal_h=9.5,
     canopy_w=16.0,
@@ -577,7 +673,7 @@ def toy_entrance_portal(
     pier_h=9.0,
     sign_scale=0.72,
 ):
-    """Oversized rounded toy entrance — canopy, chunky frame, integrated ECHT sign."""
+    """Oversized rounded toy entrance — canopy, chunky frame, brand logo or wordmark."""
     # Chunky portal recess
     part(
         f"{prefix}.recess",
@@ -651,7 +747,7 @@ def toy_entrance_portal(
         0.22,
         0.32,
         (x, y - canopy_d / 2 - 0.05, cz - 0.22),
-        mats["coral"],
+        mats["brand"],
         parent,
         col,
         f"{prefix}.canopy.trim",
@@ -668,7 +764,22 @@ def toy_entrance_portal(
             col,
             f"{prefix}.light.{i}",
         )
-    block_sign(part, prefix, "ECHT", x - 2.1, y - canopy_d / 2 - 0.12, cz + 0.05, mats["sign"], parent, col, s=sign_scale, d=0.28)
+    if brand is not None:
+        signage_from_brand(
+            part,
+            f"{prefix}.official",
+            brand,
+            x,
+            y - canopy_d / 2 - 0.14,
+            cz + 0.08,
+            mats["sign"],
+            parent,
+            col,
+            s=sign_scale,
+            d=0.24,
+        )
+    else:
+        block_sign(part, prefix, "HQ", x - 2.1, y - canopy_d / 2 - 0.12, cz + 0.05, mats["sign"], parent, col, s=sign_scale, d=0.28)
     # Chunky steps
     for i, (sw, sy) in enumerate(((portal_w * 1.05, 0.22), (portal_w * 0.88, 0.44), (portal_w * 0.72, 0.66))):
         part(
@@ -710,6 +821,7 @@ def signage_from_brand(part, prefix, brand, x, y, z, sign_mat, parent, col, *, s
             width=max(1.2, 5.0 * s),
             depth=d,
             asset_id=str(parent.get("asw_assetId") or ""),
+            anchor_role=prefix,
         )
         if result.get("placed"):
             return {"mode": "official", **result}

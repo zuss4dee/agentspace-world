@@ -169,6 +169,7 @@ def remove_asset(asset_id: str) -> int:
 
 
 def measure_local_bbox(asset_id: str, root) -> dict[str, Any]:
+    bpy.context.view_layer.update()
     root_inv = root.matrix_world.inverted()
     xs: list[float] = []
     ys: list[float] = []

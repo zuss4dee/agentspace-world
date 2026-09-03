@@ -34,15 +34,29 @@ export const STYLE_KEYWORDS = [
 
 export type StyleKeyword = (typeof STYLE_KEYWORDS)[number];
 
+/** Semantic roles for building materials and signage — not a flat scrape list. */
+export type BrandColourRoles = {
+  primary: string;
+  secondary: string;
+  accent: string;
+  background: string;
+  foreground: string;
+  logo: string[];
+};
+
 export type BrandProfile = {
   companyId: string;
   companyName: string;
   website?: string;
   tier: CompanyTier;
   logo: { wordmark: string; assetPath?: string | null; imageUrl?: string | null };
-  /** #rrggbb, ordered by prominence. */
+  /** Short about / tagline from the website (og:description / meta description). */
+  tagline?: string;
+  /** #rrggbb, ordered by prominence (derived from colourRoles when present). */
   primaryColours: string[];
   secondaryColours: string[];
+  /** Role-based palette for Blender material slots (PRIMARY / NEUTRAL / LOGO). */
+  colourRoles?: BrandColourRoles;
   typography: { display: string; body: string };
   visualStyle: string;
   industry: string;
@@ -77,10 +91,14 @@ export function slugifyCompany(text: string): string {
   return s || "company";
 }
 
-/** Deterministic pack asset id for a claimed company HQ. */
-export function defaultBuildingAssetId(profile: Pick<BrandProfile, "companyId" | "companyName">): string {
+/** Deterministic pack asset id for a claimed company HQ. Plot makes company+lot unique. */
+export function defaultBuildingAssetId(
+  profile: Pick<BrandProfile, "companyId" | "companyName">,
+  plotId?: string,
+): string {
   const slug = slugifyCompany(profile.companyId || profile.companyName);
-  return `pack.agentspace.building.${slug}.01`;
+  const plot = plotId ? slugifyCompany(plotId) : "";
+  return plot ? `pack.agentspace.building.${slug}.${plot}.01` : `pack.agentspace.building.${slug}.01`;
 }
 
 export function isStyleKeyword(v: unknown): v is StyleKeyword {
@@ -248,8 +266,14 @@ export function brandProfileFromCompanyProfile(
       assetPath: brand.logo?.assetPath ?? null,
       imageUrl: logoUrl,
     },
+    ...(brand.tagline?.trim()
+      ? { tagline: brand.tagline.trim().slice(0, 220) }
+      : profile.description.trim() && profile.description !== "You just claimed this lot. Write who you are — name, trade, and a line for the people who knock."
+        ? { tagline: profile.description.trim().slice(0, 220) }
+        : {}),
     primaryColours: primary,
     secondaryColours: secondary,
+    ...(brand.colourRoles ? { colourRoles: brand.colourRoles } : {}),
     typography: {
       display: brand.typography?.display?.trim() || base.typography.display,
       body: brand.typography?.body?.trim() || base.typography.body,

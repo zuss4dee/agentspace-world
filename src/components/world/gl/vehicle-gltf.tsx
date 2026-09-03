@@ -11,6 +11,9 @@ export const TESLA_SEDAN_ASSET_ID = "pack.agentspace.vehicle.car.tesla.sedan.01"
 export const TESLA_TRAFFIC_INDEX = 0;
 
 const M_TO_PX = TILE_PX / TILE_METERS;
+/** Modest bump so road cars read better from city camera — keep in sync with vehicle_scale.py. */
+export const ROAD_VEHICLE_SCALE_BOOST = 1.2;
+const ROAD_CAR_SCALE = M_TO_PX * ROAD_VEHICLE_SCALE_BOOST;
 
 function isGlassMaterial(mat: THREE.Material) {
   const p = mat as THREE.MeshPhysicalMaterial;
@@ -103,24 +106,25 @@ export function PackGltf({
 
 /** Procedural box car — kept as the default traffic visual and GLB fallback. */
 export function ProceduralCar({ color }: { color: string }) {
+  const s = ROAD_VEHICLE_SCALE_BOOST;
   return (
     <>
-      <mesh position={[0, h(0.08), 0]} castShadow>
-        <boxGeometry args={[h(0.2), h(0.08), h(0.38)]} />
+      <mesh position={[0, h(0.08 * s), 0]} castShadow>
+        <boxGeometry args={[h(0.2 * s), h(0.08 * s), h(0.38 * s)]} />
         <meshStandardMaterial color={color} metalness={0.42} roughness={0.38} />
       </mesh>
-      <mesh position={[0, h(0.14), h(-0.02)]} castShadow>
-        <boxGeometry args={[h(0.16), h(0.08), h(0.18)]} />
+      <mesh position={[0, h(0.14 * s), h(-0.02 * s)]} castShadow>
+        <boxGeometry args={[h(0.16 * s), h(0.08 * s), h(0.18 * s)]} />
         <meshPhysicalMaterial color="#1a1816" metalness={0.3} roughness={0.12} transparent opacity={0.7} />
       </mesh>
       {[
-        [-h(0.08), h(0.12)],
-        [h(0.08), h(0.12)],
-        [-h(0.08), h(-0.12)],
-        [h(0.08), h(-0.12)],
+        [-h(0.08 * s), h(0.12 * s)],
+        [h(0.08 * s), h(0.12 * s)],
+        [-h(0.08 * s), h(-0.12 * s)],
+        [h(0.08 * s), h(-0.12 * s)],
       ].map(([x, z], wi) => (
-        <mesh key={wi} position={[x, h(0.04), z]} rotation={[0, 0, Math.PI / 2]}>
-          <cylinderGeometry args={[h(0.035), h(0.035), h(0.04), 8]} />
+        <mesh key={wi} position={[x, h(0.04 * s), z]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[h(0.035 * s), h(0.035 * s), h(0.04 * s), 8]} />
           <meshStandardMaterial color="#1c1917" roughness={0.5} />
         </mesh>
       ))}
@@ -133,7 +137,7 @@ export function TeslaTrafficCar({ fallbackColor }: { fallbackColor: string }) {
     <PackGltf
       assetId={TESLA_SEDAN_ASSET_ID}
       fallback={<ProceduralCar color={fallbackColor} />}
-      scale={[M_TO_PX, M_TO_PX, M_TO_PX]}
+      scale={[ROAD_CAR_SCALE, ROAD_CAR_SCALE, ROAD_CAR_SCALE]}
       rotation={[0, Math.PI / 2, 0]}
       position={[0, -h(0.14), 0]}
     />

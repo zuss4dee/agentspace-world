@@ -44,6 +44,20 @@ def _slug(value: str) -> str:
     return "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in value.lower()).strip("-")
 
 
+def _resolve_logo_path(company_id: str, logo_raw: dict) -> str | None:
+    explicit = logo_raw.get("assetPath") or logo_raw.get("asset_path")
+    if explicit:
+        path = Path(str(explicit)).expanduser()
+        return str(path) if path.is_file() else str(explicit)
+    repo = ROOT.parent.parent
+    brand_dir = repo / "public" / "assets" / "brands" / _slug(company_id)
+    for ext in (".svg", ".png", ".jpg", ".jpeg"):
+        candidate = brand_dir / f"logo{ext}"
+        if candidate.is_file():
+            return str(candidate)
+    return None
+
+
 def _read_input(company: str, spec_path: str | None) -> dict:
     if spec_path:
         return json.loads(Path(spec_path).expanduser().read_text())
@@ -56,6 +70,7 @@ def _make_specs(raw: dict, company: str):
     name, primary, secondary, industry, personality = built_in
     brand_raw = raw.get("brand") if isinstance(raw.get("brand"), dict) else raw
     logo_raw = brand_raw.get("logo") if isinstance(brand_raw.get("logo"), dict) else {}
+    logo_path = _resolve_logo_path(company_id, logo_raw)
     brand = BrandSpec(
         company_id=company_id,
         company_name=str(brand_raw.get("companyName") or name),
@@ -69,7 +84,7 @@ def _make_specs(raw: dict, company: str):
         signage_direction=str(brand_raw.get("signageDirection") or ""),
         logo=BrandLogoSpec(
             wordmark=str(logo_raw.get("wordmark") or brand_raw.get("companyName") or name),
-            asset_path=logo_raw.get("assetPath") or logo_raw.get("asset_path"),
+            asset_path=logo_path,
             source_url=logo_raw.get("sourceUrl") or logo_raw.get("source_url"),
             fetched_at=logo_raw.get("fetchedAt") or logo_raw.get("fetched_at"),
             sha256=logo_raw.get("sha256"),
@@ -83,7 +98,7 @@ def _make_specs(raw: dict, company: str):
     spec = GeneratedBuildingSpec(
         asset_id=asset_id,
         building_id=str(building_raw.get("buildingId") or company_id),
-        parcel_id=str(building_raw.get("parcelId") or f"generated-{company_id}"),
+        parcel_id=str(building_raw.get("parcelId") or building_raw.get("plotId") or f"generated-{company_id}"),
         brand=brand,
         recipe=str(building_raw.get("recipe") or "auto"),
         root_local=tuple(building_raw.get("rootLocal") or (240.0, 24.0, 0.0)),
@@ -95,7 +110,7 @@ def _make_specs(raw: dict, company: str):
         mat_defs=dict(building_raw.get("matDefs") or {}),
         recipe_params=dict(building_raw.get("recipeParams") or {}),
         plot_grid={k: float(v) for k, v in grid.items()},
-        detail_density=str(building_raw.get("detailDensity") or "MEDIUM").upper(),
+        detail_density=str(building_raw.get("detailDensity") or "HIGH").upper(),
         runtime_export_kinds=list(building_raw.get("runtimeExportKinds") or [
             "structure", "facade", "window", "door", "roof", "canopy",
             "signage", "brand", "site", "landscape",
@@ -131,6 +146,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate a deterministic Agentspace company HQ")
     parser.add_argument("--company", required=True, help="company id or built-in demo id")
     parser.add_argument("--spec", help="JSON company/building spec")
+    parser.add_argument("--plot", "--plot-id", dest="plot_id", help="live plot id used as generation parcel")
+    parser.add_argument("--plot-grid", dest="plot_grid", help="x,y,w,h tile envelope")
+    parser.add_argument("--website", help="company website used for brand lookup")
     parser.add_argument("--preview", action="store_true", help="build into the library without publishing")
     parser.add_argument("--publish", action="store_true", help="export the generated pack and sync measured metadata")
     args = parser.parse_args()
@@ -138,6 +156,16 @@ def main() -> int:
         parser.error("--preview and --publish are mutually exclusive")
 
     raw = _read_input(args.company, args.spec)
+    if args.website:
+        raw["website"] = args.website
+    if args.plot_id:
+        raw["parcelId"] = args.plot_id
+        raw["plotId"] = args.plot_id
+    if args.plot_grid:
+        parts = [float(p.strip()) for p in args.plot_grid.split(",")]
+        if len(parts) != 4:
+            parser.error("--plot-grid expects x,y,w,h")
+        raw["plotGrid"] = {"x": parts[0], "y": parts[1], "w": parts[2], "h": parts[3]}
     brand, spec = _make_specs(raw, args.company)
     report = build_company_building(brand, spec)
     output = {"companyId": brand.company_id, "assetId": spec.asset_id, "preview": args.preview, "report": report}

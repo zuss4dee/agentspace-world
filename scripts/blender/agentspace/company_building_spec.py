@@ -51,4 +51,4 @@ class GeneratedBuildingSpec:
     plot_grid: dict[str, float] | None = None  # {x, y, w, h} tiles — plot allocation
     runtime_export_kinds: list[str] = field(default_factory=list)
     max_height: float | None = None
-    detail_density: str = "MEDIUM"
+    detail_density: str = "HIGH"

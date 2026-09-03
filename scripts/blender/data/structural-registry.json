@@ -1,0 +1,68 @@
+{
+  "entries": [
+    {
+      "assetId": "pack.agentspace.building.a.01",
+      "attempt": 0,
+      "companyId": "a",
+      "fingerprint": "942d855c198da5e1",
+      "plotId": "plot-a",
+      "recipe": "tower_campus",
+      "registeredAt": "2026-09-03T11:47:32.984748+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.spark.01",
+      "attempt": 0,
+      "companyId": "spark",
+      "fingerprint": "d10f7b1ac0a357bb",
+      "plotId": "gallery-spark",
+      "recipe": "smb_block",
+      "registeredAt": "2026-09-03T11:48:11.735427+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.nova.01",
+      "attempt": 0,
+      "companyId": "nova",
+      "fingerprint": "1ab600f070ba16eb",
+      "plotId": "gallery-nova",
+      "recipe": "enterprise_hq",
+      "registeredAt": "2026-09-03T11:48:14.152242+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.loft.01",
+      "attempt": 0,
+      "companyId": "loft",
+      "fingerprint": "8838c33646283c58",
+      "plotId": "gallery-loft",
+      "recipe": "startup_loft",
+      "registeredAt": "2026-09-03T11:48:19.148441+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.orbit.01",
+      "attempt": 0,
+      "companyId": "orbit",
+      "fingerprint": "7d7a157fab3eb597",
+      "plotId": "gallery-orbit",
+      "recipe": "courtyard_campus",
+      "registeredAt": "2026-09-03T11:48:21.151838+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.corner.01",
+      "attempt": 0,
+      "companyId": "corner",
+      "fingerprint": "0823449755544ee3",
+      "plotId": "gallery-corner",
+      "recipe": "low_rise_strip",
+      "registeredAt": "2026-09-03T11:48:23.194806+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.gallery.forge.01",
+      "attempt": 0,
+      "companyId": "forge",
+      "fingerprint": "f2fe96c3564fa9f6",
+      "plotId": "gallery-forge",
+      "recipe": "industrial_hall",
+      "registeredAt": "2026-09-03T11:48:24.970751+00:00"
+    }
+  ],
+  "version": 1
+}

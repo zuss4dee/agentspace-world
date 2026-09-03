@@ -9,8 +9,10 @@
     "lint": "eslint",
     "blender:publish": "node scripts/blender/publish.mjs",
     "blender:build-company": "node scripts/blender/build-company.mjs",
+    "blender:generate-building": "node scripts/blender/build-company.mjs",
     "building:generate": "blender --background scripts/blender/agentspace-world-multitask.blend --python scripts/blender/generate_building.py --",
     "building:test": "PYTHONPATH=scripts/blender python3 -m unittest agentspace.test_generator_contract",
+    "logo:build": "blender --background scripts/blender/agentspace-world-multitask.blend --python scripts/blender/build_logo.py --",
     "brand:resolve": "tsx scripts/resolve-brand-assets.ts"
   },
   "dependencies": {

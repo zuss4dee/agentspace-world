@@ -364,6 +364,21 @@ def entrance(ctx, name: str, face: Face, u: float, z0: float, w: float, h: float
             ctx.box(f"{name}.canopy.post.{k}", *col_d, col_l, frame_mat, bevel=0.06, kind="canopy")
 
 
+def balcony(ctx, name: str, face: Face, u: float, z: float, span: float, *, depth=1.55, deck="paver", rail="cream", posts="charcoal"):
+    """Projecting terrace: chunky deck slab + rail, readable at toy-city scale."""
+    dl, dd = face.place(u, z + 0.08, span, depth, 0.18, out=0.0)
+    ctx.box(f"{name}.deck", *dd, dl, deck, bevel=0.04, kind="facade")
+    rl, rd = face.place(u, z + 0.62, span, 0.12, 0.72, out=depth - 0.1)
+    ctx.box(f"{name}.rail.front", *rd, rl, rail, bevel=0.03, kind="facade")
+    for side in (-1, 1):
+        sl, sd = face.place(u + side * (span / 2 - 0.08), z + 0.55, 0.12, depth, 0.7, out=0.0)
+        ctx.box(f"{name}.rail.side.{side}", *sd, sl, rail, bevel=0.03, kind="facade")
+    for i in range(3):
+        pu = u - span / 2 + span * (i + 0.5) / 3
+        pl, pd = face.place(pu, z + 0.42, 0.14, 0.14, 0.7, out=depth - 0.12)
+        ctx.box(f"{name}.post.{i}", *pd, pl, posts, kind="facade")
+
+
 def vertical_fins(ctx, name: str, face: Face, z0: float, z1: float, count: int, mat, *, span=None, fin_w=0.34, depth=0.5):
     """Thick vertical fins between window columns — tower rhythm."""
     span = span if span is not None else face.length - 1.6

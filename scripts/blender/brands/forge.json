@@ -1,0 +1,11 @@
+{
+  "companyId": "forge",
+  "companyName": "Forge Works",
+  "tier": "startup",
+  "logo": { "wordmark": "FORGE" },
+  "primaryColours": ["#c2410c", "#ea580c"],
+  "secondaryColours": ["#1c1917"],
+  "industry": "manufacturing",
+  "styleKeywords": ["industrial", "tech"],
+  "personality": ["precise"]
+}

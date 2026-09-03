@@ -21,7 +21,31 @@ export type CompanyProfile = {
   buildingMeters?: { width: number; depth: number; height: number };
   /** HQ generation state from the claim wizard. */
   buildingStatus?: "building" | "ready" | "failed";
+  /** Large headline on the visitor ad modal. Falls back to tagline / does / name. */
+  adHeadline?: string;
+  /** Optional hero image on the visitor ad. Falls back to brand avatars. */
+  adImage?: string;
+  /** Primary CTA label. Defaults to "Explore {name}". */
+  ctaLabel?: string;
+  /** When set, CTA opens this URL in a new tab instead of entering the building. */
+  ctaUrl?: string;
+  /** Creative image aspect frame. Defaults to landscape (16:9). */
+  adImageFrame?: "landscape" | "square" | "portrait";
+  /**
+   * Custom outdoor logo marker pose, stored as offsets from the lot centre in world pixels.
+   * x = east, z = south; yaw = degrees (0 faces south / +Z). When unset, auto street-side placement is used.
+   */
+  logoPose?: LogoPose;
 };
+
+/** Owner-set pose for the outdoor brand logo marker on their lot. */
+export type LogoPose = {
+  x: number;
+  z: number;
+  yaw: number;
+};
+
+export type AdImageFrame = NonNullable<CompanyProfile["adImageFrame"]>;
 
 export type ArchFamily =
   | "office"

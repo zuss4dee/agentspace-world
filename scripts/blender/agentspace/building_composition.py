@@ -16,7 +16,7 @@ from .mini_city_style import (
     stylized_planter,
     stylized_tree,
 )
-from .mini_city_style_v2 import orb_sculpture_stack, rooftop_antenna_farm, toy_spire
+from .mini_city_style_v2 import orb_sculpture_stack, rooftop_antenna_farm, toy_spire, apply_night_facade
 from .param_rng import ParamRNG
 
 if TYPE_CHECKING:
@@ -310,11 +310,79 @@ def plan_composition(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[P
     return plans
 
 
-def _place_procedural(ctx: "BuildingContext", plan: PropPlan, part) -> None:
+def _has_official_logo(asset_id: str, role: str | None = None) -> bool:
+    for ob in bpy.data.objects:
+        if ob.get("asw_assetId") != asset_id:
+            continue
+        if not ob.get("asw_logoOfficial"):
+            continue
+        if role is None:
+            return True
+        cid = str(ob.get("asw_componentId") or ob.name)
+        if cid.startswith(f"{role}.") or role in cid:
+            return True
+    return False
+
+
+def apply_secondary_logos(ctx: "BuildingContext", anchors: BuildingAnchors) -> list[dict[str, Any]]:
+    """Place additional official logos at measured anchors when not already authored."""
+    logo = getattr(ctx.brand, "logo", None)
+    if not logo or not getattr(logo, "asset_path", None):
+        return []
+    from .logo_ingestion import apply_logo_surface
+
+    placed: list[dict[str, Any]] = []
+    s = ctx.scale
+    placements = [
+        (
+            "facade",
+            anchors.entrance[0],
+            anchors.front_y - 0.28 * s,
+            anchors.entrance[2] + 6.0 * s,
+            2.8 * s,
+        ),
+        (
+            "entrance",
+            anchors.entrance[0],
+            anchors.entrance[1],
+            anchors.entrance[2] + 3.2 * s,
+            2.2 * s,
+        ),
+        (
+            "roof",
+            anchors.roof_center[0],
+            anchors.roof_center[1],
+            anchors.roof_z + 0.35 * s,
+            2.0 * s,
+        ),
+    ]
+    for role, x, y, z, width in placements:
+        if _has_official_logo(ctx.asset_id, role):
+            continue
+        result = apply_logo_surface(
+            ctx.part,
+            role,
+            logo,
+            x,
+            y,
+            z,
+            ctx.root,
+            ctx.col,
+            width=width,
+            depth=0.1 * s,
+            asset_id=ctx.asset_id,
+            anchor_role=role,
+        )
+        if result.get("placed"):
+            placed.append({"role": role, "loc": (x, y, z), **result})
+    return placed
+
+
+def _place_procedural(ctx: "BuildingContext", plan: PropPlan, part, *, cid_prefix: str) -> None:
     m = ctx.mats
     x, y, z = plan.location
     s = plan.scale * ctx.scale
-    prefix = f"comp.{plan.slot}"
+    prefix = cid_prefix
     if plan.source == "hero_rings":
         hero_sculpture_rings(part, prefix, x, y, z, m["brand"], m["coral"], ctx.root, ctx.col, scale=s)
     elif plan.source == "orb_stack":
@@ -331,6 +399,130 @@ def _place_procedural(ctx: "BuildingContext", plan: PropPlan, part) -> None:
         rooftop_antenna_farm(part, prefix, x, y, z, m["charcoal"], m["coral"], ctx.root, ctx.col, count=2)
     elif plan.source == "spire":
         toy_spire(part, prefix, x, y, z, 2.5 * s, m["charcoal"], m["brand"], ctx.root, ctx.col)
+
+
+def _component_short(ob) -> str:
+    cid = str(ob.get("asw_componentId") or ob.name)
+    return cid.split("/")[-1] if "/" in cid else cid
+
+
+def _has_mass_detail(ctx: "BuildingContext", stem: str, *needles: str) -> bool:
+    for ob in bpy.data.objects:
+        if ob.get("asw_assetId") != ctx.asset_id:
+            continue
+        short = _component_short(ob)
+        if not short.startswith(stem) and stem not in short:
+            continue
+        if any(n in short for n in needles):
+            return True
+    return False
+
+
+def enrich_recipe_facades(ctx: "BuildingContext") -> dict[str, Any]:
+    """Safety-net pass — window rhythm, roof caps, entrance canopy on bare masses."""
+    if ctx.params.get("preset") == "echt_v1":
+        return {"skipped": True, "reason": "echt_v1 frozen"}
+
+    from .mini_city_style import toy_entrance_portal, toy_roof_stack
+
+    rng = ParamRNG(ctx.seed)
+    part = ctx.part
+    m = ctx.mats
+    front = _front(ctx)
+    added: list[str] = []
+
+    by_stem: dict[str, tuple[float, float, float, float, float, float]] = {}
+    for ob in bpy.data.objects:
+        if ob.get("asw_assetId") != ctx.asset_id or ob.type != "MESH":
+            continue
+        short = _component_short(ob)
+        if not any(short.startswith(p) for p in ("mass.", "stack.", "step.", "blob.", "ring.", "pod.", "base.", "gate.")):
+            continue
+        if any(short.startswith(p) for p in ("facade.", "roof.", "site.", "podium.", "enrich.")):
+            continue
+        xs, ys, zs = [], [], []
+        for corner in ob.bound_box:
+            loc = ob.matrix_local @ Vector(corner)
+            xs.append(loc.x)
+            ys.append(loc.y)
+            zs.append(loc.z)
+        if not xs:
+            continue
+        cx = (min(xs) + max(xs)) / 2
+        cy = (min(ys) + max(ys)) / 2
+        w = max(xs) - min(xs)
+        d = max(ys) - min(ys)
+        z0 = min(zs)
+        h = max(zs) - min(zs)
+        if h < 2.5 or w < 1.5:
+            continue
+        stem = ".".join(short.split(".")[:2]) if short.count(".") >= 1 else short
+        prev = by_stem.get(stem)
+        if prev is None or h > prev[3]:
+            by_stem[stem] = (cx, cy, z0, h, w, d)
+
+    for stem, (cx, cy, z0, h, w, d) in by_stem.items():
+        face_y = cy - d / 2 - 0.06
+        if not _has_mass_detail(ctx, stem, "facade", "win", "glass", "slot", "band", "curtain"):
+            style = rng.choice(f"enrich.{stem}.style", ["slots", "band", "mixed"])
+            apply_night_facade(
+                part,
+                f"enrich.{stem}",
+                cx,
+                face_y,
+                z0 + 1.8,
+                z0 + h - 0.8,
+                w * 0.62,
+                m,
+                ctx.root,
+                ctx.col,
+                style=style,
+                seed=rng.randint(f"enrich.{stem}", 0, 9999),
+            )
+            added.append(f"facade:{stem}")
+        if not _has_mass_detail(ctx, stem, "roof"):
+            toy_roof_stack(
+                part,
+                f"enrich.{stem}.roof",
+                w + 0.3,
+                d + 0.25,
+                cx,
+                cy,
+                z0 + h,
+                m["roof"],
+                m["charcoal"],
+                ctx.root,
+                ctx.col,
+                lip=0.38,
+            )
+            added.append(f"roof:{stem}")
+
+    has_entrance = any(
+        _component_short(o).startswith("entrance")
+        for o in bpy.data.objects
+        if o.get("asw_assetId") == ctx.asset_id
+    )
+    if not has_entrance:
+        toy_entrance_portal(
+            part,
+            "enrich.entrance",
+            0,
+            front + 2.0,
+            ctx.site_z,
+            m,
+            ctx.root,
+            ctx.col,
+            brand=ctx.brand,
+            portal_w=min(ctx.W * 0.42, 14.0),
+            portal_h=8.5,
+            canopy_w=min(ctx.W * 0.48, 16.0),
+            canopy_d=3.2,
+            pier_h=0,
+            sign_scale=0.55,
+        )
+        added.append("entrance")
+
+    return {"added": added, "masses": len(by_stem)}
 
 
 def apply_toy_composition(ctx: "BuildingContext") -> dict[str, Any]:
@@ -362,11 +554,14 @@ def apply_toy_composition(ctx: "BuildingContext") -> dict[str, Any]:
                 )
                 placed.append({"slot": plan.slot, "source": plan.source, "library": lib_id, "loc": loc})
             else:
-                _place_procedural(ctx, plan, ctx.part)
+                _place_procedural(ctx, plan, ctx.part, cid_prefix=cid)
                 placed.append({"slot": plan.slot, "source": plan.source, "procedural": True, "loc": plan.location})
         except Exception as exc:
             placed.append({"slot": plan.slot, "source": plan.source, "error": str(exc)})
 
+    secondary_logos = apply_secondary_logos(ctx, anchors)
+
+    density = str(ctx.params.get("detail_density") or getattr(ctx.spec, "detail_density", "MEDIUM")).upper()
     return {
         "skipped": False,
         "anchors": {
@@ -378,6 +573,7 @@ def apply_toy_composition(ctx: "BuildingContext") -> dict[str, Any]:
         },
         "plans": len(plans),
         "placed": placed,
+        "secondaryLogos": secondary_logos,
         "profile": ctx.params.get("composition_profile"),
         "detailDensity": density,
         "sculptureCatalogue": [entry["component_id"] for entry in SCULPTURE_CATALOG],

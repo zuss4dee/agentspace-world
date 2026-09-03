@@ -77,7 +77,7 @@ def generate_recipe_params(rng: ParamRNG, recipe: str, *, w: float, d: float) ->
         "detail_density": rng.weighted_choice(
             "detail_density",
             list(DETAIL_DENSITIES),
-            [0.8, 2.0, 1.2, 0.45],
+            [0.35, 1.0, 2.2, 1.4],
         ),
     }
     if recipe == "tower_campus":
@@ -92,8 +92,8 @@ def generate_recipe_params(rng: ParamRNG, recipe: str, *, w: float, d: float) ->
     return base
 
 
-def select_recipe(rng: ParamRNG, brand=None) -> str:
-    """Choose a family deterministically, with brand traits acting as a bias."""
+def _brand_recipe_weights(brand=None) -> dict[str, float]:
+    """Industry/personality bias on architectural grammars (not finished buildings)."""
     weights = {recipe: 1.0 for recipe in RECIPE_IDS}
     weights.update(
         {
@@ -115,6 +115,7 @@ def select_recipe(rng: ParamRNG, brand=None) -> str:
             str(getattr(brand, "visual_style", "")),
             str(getattr(brand, "architectural_direction", "")),
             " ".join(getattr(brand, "personality", []) or []),
+            " ".join(getattr(brand, "style_keywords", []) or []),
         ]
     ).lower()
     if any(token in text for token in ("creative", "design", "art", "playful", "marketing")):
@@ -129,4 +130,26 @@ def select_recipe(rng: ParamRNG, brand=None) -> str:
     if any(token in text for token in ("campus", "community", "education")):
         for recipe in ("courtyard_block", "bridge_complex"):
             weights[recipe] += 0.6
+    return weights
+
+
+def select_recipe(rng: ParamRNG, brand=None) -> str:
+    """Choose an architectural grammar deterministically, with brand traits as bias."""
+    weights = _brand_recipe_weights(brand)
     return rng.weighted_choice("recipe", list(RECIPE_IDS), [weights[r] for r in RECIPE_IDS])
+
+
+def select_recipe_for_envelope(rng: ParamRNG, brand, envelope_weights: dict[str, float]) -> str:
+    """Plot envelope + brand → grammar (may combine via hybrid)."""
+    weights = _brand_recipe_weights(brand)
+    for recipe, boost in envelope_weights.items():
+        if recipe in weights:
+            weights[recipe] += boost - 1.0
+    primary = rng.weighted_choice("recipe", list(RECIPE_IDS), [max(0.05, weights[r]) for r in RECIPE_IDS])
+    # Large plots: occasional grammar combination via hybrid
+    if envelope_weights.get("bridge_complex", 0) > 1.2 and rng.uniform("combo", 0, 1) > 0.55:
+        return "hybrid"
+    if primary == "courtyard_block" and envelope_weights.get("vertical_landmark", 0) > 0.9:
+        if rng.uniform("court_tower", 0, 1) > 0.5:
+            return "hybrid"
+    return primary

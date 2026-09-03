@@ -3,6 +3,14 @@ from __future__ import annotations
 
 import math
 
+from ..vehicle_scale import (
+    CANONICAL_CAR_BODY_H_M,
+    CANONICAL_CAR_LENGTH_M,
+    CANONICAL_CAR_WHEEL_R_M,
+    CANONICAL_CAR_WHEEL_W_M,
+    CANONICAL_CAR_WIDTH_M,
+    site_vehicle_scale,
+)
 from .primitives import Face, Mass
 from .signage import logo_flat, wordmark_on_face
 
@@ -164,23 +172,62 @@ def bollard(ctx, name: str, x, y, z, *, mat="charcoal", cap="cream"):
     ctx.cyl(f"{name}.cap", 0.18, 0.12, (x, y, z + 0.94), cap, segs=12, kind="landscape")
 
 
-def car(ctx, name: str, x, y, z, *, body="brand", cabin="glass", along="x", yaw=None, length=4.6, width=2.1):
-    """Chunky toy car: body + cabin + 4 wheel discs. `along` = parking direction."""
+def car(
+    ctx,
+    name: str,
+    x,
+    y,
+    z,
+    *,
+    body="brand",
+    cabin="glass",
+    along="x",
+    yaw=None,
+    length=CANONICAL_CAR_LENGTH_M,
+    width=CANONICAL_CAR_WIDTH_M,
+):
+    """Toy site car sized to match road-traffic Tesla after lot-fit GLB scaling."""
+    fit = site_vehicle_scale(ctx)
     rot_z = yaw if yaw is not None else (0.0 if along == "x" else math.pi / 2)
     rot = (0.0, 0.0, rot_z)
-    L, Wd = length, width
-    ctx.box(f"{name}.body", L, Wd, 0.78, (x, y, z + 0.62), body, bevel=0.22, kind="prop", rot=rot)
-    ctx.box(f"{name}.cabin", L * 0.5, Wd * 0.86, 0.66, (x - L * 0.05 * math.cos(rot_z), y - L * 0.05 * math.sin(rot_z), z + 1.3), cabin, bevel=0.2, kind="prop", rot=rot)
-    ctx.box(f"{name}.roof", L * 0.42, Wd * 0.8, 0.12, (x - L * 0.05 * math.cos(rot_z), y - L * 0.05 * math.sin(rot_z), z + 1.66), body, bevel=0.04, kind="prop", rot=rot)
+    L, Wd = length * fit, width * fit
+    body_h = CANONICAL_CAR_BODY_H_M * fit
+    wheel_r = CANONICAL_CAR_WHEEL_R_M * fit
+    wheel_w = CANONICAL_CAR_WHEEL_W_M * fit
+    body_z = z + wheel_r + body_h * 0.28
+    cabin_z = body_z + body_h * 0.52
+    roof_z = cabin_z + body_h * 0.42
+    ctx.box(f"{name}.body", L, Wd, body_h, (x, y, body_z), body, bevel=0.12 * fit, kind="prop", rot=rot)
+    ctx.box(
+        f"{name}.cabin",
+        L * 0.52,
+        Wd * 0.88,
+        body_h * 0.78,
+        (x - L * 0.04 * math.cos(rot_z), y - L * 0.04 * math.sin(rot_z), cabin_z),
+        cabin,
+        bevel=0.1 * fit,
+        kind="prop",
+        rot=rot,
+    )
+    ctx.box(
+        f"{name}.roof",
+        L * 0.44,
+        Wd * 0.82,
+        body_h * 0.14,
+        (x - L * 0.04 * math.cos(rot_z), y - L * 0.04 * math.sin(rot_z), roof_z),
+        body,
+        bevel=0.03 * fit,
+        kind="prop",
+        rot=rot,
+    )
     for i, (ax, ay) in enumerate(((-L * 0.3, -Wd * 0.5), (L * 0.3, -Wd * 0.5), (-L * 0.3, Wd * 0.5), (L * 0.3, Wd * 0.5))):
         wx = x + ax * math.cos(rot_z) - ay * math.sin(rot_z)
         wy = y + ax * math.sin(rot_z) + ay * math.cos(rot_z)
-        ctx.cyl(f"{name}.wheel.{i}", 0.42, 0.34, (wx, wy, z + 0.42), "rubber", segs=16, kind="prop", rot=(math.pi / 2, 0.0, rot_z))
-        ctx.cyl(f"{name}.hub.{i}", 0.2, 0.36, (wx, wy, z + 0.42), "cream", segs=12, kind="prop", rot=(math.pi / 2, 0.0, rot_z))
-    # lights
+        ctx.cyl(f"{name}.wheel.{i}", wheel_r, wheel_w, (wx, wy, z + wheel_r), "rubber", segs=16, kind="prop", rot=(math.pi / 2, 0.0, rot_z))
+        ctx.cyl(f"{name}.hub.{i}", wheel_r * 0.48, wheel_w * 1.05, (wx, wy, z + wheel_r), "cream", segs=12, kind="prop", rot=(math.pi / 2, 0.0, rot_z))
     fx = x + (L / 2) * math.cos(rot_z)
     fy = y + (L / 2) * math.sin(rot_z)
-    ctx.box(f"{name}.lights", 0.12, Wd * 0.7, 0.18, (fx, fy, z + 0.72), "sign", kind="prop", rot=rot)
+    ctx.box(f"{name}.lights", 0.1 * fit, Wd * 0.68, 0.14 * fit, (fx, fy, body_z + body_h * 0.18), "sign", kind="prop", rot=rot)
 
 
 def pole_sign(ctx, name: str, x, y, z, text: str, *, h=8.5, panel_w=5.2, panel_h=2.4, panel="brand", letters=None, pole="charcoal", with_logo=True):

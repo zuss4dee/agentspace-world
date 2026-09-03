@@ -9,6 +9,8 @@ import {
   type DerivedBrandProfile,
   type StyleKeyword,
 } from "./brand-profile";
+import { buildColourRolesFromSources, paletteFromRoles } from "./brand-colours";
+import { applyVerifiedOverride, verifiedOverrideFor } from "./brand-overrides";
 import { normalizeWebsiteUrl } from "./company-profile";
 
 export type { DerivedBrandProfile } from "./brand-profile";
@@ -706,16 +708,15 @@ export async function deriveBrandProfile(rawUrl: string): Promise<DerivedBrandPr
   const externalCss = sheets.join("\n");
   const allCss = `${inlineStyles}\n${styleAttrs}\n${externalCss}`;
 
-  // --- colours ----------------------------------------------------------------
-  const colours = collectColours(allCss, 1);
-  // Brand-named custom properties are a strong signal.
-  const brandVars = [...allCss.matchAll(/--[a-z0-9-]*(?:brand|primary|accent)[a-z0-9-]*\s*:\s*([^;}]+)/gi)].map((m) => m[1] ?? "").join(";");
-  mergeColourMaps(colours, collectColours(brandVars, 3));
+  // --- colours (semantic roles, not flat scrape) --------------------------------
   const themeColour = meta["theme-color"];
-  if (themeColour) mergeColourMaps(colours, collectColours(themeColour, 6));
-  const clusters = clusterColours([...colours.values()]);
-  const primaryColours = clusters.slice(0, 3).map((c) => c.rep.hex);
-  const secondaryColours = clusters.slice(3, 6).map((c) => c.rep.hex);
+  const { roles: colourRoles, hits: colourHits } = buildColourRolesFromSources({
+    html,
+    css: allCss,
+    themeColour,
+  });
+  const { primaryColours, secondaryColours } = paletteFromRoles(colourRoles);
+  const clusters = clusterColours([...colourHits.values()].map((h) => ({ hex: h.hex, hsl: h.hsl, weight: h.weight })));
 
   // --- fonts ------------------------------------------------------------------
   const fonts = fontFamilies(allCss);
@@ -727,6 +728,14 @@ export async function deriveBrandProfile(rawUrl: string): Promise<DerivedBrandPr
   const motionDecls = allCss.match(/\b(?:animation(?:-name)?|transition)\s*:/gi)?.length ?? 0;
   const libraries = motionLibraries(html, allCss);
   const hasMotion = keyframes > 0 || libraries.length > 0;
+
+  // --- about / tagline --------------------------------------------------------
+  const rawTagline = decodeEntities(
+    meta["og:description"] || meta["twitter:description"] || meta.description || "",
+  )
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 220);
 
   // --- text heuristics --------------------------------------------------------
   const text = `${visibleText(html)} ${meta.description ?? ""} ${meta["og:description"] ?? ""}`.slice(0, 200_000);
@@ -755,8 +764,10 @@ export async function deriveBrandProfile(rawUrl: string): Promise<DerivedBrandPr
     website: base.origin + (base.pathname === "/" ? "" : base.pathname),
     tier,
     logo: { wordmark: emptyBrandProfile(companyId, companyName).logo.wordmark, assetPath: null, imageUrl: logoUrl },
+    ...(rawTagline ? { tagline: rawTagline } : {}),
     primaryColours,
     secondaryColours,
+    colourRoles,
     typography: { display, body },
     visualStyle: visualStyleFor(keywords, industry),
     industry,
@@ -766,5 +777,6 @@ export async function deriveBrandProfile(rawUrl: string): Promise<DerivedBrandPr
     animations: { hasMotion, keyframes, libraries },
     derivedFrom: { url: normalized, fetchedAt: new Date().toISOString(), confidence },
   };
-  return profile;
+  const verified = verifiedOverrideFor(companyId, base.hostname);
+  return verified ? applyVerifiedOverride(profile, verified) : profile;
 }

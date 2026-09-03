@@ -1,4 +1,4 @@
-"""Three Silicon City archetypes — enterprise_hq / smb_block / startup_loft.
+"""Silicon City archetypes — authored SPARK/NOVA language plus envelope-scaled families.
 
 All coordinates are metres, root at plot centre, street at -Y, Z up. Each
 archetype builds: lawn tile + paver apron + sidewalk, saturated brand masses
@@ -16,6 +16,7 @@ from .primitives import (
     Mass,
     accent_wall,
     awning,
+    balcony,
     barrel_vault,
     block,
     columns,
@@ -578,6 +579,349 @@ def enterprise_hq(ctx) -> None:
     _anchors(ctx, entrance_xyz=(A.x + ent_u, A.y0, base), roof_center_xy=(T3.x, T3.y), roof_z=t3_roof)
 
 
+# ---------------------------------------------------------------------------
+# courtyard_campus — U-wings + mixed heights around a planted court
+# ---------------------------------------------------------------------------
+
+
+def courtyard_campus(ctx) -> None:
+    """Large-square campus: front bar, two wings of different height, rear link, corner tower."""
+    W, D = ctx.W, ctx.D
+    sh = ctx.storey
+    storeys = _storeys(ctx, 3)
+    ox, oy = _wing(ctx)
+    text = ctx.p("wordmark", "HQ")
+    density = float(ctx.p("prop_density", 0.7))
+    gb = max(0.35, min(0.95, float(ctx.p("glass_bias", 0.5)) * float(ctx.p("window_density", 1.0))))
+    frame = ctx.frame
+    cols = _win_cols(ctx, 4)
+    logo_mode = str(ctx.p("logo_mode", "facade_blade"))
+    style = str(ctx.p("facade_style", "fins"))
+
+    apron = Mass(0.0, 1.0, 0.0, W - 2.6, D - 5.0, 0.0)
+    base, lawn_z, _walk = _site(ctx, apron, walk_depth=3.8)
+
+    front_d = min(12.0, max(9.0, D * 0.20))
+    wing_t = min(12.0, max(8.6, W * 0.18))
+    y_front = -D / 2 + 4.4 + front_d / 2
+    F = Mass(ox * 0.2, y_front + oy * 0.12, base, W - 5.2, front_d, sh * 2)
+
+    back_limit = D / 2 - 2.4
+    left_d = max(16.0, back_limit - F.y1 + 1.8)
+    Lw = Mass(F.x0 + wing_t / 2 + ox * 0.25, F.y1 + left_d / 2 - 1.8, base, wing_t, left_d, sh * max(3, storeys))
+    right_d = max(14.0, left_d * 0.72)
+    Rw = Mass(F.x1 - wing_t / 2 + ox * 0.12, F.y1 + right_d / 2 - 1.8, base, wing_t, right_d, sh * 2)
+    rear_w = max(16.0, Rw.x0 - Lw.x1 + wing_t * 0.35)
+    rear_d = min(10.0, max(7.5, D * 0.14))
+    R = Mass((Lw.x1 + Rw.x0) / 2, Lw.y1 - rear_d / 2 + 0.5, base, rear_w, rear_d, sh * 1.15)
+    tw = min(11.0, wing_t)
+    T = Mass(Rw.x, min(Rw.y1 - tw / 2 + 1.0, back_limit - tw / 2), base, tw, tw, sh * (storeys + 1))
+
+    for name, m, mat, floors in (
+        ("F", F, "brand", 2),
+        ("L", Lw, "brand", max(3, storeys)),
+        ("Rwing", Rw, "coral", 2),
+        ("Rear", R, "cream_dark", 1),
+        ("T", T, "brand", storeys + 1),
+    ):
+        block(ctx, name, m, mat)
+        if floors > 1:
+            floor_lines(ctx, name, m, [base + sh * k for k in range(1, floors)], "cream")
+
+    f_roof = flat_roof(ctx, "F", F, parapet_mat="cream", parapet_h=0.6)
+    l_roof = _apply_main_roof(ctx, "L", Lw, default="parapet")
+    rw_roof = flat_roof(ctx, "Rwing", Rw, parapet_mat="cream", parapet_h=0.55)
+    r_roof = flat_roof(ctx, "Rear", R, parapet_mat="cream", parapet_h=0.4)
+    t_roof = flat_roof(ctx, "T", T, parapet_mat="cream", parapet_h=0.7)
+
+    ff = F.face("front")
+    storefront(ctx, "F.shop.l", ff, base, sh * 0.95, "glass", "cream", "cream_dark", u0=-F.w * 0.22, span=F.w * 0.32, cols=4)
+    awning(ctx, "F.awning.l", ff, -F.w * 0.22, base + sh * 0.84, F.w * 0.34, "coral", stripe_mat="cream", stripes=5, glow_mat="glow")
+    storefront(ctx, "F.shop.r", ff, base, sh * 0.95, "glass", "cream", "cream_dark", u0=F.w * 0.26, span=F.w * 0.22, cols=3)
+    awning(ctx, "F.awning.r", ff, F.w * 0.26, base + sh * 0.84, F.w * 0.24, "coral", stripe_mat="cream", stripes=3, glow_mat="glow")
+    entrance(ctx, "F.entrance", ff, 0.0, base, 4.4, sh * 1.7, "charcoal", "glass", "paver", canopy_mat="cream", canopy_strip="brand", steps=3)
+    fascia_sign(ctx, "F.fascia", ff, 0.0, base + sh * 1.85, min(14.0, F.w * 0.4), 1.2, "charcoal", "sign", text)
+    window_row(ctx, "F.front.f1", ff, base + sh, sh, max(6, cols + 2), frame, "glass", glass_bias=gb, span=F.w - 2.4)
+    window_grid(ctx, "L.court", Lw.face("right"), base, sh, list(range(max(3, storeys))), cols, frame, "glass", glass_bias=gb)
+    window_grid(ctx, "L.left", Lw.face("left"), base, sh, list(range(max(3, storeys))), cols, frame, "glass", glass_bias=gb)
+    window_grid(ctx, "Rw.court", Rw.face("left"), base, sh, list(range(2)), max(3, cols - 1), ctx.accent_frame, "glass", glass_bias=gb)
+    window_grid(ctx, "Rw.right", Rw.face("right"), base, sh, list(range(2)), max(3, cols - 1), ctx.accent_frame, "glass", glass_bias=gb)
+    _tower_facade(ctx, "T", T, ("front", "left", "right", "back"), list(range(storeys + 1)), max(2, cols - 1), frame, style=style if style != "slots" else "fins", levels=[base + sh * k for k in range(1, storeys + 1)])
+
+    # Inner terraces looking into the court
+    balcony(ctx, "L.balcony", Lw.face("right"), 0.0, base + sh * 2, min(8.0, Lw.d * 0.4), depth=1.6)
+    balcony(ctx, "Rw.balcony", Rw.face("left"), 0.0, base + sh, min(7.0, Rw.d * 0.45), depth=1.5)
+    roof_deck(ctx, "F.deck", F.x * 0.2, F.y, f_roof, min(14.0, F.w * 0.35), min(6.5, F.d * 0.55))
+
+    court_x = (Lw.x1 + Rw.x0) / 2
+    court_y = (F.y1 + min(Lw.y1, Rw.y1)) / 2
+    sky_bridge(ctx, "bridge", Lw.x1 - 0.15, Rw.x0 + 0.15, court_y + 2.0, base + sh * 1.05, d=3.4, h=sh * 0.75)
+
+    place_brand_logo_complements(
+        ctx,
+        mode=logo_mode,
+        text=text,
+        plaza_xy=(F.x1 - 4.0, F.y0 - 2.2),
+        plaza_z=lawn_z,
+        roof_xy=(T.x, T.y),
+        roof_z=t_roof,
+        facade_face=T.face("front"),
+        facade_u=0.0,
+        facade_z0=base + sh,
+        facade_h=T.h - sh,
+        roof_size=T.w * 0.42,
+        always_roof_plaque=True,
+    )
+    solar_array(ctx, "L.roof.solar", Lw.x, Lw.y - 2.0, l_roof, 2, 4)
+    hvac_unit(ctx, "L.roof.hvac", Lw.x, Lw.y + left_d * 0.22, l_roof)
+    satellite_dish(ctx, "T.roof.dish", T.x - 2.4, T.y + 2.2, t_roof)
+    water_tank(ctx, "Rear.tank", R.x0 + 2.2, R.y, r_roof, r=1.0, h=1.9)
+    vent_stack(ctx, "Rw.vent", Rw.x, Rw.y, rw_roof)
+    if density > 0.55:
+        rooftop_billboard(ctx, "L.billboard", Lw.x, Lw.y0 + 1.4, l_roof, text, w=8.5, h=2.8, lift=1.8, panel="cream", letters="charcoal")
+    if ctx.p("motion_accent", False):
+        beacon_mast(ctx, "T.beacon", T.x + 2.4, T.y + 2.4, t_roof, h=6.2, motion=True)
+
+    pole_sign(ctx, "sign.pole", F.x0 + 2.4, F.y0 - 2.6, lawn_z, text, h=9.2, panel_w=5.4, panel_h=2.3, with_logo=False)
+    parking_row(ctx, "cars", F.x - 10.0, F.x + 6.0, F.y0 - 2.8, lawn_z + 0.14, 3, rng=ctx.rng)
+    blob_tree(ctx, "court.tree.a", court_x - 3.2, court_y, base, s=0.95)
+    blob_tree(ctx, "court.tree.b", court_x + 3.4, court_y + 2.2, base, s=0.85)
+    blob_tree(ctx, "court.tree.c", court_x, court_y + 5.0, base, s=0.75)
+    bench(ctx, "court.bench.a", court_x - 1.2, court_y - 2.4, base)
+    bench(ctx, "court.bench.b", court_x + 2.4, court_y - 2.4, base)
+    hedge(ctx, "court.hedge", court_x, min(Lw.y1, Rw.y1) - 1.2, base, min(12.0, rear_w * 0.6))
+    planter(ctx, "F.planter.l", F.x - 6.0, F.y0 - 1.4, lawn_z, w=1.3)
+    planter(ctx, "F.planter.r", F.x + 6.0, F.y0 - 1.4, lawn_z, w=1.3)
+    lamp(ctx, "lamp.l", F.x0 + 3.0, F.y0 - 2.0, lawn_z)
+    lamp(ctx, "lamp.r", F.x1 - 3.0, F.y0 - 2.0, lawn_z)
+    blob_tree(ctx, "edge.tree.a", Lw.x0 - 1.6, Lw.y, lawn_z, s=1.0)
+    blob_tree(ctx, "edge.tree.b", Rw.x1 + 1.6, Rw.y, lawn_z, s=0.9)
+    blob_tree(ctx, "edge.tree.c", R.x, min(D / 2 - 2.0, R.y1 + 1.4), lawn_z, s=0.85)
+    for i in range(3):
+        bollard(ctx, f"bollard.{i}", F.x - 4.0 + i * 2.4, F.y0 - 1.8, lawn_z)
+
+    _anchors(ctx, entrance_xyz=(F.x, F.y0, base), roof_center_xy=(T.x, T.y), roof_z=max(t_roof, l_roof))
+
+
+# ---------------------------------------------------------------------------
+# low_rise_strip — wide + shallow retail / studio ribbon
+# ---------------------------------------------------------------------------
+
+
+def low_rise_strip(ctx) -> None:
+    """Horizontal headquarters: long two-storey frontage + taller end pavilion + rear service."""
+    W, D = ctx.W, ctx.D
+    sh = ctx.storey
+    storeys = _storeys(ctx, 2)
+    ox, oy = _wing(ctx)
+    text = ctx.p("wordmark", "HQ")
+    density = float(ctx.p("prop_density", 0.7))
+    gb = max(0.35, min(0.95, float(ctx.p("glass_bias", 0.5)) * float(ctx.p("window_density", 1.0))))
+    frame = ctx.frame
+    cols = _win_cols(ctx, 8)
+    logo_mode = str(ctx.p("logo_mode", "plaza_totem"))
+
+    apron = Mass(0.0, 0.6, 0.0, W - 2.2, D - 3.6, 0.0)
+    base, lawn_z, _walk = _site(ctx, apron, walk_depth=3.2)
+
+    main_d = min(11.4, max(8.8, D * 0.44))
+    pav_w = min(13.5, max(10.0, W * 0.15))
+    y_main = -D / 2 + 4.6 + main_d / 2 + oy * 0.15
+    A = Mass(-1.0 + ox * 0.2, y_main, base, W - 8.0 - pav_w, main_d, sh * storeys)
+    P = Mass(min(A.x1 + pav_w / 2 - 1.1, W / 2 - pav_w / 2 - 1.6), y_main - 0.6, base, pav_w, main_d + 1.4, sh * (storeys + 1))
+    S = Mass(A.x0 + min(A.w, 22.0) * 0.28, A.y1 + 3.2 + oy * 0.1, base, min(22.0, A.w * 0.38), min(6.4, D * 0.22), sh * 1.05)
+
+    block(ctx, "A", A, "brand")
+    floor_lines(ctx, "A", A, [base + sh * k for k in range(1, storeys)], "cream")
+    block(ctx, "P", P, "coral")
+    floor_lines(ctx, "P", P, [base + sh * k for k in range(1, storeys + 1)], "cream")
+    block(ctx, "S", S, "cream_dark", bevel=0.2)
+
+    a_roof = flat_roof(ctx, "A", A, parapet_mat="cream", parapet_h=0.55)
+    p_roof = _apply_main_roof(ctx, "P", P, default="pitch")
+    parapet(ctx, "S", S, "cream", h=0.4, t=0.3)
+
+    af = A.face("front")
+    bay = A.w / 3.2
+    storefront(ctx, "A.shop.a", af, base, sh * 0.92, "glass", "cream", "cream_dark", u0=-bay * 0.95, span=bay * 0.9, cols=4)
+    awning(ctx, "A.awning.a", af, -bay * 0.95, base + sh * 0.82, bay * 0.96, "coral", stripe_mat="cream", stripes=4, glow_mat="glow")
+    storefront(ctx, "A.shop.b", af, base, sh * 0.92, "glass", "cream", "cream_dark", u0=bay * 0.15, span=bay * 0.85, cols=3)
+    awning(ctx, "A.awning.b", af, bay * 0.15, base + sh * 0.82, bay * 0.9, "coral", stripe_mat="cream", stripes=3, glow_mat="glow")
+    entrance(ctx, "A.entrance", af, -bay * 0.15, base, 3.6, sh * 0.95, "charcoal", "glass", "paver", canopy_mat="cream", canopy_strip="brand", steps=2)
+    fascia_sign(ctx, "A.fascia", af, 0.0, base + sh * 1.05, min(16.0, A.w * 0.42), 1.15, "charcoal", "sign", text)
+    for fi in range(1, storeys):
+        window_row(ctx, f"A.front.f{fi}", af, base + sh * fi, sh, max(8, cols), frame, "glass", glass_bias=gb, span=A.w - 2.2)
+    window_row(ctx, "A.back", A.face("back"), base + 0.5, sh, max(6, cols - 2), "charcoal", "glass", glass_bias=gb, span=A.w - 2.4)
+
+    pf = P.face("front")
+    storefront(ctx, "P.shop", pf, base, sh * 0.9, "glass", "cream", "cream_dark", u0=0.0, span=P.w - 2.2, cols=3)
+    awning(ctx, "P.awning", pf, 0.0, base + sh * 0.8, P.w - 1.6, "brand", stripe_mat="cream", stripes=3, glow_mat="glow")
+    window_grid(ctx, "P.front", pf, base, sh, list(range(1, storeys + 1)), 3, ctx.accent_frame, "glass", glass_bias=gb, margin=0.9)
+    window_grid(ctx, "P.right", P.face("right"), base, sh, list(range(storeys + 1)), 2, ctx.accent_frame, "glass", glass_bias=gb, margin=0.85)
+    balcony(ctx, "P.balcony", pf, 0.0, base + sh * storeys, min(6.5, P.w - 2.4), depth=1.45)
+    logo_on_face(ctx, "logo.facade", pf, 0.0, base + sh * storeys * 0.55, min(3.2, sh * 0.8), backing_mat="cream")
+
+    window_row(ctx, "S.back", S.face("back"), base, S.h, 3, "charcoal", "glass", z_frac=0.55, glass_bias=gb)
+
+    place_brand_logo_complements(
+        ctx,
+        mode=logo_mode,
+        text=text,
+        plaza_xy=(A.x0 + 3.0, A.y0 - 2.4),
+        plaza_z=lawn_z,
+        roof_xy=(P.x, P.y),
+        roof_z=p_roof if isinstance(p_roof, float) else a_roof,
+        facade_face=af,
+        facade_u=-bay * 0.6,
+        facade_z0=base + sh,
+        facade_h=sh,
+        roof_size=P.w * 0.5,
+        always_roof_plaque=True,
+    )
+    solar_array(ctx, "A.roof.solar", A.x - A.w * 0.15, A.y, a_roof, 2, 6)
+    hvac_unit(ctx, "A.roof.hvac.a", A.x + A.w * 0.22, A.y - 1.4, a_roof)
+    if density > 0.5:
+        hvac_unit(ctx, "A.roof.hvac.b", A.x + A.w * 0.08, A.y + 1.6, a_roof, w=1.6, d=1.2, h=1.0)
+    satellite_dish(ctx, "P.roof.dish", P.x - 2.0, P.y + 1.6, a_roof + 0.2)
+    water_tank(ctx, "S.tank", S.x1 - 1.6, S.y, S.top, r=0.9, h=1.7)
+    vent_stack(ctx, "A.vent", A.x - A.w * 0.3, A.y + 1.5, a_roof)
+    rooftop_billboard(ctx, "A.billboard", A.x + A.w * 0.12, A.y0 + 0.8, a_roof, text, w=9.0, h=2.6, lift=1.6, panel="cream", letters="charcoal")
+
+    pole_sign(ctx, "sign.pole", A.x0 + 2.2, A.y0 - 2.5, lawn_z, text, h=8.0, panel_w=5.0, panel_h=2.1, with_logo=False)
+    parking_row(ctx, "cars", A.x - 16.0, A.x + 12.0, A.y0 - 2.6, lawn_z + 0.14, 4, rng=ctx.rng)
+    for i, x in enumerate((A.x - A.w * 0.35, A.x, A.x + A.w * 0.28)):
+        planter(ctx, f"planter.{i}", x, A.y0 - 1.35, lawn_z, w=1.15)
+        blob_tree(ctx, f"tree.front.{i}", x + 2.2, A.y0 - 1.5, lawn_z, s=0.72 + 0.08 * i)
+    blob_tree(ctx, "tree.l", A.x0 - 1.5, A.y, lawn_z, s=0.9)
+    blob_tree(ctx, "tree.r", P.x1 + 1.5, P.y, lawn_z, s=0.85)
+    hedge(ctx, "hedge.rear", S.x, min(D / 2 - 1.4, S.y1 + 1.3), lawn_z, min(24.0, A.w * 0.5))
+    bench(ctx, "bench", A.x - 4.0, A.y0 - 1.2, base)
+    lamp(ctx, "lamp.l", A.x0 + 4.0, A.y0 - 2.2, lawn_z)
+    lamp(ctx, "lamp.r", P.x, P.y0 - 2.0, lawn_z)
+    for i in range(4):
+        bollard(ctx, f"bollard.{i}", A.x - 6.0 + i * 2.2, A.y0 - 1.7, lawn_z)
+
+    _anchors(ctx, entrance_xyz=(A.x - bay * 0.15, A.y0, base), roof_center_xy=(P.x, P.y), roof_z=max(a_roof, p_roof if isinstance(p_roof, float) else a_roof))
+
+
+# ---------------------------------------------------------------------------
+# industrial_hall — narrow + deep office head + long sawtooth hall
+# ---------------------------------------------------------------------------
+
+
+def industrial_hall(ctx) -> None:
+    """Deep plot: street-facing office / lab head, long connected hall, loading dock."""
+    W, D = ctx.W, ctx.D
+    sh = ctx.storey
+    storeys = _storeys(ctx, 3)
+    ox, oy = _wing(ctx)
+    text = ctx.p("wordmark", "HQ")
+    density = float(ctx.p("prop_density", 0.7))
+    gb = max(0.35, min(0.95, float(ctx.p("glass_bias", 0.5)) * float(ctx.p("window_density", 1.0))))
+    frame = ctx.frame
+    cols = _win_cols(ctx, 4)
+    logo_mode = str(ctx.p("logo_mode", "roof_deck"))
+    roof_mod = _roof_module(ctx, "pitch")
+
+    apron = Mass(0.0, 1.4, 0.0, W - 2.4, D - 4.4, 0.0)
+    base, lawn_z, _walk = _site(ctx, apron, walk_depth=3.6)
+
+    head_d = min(16.0, max(12.0, D * 0.22))
+    y_head = -D / 2 + 4.8 + head_d / 2
+    H = Mass(ox * 0.2, y_head + oy * 0.1, base, min(W - 5.0, W * 0.84), head_d, sh * storeys)
+    hall_w = min(H.w * 0.78, W - 8.0)
+    hall_d = max(22.0, (D / 2 - 2.4) - H.y1 + 1.6)
+    L = Mass(H.x + ox * 0.1, H.y1 + hall_d / 2 - 1.6, base, hall_w, hall_d, sh * 1.85)
+    dock_w = 5.0
+    dock = Mass(max(L.x0 - 2.2, -W / 2 + dock_w / 2 + 1.4), L.y - hall_d * 0.12, base + 0.2, dock_w, min(10.0, hall_d * 0.28), sh * 0.85)
+
+    block(ctx, "H", H, "brand")
+    floor_lines(ctx, "H", H, [base + sh * k for k in range(1, storeys)], "cream")
+    block(ctx, "L", L, "cream_dark", bevel=0.22)
+    floor_lines(ctx, "L", L, [base + sh], "cream", thick=0.3, proud=0.2)
+    block(ctx, "Dock", dock, "charcoal", bevel=0.16)
+
+    h_roof = flat_roof(ctx, "H", H, parapet_mat="cream", parapet_h=0.65)
+    if roof_mod == "barrel":
+        hall_top = barrel_vault(ctx, "L.vault", L.x, L.y, L.top + 0.12, L.w - 1.0, min(L.d * 0.7, 16.0), "brand", "cream", slats=7, rise=min(5.2, sh * 1.2), end_mat="coral")
+        parapet(ctx, "L", L, "cream", h=0.4)
+    else:
+        hall_top = sawtooth_roof(ctx, "L.roof", Mass(L.x, L.y, L.top, L.w - 0.8, L.d - 1.0, 0.0), max(3, min(6, int(L.w / 5.5))), "cream", "glass", "coral", rise=sh * 0.9)
+        parapet(ctx, "L", L, "cream", h=0.35)
+
+    hf = H.face("front")
+    storefront(ctx, "H.shop", hf, base, sh * 0.95, "glass", "cream", "cream_dark", u0=-H.w * 0.18, span=H.w * 0.42, cols=4)
+    awning(ctx, "H.awning", hf, -H.w * 0.18, base + sh * 0.84, H.w * 0.46, "coral", stripe_mat="cream", stripes=5, glow_mat="glow")
+    entrance(ctx, "H.entrance", hf, H.w * 0.22, base, 3.8, sh * 1.55, "charcoal", "glass", "paver", canopy_mat="cream", canopy_strip="brand", steps=3)
+    fascia_sign(ctx, "H.fascia", hf, 0.0, base + sh * 1.7, min(12.0, H.w * 0.5), 1.2, "charcoal", "sign", text)
+    for fi in range(1, storeys):
+        window_row(ctx, f"H.front.f{fi}", hf, base + sh * fi, sh, max(4, cols), frame, "glass", glass_bias=gb, span=H.w - 2.2)
+    window_grid(ctx, "H.right", H.face("right"), base, sh, list(range(storeys)), 3, frame, "glass", glass_bias=gb)
+    window_grid(ctx, "H.left", H.face("left"), base, sh, list(range(storeys)), 3, frame, "glass", glass_bias=gb)
+    balcony(ctx, "H.balcony", hf, -H.w * 0.08, base + sh * 2, min(8.0, H.w * 0.35), depth=1.5)
+
+    lf, lb = L.face("left"), L.face("back")
+    n_ind = max(4, min(8, int(L.d / 4.5)))
+    for i in range(n_ind):
+        u = -L.d * 0.38 + L.d * 0.76 * (i + 0.5) / n_ind
+        industrial_window(ctx, f"L.left.{i}", lf, u, base + sh * 0.95, 3.4, sh * 0.7, frame, "glass", panes_x=3, panes_y=2)
+    for i in range(max(3, cols)):
+        u = -L.w * 0.32 + L.w * 0.64 * (i + 0.5) / max(3, cols)
+        industrial_window(ctx, f"L.back.{i}", lb, u, base + sh * 0.9, 3.6, sh * 0.66, frame, "glass", panes_x=3, panes_y=2)
+    # loading door on dock
+    df = dock.face("left")
+    dl, dd = df.place(0.0, dock.z0 + dock.h * 0.42, 3.2, 0.18, dock.h * 0.7)
+    ctx.box("Dock.door", *dd, dl, "metal", bevel=0.04, kind="door")
+    awning(ctx, "Dock.canopy", df, 0.0, dock.z0 + dock.h * 0.88, 4.6, "coral", depth=2.2, drop=0.7, stripe_mat="cream", stripes=3)
+
+    mural = accent_wall(ctx, "L.mural", L.face("right"), "coral", t=0.4, inset=0.3)
+    wordmark_on_face(ctx, "L.mural.text", text, mural, 0.0, base + 1.2, ctx.letters_on_accent, s=2.1, depth=0.28, max_w=min(16.0, mural.length - 2.0))
+
+    place_brand_logo_complements(
+        ctx,
+        mode=logo_mode,
+        text=text,
+        plaza_xy=(H.x1 - 3.2, H.y0 - 2.3),
+        plaza_z=lawn_z,
+        roof_xy=(H.x, H.y),
+        roof_z=h_roof,
+        facade_face=hf,
+        facade_u=H.w * 0.22,
+        facade_z0=base + sh,
+        facade_h=sh * max(1, storeys - 1),
+        roof_size=H.w * 0.36,
+        always_roof_plaque=True,
+    )
+    solar_array(ctx, "H.solar", H.x - 4.0, H.y, h_roof, 2, 3)
+    hvac_unit(ctx, "H.hvac", H.x + 5.0, H.y - 2.0, h_roof)
+    hvac_unit(ctx, "L.hvac", L.x + hall_w * 0.22, L.y - 4.0, L.top + 0.15, w=1.8, d=1.4, h=1.15)
+    satellite_dish(ctx, "L.dish", L.x - hall_w * 0.28, L.y + hall_d * 0.28, L.top + 0.15)
+    water_tank(ctx, "L.tank", L.x + hall_w * 0.28, L.y + hall_d * 0.3, L.top + 0.15, r=1.05, h=2.1)
+    vent_stack(ctx, "L.vent.a", L.x - 3.0, L.y, L.top + 0.15, h=1.4)
+    vent_stack(ctx, "L.vent.b", L.x + 3.0, L.y + 4.0, L.top + 0.15, h=1.8)
+    roof_access_box(ctx, "L.access", L.x, L.y - hall_d * 0.2, L.top + 0.1)
+    if ctx.p("motion_accent", False):
+        beacon_mast(ctx, "L.beacon", L.x, L.y1 - 2.2, hall_top, h=6.5, motion=True)
+    else:
+        beacon_mast(ctx, "L.mast", L.x, L.y1 - 2.2, hall_top, h=5.2, motion=False, orb="coral")
+
+    pole_sign(ctx, "sign.pole", H.x0 + 2.0, H.y0 - 2.5, lawn_z, text, h=8.6, panel_w=5.2, panel_h=2.2, with_logo=False)
+    parking_row(ctx, "cars", H.x - 8.0, H.x + 6.0, H.y0 - 2.7, lawn_z + 0.14, 3, rng=ctx.rng)
+    blob_tree(ctx, "tree.fl", H.x0 - 1.4, H.y0 + 2.0, lawn_z, s=0.9)
+    blob_tree(ctx, "tree.fr", H.x1 + 1.4, H.y0 + 2.0, lawn_z, s=0.85)
+    blob_tree(ctx, "tree.ml", L.x0 - 2.6, L.y, lawn_z, s=0.8)
+    blob_tree(ctx, "tree.back", L.x, min(D / 2 - 1.8, L.y1 + 1.5), lawn_z, s=0.95)
+    hedge(ctx, "hedge.r", min(W / 2 - 1.6, L.x1 + 2.4), L.y, lawn_z, min(22.0, hall_d * 0.55), along="y")
+    planter(ctx, "planter.l", H.x - 5.0, H.y0 - 1.3, lawn_z, w=1.2)
+    planter(ctx, "planter.r", H.x + 5.0, H.y0 - 1.3, lawn_z, w=1.2)
+    bench(ctx, "bench", H.x - 2.4, H.y0 - 1.15, base)
+    lamp(ctx, "lamp", H.x + 8.0, H.y0 - 2.1, lawn_z)
+    for i in range(3):
+        bollard(ctx, f"bollard.{i}", H.x + 2.0 + i * 2.0, H.y0 - 1.7, lawn_z)
+
+    _anchors(ctx, entrance_xyz=(H.x + H.w * 0.22, H.y0, base), roof_center_xy=(L.x, L.y), roof_z=hall_top)
+
+
 def _rot_about(loc, centre, ang):
     if not ang:
         return loc
@@ -592,4 +936,7 @@ ARCHETYPES = {
     "enterprise_hq": enterprise_hq,
     "smb_block": smb_block,
     "startup_loft": startup_loft,
+    "courtyard_campus": courtyard_campus,
+    "low_rise_strip": low_rise_strip,
+    "industrial_hall": industrial_hall,
 }

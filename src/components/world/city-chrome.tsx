@@ -6,6 +6,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { PlotSheet } from "@/components/world/plot-sheet";
 import { ClaimSetupWizard } from "@/components/world/claim-setup-wizard";
+import { AdEditSheet } from "@/components/world/ad-edit-sheet";
+import { LogoPlacementSheet } from "@/components/world/logo-placement-sheet";
 import { CompanyProfileCard } from "@/components/world/company-profile";
 import { BuildingStudio } from "@/components/world/building-studio";
 import { useWorld } from "@/components/world/world-store";
@@ -19,8 +21,10 @@ import {
 import { bestAdjoiningSale, buildingSize, centerPlace, claimIssueFor, claimedCoversPlot, coverageOfClaims, expandPrice, getPlot, LAND_USES, MAX_CLAIMS, maxExpandFor, plotArea, plotRect, resizeSlice, usesForPlot, workingLand } from "@/lib/plots";
 import { formatUsd } from "@/lib/companies";
 import { WORLD_BUILDINGS } from "@/lib/campus";
-import { profileOf, visitSiteUrl } from "@/lib/company-profile";
+import { occupancyHas, withOccupancyIds } from "@/lib/generated-occupancy";
+import { profileOf, BUILDING_PROFILES } from "@/lib/company-profile";
 import { brandProfileFileName, brandProfileFromCompanyProfile, downloadBrandProfile } from "@/lib/brand-profile";
+import { adLogoUrl } from "@/lib/business-ad";
 import { CAMERA_SHORTCUTS, SHORTCUT_SURFACES } from "@/lib/shortcuts";
 import { ARCH_VIEW_LABEL, type ArchView } from "@/lib/arch-viz";
 
@@ -62,33 +66,46 @@ export function CityChrome() {
     setArchView,
     connectBot,
     openClaimSetup,
+    openAdEdit,
+    adEditPlotId,
+    openLogoEdit,
+    logoEditPlotId,
+    dismissLogoEdit,
+    moveBuilding,
   } = useWorld();
   const [bid, setBid] = useState(String(Math.ceil(beaconBidCents / 100) || BEACON_NEXT_BID));
   const [keysOpen, setKeysOpen] = useState(false);
   const [walkingIn, setWalkingIn] = useState(false);
   const occupied = useMemo(
-    () => coverageOfClaims(claimedPlotIds, claimedExtras),
+    () => coverageOfClaims(withOccupancyIds(claimedPlotIds), claimedExtras),
     [claimedPlotIds, claimedExtras],
   );
   const activity = useMemo(() => shopActivity(), []);
   const picked = getPlot(selectedPlotId);
-  const pickedClaimed = Boolean(picked && claimedCoversPlot(picked.id, claimedPlotIds));
+  const occupancySelected = Boolean(picked && occupancyHas(picked.id));
+  const userClaimed = Boolean(picked && claimedCoversPlot(picked.id, claimedPlotIds));
+  const pickedClaimed = userClaimed || occupancySelected;
   const worldBuilding = selectedBuildingId
     ? WORLD_BUILDINGS.find((b) => b.id === selectedBuildingId)
     : undefined;
+  const authoredOccupiedId =
+    selectedBuildingId && BUILDING_PROFILES[selectedBuildingId] ? selectedBuildingId : null;
   const occupiedId =
-    worldBuilding?.id ?? (pickedClaimed && picked && buildingSpecs[picked.id] ? picked.id : null);
-  const showCompany = Boolean(!interiorId && occupiedId);
+    worldBuilding?.id ??
+    authoredOccupiedId ??
+    (occupancySelected && picked ? picked.id : null) ??
+    (userClaimed && picked && buildingSpecs[picked.id] ? picked.id : null);
+  const showCompany = Boolean(!interiorId && occupiedId && !logoEditPlotId);
   const occupiedSpec = occupiedId ? buildingSpecs[occupiedId] : undefined;
   const occupiedProfile = occupiedId ? profileOf(occupiedSpec, occupiedId) : null;
   const pickedCompanyReady = Boolean(
-    pickedClaimed && picked && buildingSpecs[picked.id]?.profile?.name?.trim(),
+    occupancySelected || (userClaimed && picked && buildingSpecs[picked.id]?.profile?.name?.trim()),
   );
-  const pickedProfile = pickedClaimed && picked ? buildingSpecs[picked.id]?.profile : undefined;
+  const pickedProfile = picked && (userClaimed || occupancySelected) ? buildingSpecs[picked.id]?.profile : undefined;
   const pickedBuildingReady = Boolean(pickedProfile?.buildingAssetId);
   const pickedBuildingFailed = pickedProfile?.buildingStatus === "failed";
   const ownedBrand =
-    pickedClaimed && picked && pickedCompanyReady && occupiedProfile && occupiedId === picked.id
+    userClaimed && picked && pickedCompanyReady && occupiedProfile && occupiedId === picked.id
       ? brandProfileFromCompanyProfile(picked.id, occupiedProfile)
       : null;
   const exportOwnedBrand = ownedBrand
@@ -97,6 +114,16 @@ export function CityChrome() {
         toast.success(`${brandProfileFileName(ownedBrand)} downloaded.`);
       }
     : undefined;
+  const ownedSelected = Boolean(userClaimed && occupiedId && picked && occupiedId === picked.id);
+  const moveTargets = useMemo(() => {
+    if (!ownedSelected || !occupiedId || !occupiedProfile?.buildingAssetId) return [];
+    return claimedPlotIds
+      .filter((id) => id !== occupiedId && !buildingSpecs[id]?.profile?.buildingAssetId)
+      .map((id) => {
+        const p = getPlot(id);
+        return { id, label: p?.groupLabel ?? id };
+      });
+  }, [ownedSelected, occupiedId, occupiedProfile?.buildingAssetId, claimedPlotIds, buildingSpecs]);
   const land = picked ? workingLand(picked, landSlice ?? plotRect(picked)) : undefined;
   const selectedLands = selectedPlotIds
     .map((id) => {
@@ -112,14 +139,14 @@ export function CityChrome() {
     land && land.kind === "sale" && !pickedClaimed
       ? maxExpandFor(
           land,
-          coverageOfClaims(claimedPlotIds, claimedExtras, picked?.id),
+          coverageOfClaims(withOccupancyIds(claimedPlotIds), claimedExtras, picked?.id),
           LAND_USES.find((u) => u.id === previewUseId),
           buildingPlace,
         )
       : 0;
   const issue =
     land && land.kind === "sale" && !pickedClaimed
-      ? claimIssueFor(selectedLands.length ? selectedLands : [land], claimedPlotIds, claimedExtras)
+      ? claimIssueFor(selectedLands.length ? selectedLands : [land], withOccupancyIds(claimedPlotIds), claimedExtras)
       : null;
   const adjoining = land
     ? bestAdjoiningSale(land, [...claimedPlotIds, ...selectedPlotIds])
@@ -137,12 +164,16 @@ export function CityChrome() {
       }
       if (e.key === "Escape") {
         setKeysOpen(false);
+        if (logoEditPlotId) {
+          dismissLogoEdit();
+          return;
+        }
         selectPlot(null);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [dismissLogoEdit, logoEditPlotId, selectPlot]);
 
   return (
     <>
@@ -327,26 +358,36 @@ export function CityChrome() {
       {showCompany && occupiedProfile && occupiedId ? (
         <CompanyProfileCard
           profile={occupiedProfile}
-          owned={Boolean(pickedClaimed && occupiedId === picked?.id)}
+          owned={ownedSelected}
           onClose={() => selectPlot(null)}
           onEnter={() => enterBuilding(occupiedId)}
-          onVisit={
-            visitSiteUrl(occupiedProfile)
-              ? () => {
-                  const url = visitSiteUrl(occupiedProfile);
-                  if (url) window.open(url, "_blank", "noopener,noreferrer");
-                }
-              : () => {
-                  const b = WORLD_BUILDINGS.find((row) => row.id === occupiedId);
-                  if (b) focusCoord(b.origin.x + b.size.x / 2, b.origin.y + b.size.y / 2, 1.55);
-                }
-          }
-          visitLabel={visitSiteUrl(occupiedProfile) ? "Visit site" : "View on map"}
-          onExportBrand={exportOwnedBrand}
-          exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
           onBuildHq={
-            pickedClaimed && picked && occupiedId === picked.id && !pickedBuildingReady
+            userClaimed && picked && occupiedId === picked.id && !pickedBuildingReady
               ? () => openClaimSetup(picked.id, "build")
+              : undefined
+          }
+          onEditAd={ownedSelected ? () => openAdEdit(occupiedId) : undefined}
+          onPlaceLogo={
+            ownedSelected && occupiedProfile && adLogoUrl(occupiedProfile)
+              ? () => openLogoEdit(occupiedId!)
+              : undefined
+          }
+          moveTargets={ownedSelected ? moveTargets : undefined}
+          onMoveBuilding={
+            ownedSelected && occupiedProfile?.buildingAssetId && claimedPlotIds.length >= 2
+              ? (destId) => {
+                  const result = moveBuilding(occupiedId, destId);
+                  if (result.ok) {
+                    const dest = getPlot(destId);
+                    toast.success(`HQ moved to ${dest?.groupLabel ?? "your other lot"}.`);
+                  } else if (result.reason === "occupied") {
+                    toast.error("That lot already has a building. Pick an empty owned lot.");
+                  } else if (result.reason === "not-owned") {
+                    toast.error("You can only move to lots you already own.");
+                  } else {
+                    toast.error("Could not move building.");
+                  }
+                }
               : undefined
           }
         />
@@ -442,14 +483,14 @@ export function CityChrome() {
           }}
           onEnter={enterBuilding}
           onBid={() => setBeaconOpen(true)}
-          onSetupCompany={pickedClaimed && picked ? () => openClaimSetup(picked.id) : undefined}
+          onSetupCompany={userClaimed && picked ? () => openClaimSetup(picked.id) : undefined}
           companyReady={pickedCompanyReady}
           buildingReady={pickedBuildingReady}
           buildingFailed={pickedBuildingFailed}
           onExportBrand={exportOwnedBrand}
           exportBrandName={ownedBrand ? brandProfileFileName(ownedBrand) : undefined}
           onBuildHq={
-            pickedClaimed && picked && pickedCompanyReady
+            userClaimed && picked && pickedCompanyReady
               ? () => openClaimSetup(picked.id, "build")
               : undefined
           }
@@ -457,6 +498,8 @@ export function CityChrome() {
       ) : null}
 
       <ClaimSetupWizard />
+      {adEditPlotId ? <AdEditSheet plotId={adEditPlotId} /> : null}
+      {logoEditPlotId ? <LogoPlacementSheet /> : null}
 
       {beaconOpen ? (
         <div className="ns-bid-scrim" role="presentation" onClick={() => setBeaconOpen(false)}>

@@ -91,6 +91,37 @@ def assert_no_interior_kinds(asset_id: str) -> dict:
     return {"ok": not bad, "interiorComponents": bad}
 
 
+def logo_asset_id(company_id: str, *, version: str = "01") -> str:
+    slug = "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in company_id.lower()).strip("-")
+    return f"pack.agentspace.logo.{slug}.{version}"
+
+
+def validate_logo_asset_id(asset_id: str) -> dict:
+    """Pack ids for standalone logo GLBs."""
+    import re
+
+    ok = bool(re.fullmatch(r"pack\.agentspace\.logo\.[a-z0-9][a-z0-9._-]*", asset_id))
+    return {"ok": ok, "assetId": asset_id, "reason": None if ok else "invalid logo asset id"}
+
+
+def validate_logo_anchors(asset_id: str) -> dict:
+    """Require at least one logo anchor or official logo mesh on a building."""
+    import bpy
+
+    anchors: list[str] = []
+    official = 0
+    for ob in bpy.data.objects:
+        if ob.get("asw_assetId") != asset_id:
+            continue
+        kind = str(ob.get("asw_kind") or "")
+        if kind == "brand_logo_anchor":
+            anchors.append(str(ob.get("asw_componentId") or ob.name))
+        if ob.get("asw_logoOfficial"):
+            official += 1
+    ok = bool(anchors or official)
+    return {"ok": ok, "anchors": anchors, "officialLogoMeshes": official}
+
+
 def validate_asset_id(asset_id: str) -> dict:
     """Pack ids are the stable contract consumed by R3F and publish."""
     import re

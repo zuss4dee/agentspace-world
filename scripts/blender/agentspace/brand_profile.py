@@ -226,16 +226,36 @@ def load_brand_profile(path: str | Path) -> BrandProfile:
         return brand_profile_from_dict(json.load(f))
 
 
+def _resolve_brand_logo_path(company_id: str, asset_path: str | None) -> str | None:
+    if asset_path:
+        path = Path(asset_path).expanduser()
+        if path.is_file():
+            return str(path)
+    repo = Path(__file__).resolve().parents[3]
+    brand_dir = repo / "public" / "assets" / "brands" / company_id
+    for ext in (".svg", ".png", ".jpg", ".jpeg"):
+        candidate = brand_dir / f"logo{ext}"
+        if candidate.is_file():
+            return str(candidate)
+    return asset_path
+
+
 def to_brand_spec(profile: BrandProfile) -> BrandSpec:
     return BrandSpec(
         company_id=profile.company_id,
         company_name=profile.company_name,
         primary_colours=list(profile.primary_colours),
         secondary_colours=list(profile.secondary_colours),
+        industry=profile.industry,
+        personality=list(profile.personality),
         visual_style=profile.visual_style,
-        architectural_direction=f"siliconcity {archetype_for_tier(profile.tier)}",
-        signage_direction="3D logo mark (totem/blade/roof) + wordmark + roof/facade plaque",
-        logo=BrandLogoSpec(wordmark=profile.wordmark(), asset_path=profile.logo.asset_path),
+        architectural_direction=f"procedural grammar (tier={profile.tier})",
+        signage_direction="facade sign + brand materials after structure",
+        logo=BrandLogoSpec(
+            wordmark=profile.wordmark(),
+            asset_path=_resolve_brand_logo_path(profile.company_id, profile.logo.asset_path),
+            source_url=profile.logo.image_url,
+        ),
     )
 
 
@@ -397,8 +417,8 @@ def derive_mat_defs(profile: BrandProfile) -> dict[str, dict[str, Any]]:
         cream_dark_s: RGB = tint_toward_hue((0.13, 0.14, 0.18), brand_s, 0.12)
         roof_s: RGB = tint_toward_hue((0.24, 0.25, 0.29), brand_s, 0.10)
     else:
-        cream_s = (0.93, 0.92, 0.90)
-        cream_dark_s = tint_toward_hue((0.80, 0.78, 0.74), brand_s, 0.06)
+        cream_s = (0.88, 0.84, 0.78)
+        cream_dark_s = tint_toward_hue((0.72, 0.68, 0.62), brand_s, 0.08)
         roof_s = tint_toward_hue((0.74, 0.74, 0.72), brand_s, 0.08)
 
     charcoal_s: RGB = tint_toward_hue((0.15, 0.16, 0.18), brand_s, 0.10)
@@ -754,7 +774,58 @@ def style_params(profile: BrandProfile, *, rng: ParamRNG | None = None) -> dict[
 
 
 # ---------------------------------------------------------------------------
-# Spec assembly
+# Grammar style params (procedural recipes — not siliconcity archetypes)
+# ---------------------------------------------------------------------------
+
+GENERATION_VERSION = 1
+MAX_UNIQUENESS_ATTEMPTS = 12
+
+
+def grammar_style_params(profile: BrandProfile, rng: ParamRNG) -> dict[str, Any]:
+    """Brand/personality bias → knobs consumed by building_recipes_procedural."""
+    base = style_params(profile, rng=None)
+    bag = profile.keyword_bag()
+    playful = bool(bag & PLAYFUL_KEYWORDS)
+    creative = bool(bag & CREATIVE_KEYWORDS)
+    finance = bool(bag & FINANCE_KEYWORDS)
+    tech = bool(bag & TECH_KEYWORDS)
+
+    composition = base.get("composition_profile") or "plaza_sculpture"
+    if composition in ("formal_plaza", "forecourt"):
+        composition = "signage_corner" if finance else "plaza_sculpture"
+
+    detail = base.get("detail_density")
+    if not detail:
+        pd = float(base.get("prop_density", 0.7))
+        detail = "VERY_HIGH" if pd > 0.9 else "HIGH" if pd > 0.75 else "MEDIUM" if pd > 0.55 else "LOW"
+
+    tower_style = base.get("tower_style", "setback")
+    if tech and rng.uniform("tower.tech", 0, 1) > 0.4:
+        tower_style = rng.choice("tower_style", ["cylinder", "cantilever", "wishbone"])
+    elif creative:
+        tower_style = rng.choice("tower_style", ["cantilever", "wishbone", "setback"])
+
+    hybrid_mode = None
+    if creative or playful:
+        hybrid_mode = rng.weighted_choice("hybrid.mode", ["tower", "sculpture", "terrace"], [1.2, 1.0, 0.8])
+    elif finance:
+        hybrid_mode = "tower"
+
+    return {
+        "composition_profile": composition,
+        "detail_density": detail,
+        "tower_style": tower_style,
+        "glass_bias": base["glass_bias"],
+        "asymmetry": round(rng.uniform("asym", 0.15, 0.92 if creative else 0.75), 3),
+        "prop_density": base["prop_density"],
+        "hybrid_mode": hybrid_mode,
+        "landmark_style": rng.choice("landmark.style", ["wishbone", "cylinder"]) if tech else None,
+        "flags": base.get("flags", []),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Spec assembly — plot envelope → grammar → uniqueness → brand
 # ---------------------------------------------------------------------------
 
 
@@ -775,47 +846,96 @@ def build_spec_from_profile(
     scale: float | None = None,
     footprint: tuple[float, float] | None = None,
     tier: str | None = None,
+    plot_id: str | None = None,
+    generation_version: int = GENERATION_VERSION,
 ) -> GeneratedBuildingSpec:
-    """Tier defaults + brand-derived params → GeneratedBuildingSpec (bpy-free).
+    """Plot envelope → architectural grammar → uniqueness → brand materials.
 
-    Same companyId (+ asset_id) always rebuilds identically; different companyId
-    yields different within-family massing via ParamRNG(deterministic_seed).
+    Replaces the legacy tier→fixed-archetype (enterprise_hq/smb_block/startup_loft)
+    path. Same companyId+plotId+generationVersion rebuilds identically; collisions
+    advance seed via attemptN until a unique structural fingerprint is found.
     """
+    from .plot_envelope import grammar_weights_for_envelope, resolve_envelope
+    from .param_rng import generate_recipe_params, select_recipe_for_envelope
+    from .uniqueness_registry import register_fingerprint, structural_fingerprint
+
     tier = tier or profile.tier
-    if tier not in TIER_DEFAULTS:
+    if tier not in TIERS:
         tier = "smb"
-    defaults = TIER_DEFAULTS[tier]
-    fw, fd = footprint or defaults["footprint"]
-    if plot_grid is None:
-        tw, th = defaults["plot_tiles"]
-        plot_grid = {"x": 0, "y": 0, "w": tw, "h": th}
+    pid = plot_id or f"plot-{profile.slug}"
+    envelope = resolve_envelope(
+        plot_id=pid,
+        tier=tier,
+        plot_grid=plot_grid,
+        footprint=footprint,
+        scale=scale,
+    )
     aid = asset_id or default_asset_id(profile)
-    seed = deterministic_seed(profile.company_id, aid)
-    rng = ParamRNG(seed)
-    params = style_params(profile, rng=rng)
-    params["tier"] = tier
-    params["wordmark"] = profile.wordmark()
-    params["initial"] = profile.initial()
+    env_weights = grammar_weights_for_envelope(envelope)
+
+    recipe = ""
+    params: dict[str, Any] = {}
+    fingerprint = ""
+    seed = 0
+
+    for attempt in range(MAX_UNIQUENESS_ATTEMPTS):
+        seed_key = f"{profile.company_id}+{pid}+{aid}"
+        if attempt:
+            seed_key += f":attempt{attempt}"
+        seed = deterministic_seed(seed_key, aid)
+        rng = ParamRNG(seed)
+        recipe = select_recipe_for_envelope(rng, profile, env_weights)
+        params = generate_recipe_params(rng, recipe, w=envelope.footprint_w, d=envelope.footprint_d)
+        params.update({k: v for k, v in grammar_style_params(profile, rng).items() if v is not None})
+        params["tier"] = tier
+        params["wordmark"] = profile.wordmark()
+        params["generation_version"] = generation_version
+        params["seed"] = seed
+        if recipe == "hybrid" and not params.get("hybrid_mode"):
+            params["hybrid_mode"] = rng.choice("hybrid.mode", ["tower", "sculpture", "terrace"])
+
+        fingerprint = structural_fingerprint(recipe, params)
+        if register_fingerprint(
+            fingerprint,
+            company_id=profile.company_id,
+            plot_id=pid,
+            asset_id=aid,
+            recipe=recipe,
+            attempt=attempt,
+        ):
+            break
+    else:
+        raise RuntimeError(
+            f"no unique structure after {MAX_UNIQUENESS_ATTEMPTS} attempts "
+            f"for {profile.company_id} on {pid}"
+        )
+
+    params["uniquenessKey"] = fingerprint
+    params["structuralFingerprint"] = fingerprint
+
+    # Brand colours + logo AFTER structure is fixed
     mat_defs = derive_mat_defs(profile)
-    params["uniquenessKey"] = uniqueness_key(profile.company_id, tier, params, mat_defs)
+
     return GeneratedBuildingSpec(
         asset_id=aid,
         building_id=f"{profile.slug}-{tier}",
-        parcel_id=f"plot-{profile.slug}",
+        parcel_id=pid,
         brand=to_brand_spec(profile),
-        recipe=defaults["archetype"],
+        recipe=recipe,
         root_local=root_local,
-        scale=float(scale if scale is not None else defaults["scale"]),
-        footprint_w=float(fw),
-        footprint_d=float(fd),
-        site_z=0.3,
-        roof_kind=str(params.get("roof_module") or "flat"),
-        glass_ratio=float(params["glass_bias"]),
+        scale=envelope.scale,
+        footprint_w=envelope.footprint_w,
+        footprint_d=envelope.footprint_d,
+        site_z=0.34,
+        max_height=envelope.max_height,
+        roof_kind=str(params.get("roof_module") or "membrane"),
+        glass_ratio=float(params.get("glass_bias", 0.5)),
         mat_defs=mat_defs,
         recipe_params=params,
-        plot_grid=plot_grid,
+        plot_grid=envelope.plot_grid,
+        detail_density=str(params.get("detail_density") or "HIGH").upper(),
         runtime_export_kinds=[
-            "structure",
+            "building",
             "facade",
             "window",
             "door",

@@ -26,7 +26,17 @@ def compile_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> GeneratedBuil
     overrides = dict(spec.recipe_params or {})
     out.recipe_params = {**params, "seed": seed, **overrides}
     requested_density = str(getattr(spec, "detail_density", "") or "").upper()
-    out.detail_density = str(overrides.get("detail_density", requested_density if requested_density in {"LOW", "MEDIUM", "HIGH", "VERY_HIGH"} else params["detail_density"])).upper()
+    if requested_density in {"LOW", "MEDIUM", "HIGH", "VERY_HIGH"}:
+        density_default = requested_density
+    elif overrides.get("detail_density"):
+        density_default = str(overrides["detail_density"]).upper()
+    else:
+        density_default = "HIGH"
+    out.detail_density = str(overrides.get("detail_density", density_default)).upper()
+    if not out.recipe_params.get("detail_density"):
+        out.recipe_params["detail_density"] = out.detail_density
+    if not out.recipe_params.get("composition_profile"):
+        out.recipe_params.setdefault("composition_profile", "plaza_sculpture")
     if not out.mat_defs:
         out.mat_defs = brand_material_defs(brand)
     return out

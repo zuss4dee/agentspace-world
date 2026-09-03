@@ -26,6 +26,7 @@ import {
   type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
+import { occupancyHas, GENERATED_OCCUPANCY_PLOT_IDS, withOccupancyIds } from "@/lib/generated-occupancy";
 import { isOccupiedPlot, claimedBuildingPlacementFromPlot } from "@/lib/lot-footprint";
 import { BuildingFromSpec } from "@/components/world/gl/architecture";
 import { BuildingGltfByUrl } from "@/components/world/gl/vehicle-gltf";
@@ -184,7 +185,7 @@ export function SaleStakes() {
   const rails = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const { claimedPlotIds, selectedPlotId, selectedPlotIds } = useWorld();
-  const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
+  const claimed = useMemo(() => new Set(withOccupancyIds(claimedPlotIds)), [claimedPlotIds]);
   const sales = useMemo(() => CITY_PLOTS.filter((p) => p.kind === "sale" && p.y < 80), []);
 
   useLayoutEffect(() => {
@@ -284,7 +285,7 @@ export function BuildingGhost() {
   } = useWorld();
   const claimed = useMemo(() => new Set(claimedPlotIds), [claimedPlotIds]);
   const plot = getPlot(selectedPlotId);
-  if (!plot || plot.kind !== "sale" || claimedCoversPlot(plot.id, claimed)) return null;
+  if (!plot || plot.kind !== "sale" || claimedCoversPlot(plot.id, claimed) || occupancyHas(plot.id)) return null;
   const landPlot = workingLand(plot, landSlice ?? plotRect(plot));
   const use = LAND_USES.find((u) => u.id === previewUseId) ?? LAND_USES[0]!;
   const extra = Math.min(
@@ -506,22 +507,28 @@ function ClaimedBuildingGltf({
 
 export function ClaimedMarks() {
   const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs, selectPlot } = useWorld();
+  const ids = useMemo(
+    () => [...new Set([...claimedPlotIds, ...GENERATED_OCCUPANCY_PLOT_IDS])],
+    [claimedPlotIds],
+  );
   return (
     <group>
-      {claimedPlotIds.map((id) => {
+      {ids.map((id) => {
         const p = getPlot(id);
         if (!p) return null;
         const extra = claimedExtras[id] ?? 0;
         const r = expandedRect(p, extra);
-        const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES[0]!;
+        const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES.find((u) => u.id === "office") ?? LAND_USES[0]!;
         const fp = buildingFootprint(p, use, extra, claimedPlaces[id]);
         const x0 = wx(r.x);
         const z0 = wz(r.y);
         const x1 = wx(r.x + r.w);
         const z1 = wz(r.y + r.h);
-        const spec = fp
-          ? withBrandAccent(buildingSpecs[id] ?? specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id)))
-          : null;
+        const spec = buildingSpecs[id]
+          ? withBrandAccent(buildingSpecs[id])
+          : fp
+            ? withBrandAccent(specFromUse(id, use.id, fp.w, fp.h, h(fp.height), officePalette(use.id)))
+            : null;
         return (
           <group
             key={id}

@@ -43,6 +43,8 @@ def _measure_asset_bbox(asset_id: str) -> dict:
 def _folder_for(asset_id: str, kind: str) -> str:
     if asset_id.startswith("pack.agentspace.character"):
         return "characters"
+    if asset_id.startswith("pack.agentspace.logo"):
+        return "logos"
     if asset_id.startswith("pack.agentspace.building"):
         return "buildings"
     if asset_id.startswith("pack.agentspace.vehicle"):

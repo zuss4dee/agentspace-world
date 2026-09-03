@@ -17,6 +17,7 @@ from .mini_city_style import (
     site_props_tier,
     stylized_bench,
     stylized_bike,
+    stylized_site_car,
     stylized_bollard,
     stylized_lamp,
     stylized_planter,
@@ -86,7 +87,7 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
     toy_window_band(part, "mass.left.win.b", lx + lw * 0.2, face, base_z + 10.0, 3.2, 3.6, m["charcoal"], m["glass"], root, col)
 
     cx, cy, cw, cd, ch = 0.0, 1.5, 12.0, 12.5, 30.0
-    rounded_mass(part, "mass.tower", cw, cd, ch, cx, cy, base_z, m["brand"], root, col, bevel=0.42, cid="mass.tower")
+    rounded_mass(part, "mass.tower", cw, cd, ch, cx, cy, base_z, m["cream"], root, col, bevel=0.42, cid="mass.tower")
     rounded_mass(
         part,
         "mass.tower.crown",
@@ -96,7 +97,7 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
         cx,
         cy + 0.5,
         base_z + ch,
-        m["coral"],
+        m["brand"],
         root,
         col,
         bevel=0.28,
@@ -117,10 +118,10 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
         depth=0.42,
         cols=2,
     )
-    signage_from_brand(part, "facade", ctx.brand, cx - 1.8, cy - cd / 2 - 0.28, base_z + 12.5, m["sign"], root, col, s=0.62, d=0.26)
+    signage_from_brand(part, "facade", ctx.brand, cx, cy - cd / 2 - 0.32, base_z + 14.0, m["sign"], root, col, s=0.72, d=0.22)
 
     rx, ry, rw, rd, rh = 13.0, 2.0, 11.0, 10.5, 14.0
-    rounded_mass(part, "mass.right", rw, rd, rh, rx, ry, base_z, m["coral"], root, col, bevel=0.36, cid="mass.right")
+    rounded_mass(part, "mass.right", rw, rd, rh, rx, ry, base_z, m["cream"], root, col, bevel=0.36, cid="mass.right")
     toy_window_band(part, "mass.right.win", rx, ry - rd / 2 - 0.08, base_z + 5.0, 3.5, 4.0, m["charcoal"], m["glass"], root, col)
     terrace_garden(part, "terrace.right", rx, ry - rd * 0.08, base_z + rh + 0.65, 5.5, 4.0, m, root, col)
 
@@ -151,7 +152,8 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
     for i, (ox, oy) in enumerate(((-1.2, 0.8), (1.0, -0.6))):
         rounded_mass(part, f"roof.unit.{i}", 1.4, 1.4, 1.1, cx + ox * 3, cy + oy * 2, base_z + ch + 2.2, m["charcoal"], root, col, bevel=0.12, cid=f"roof.unit.{i}")
 
-    toy_rooftop_beacon(part, "beacon", cx, cy + 0.3, base_z + ch + 2.8, m["brand"], m["coral"], root, col, scale=1.15)
+    toy_rooftop_beacon(part, "beacon", cx, cy + 0.3, base_z + ch + 2.8, m["brand"], m["charcoal"], root, col, scale=1.15)
+    signage_from_brand(part, "roof", ctx.brand, cx, cy + 0.3, base_z + ch + 5.6, m["sign"], root, col, s=0.58, d=0.18)
 
     toy_entrance_portal(
         part,
@@ -162,6 +164,7 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
         m,
         root,
         col,
+        brand=ctx.brand,
         portal_w=13.5,
         portal_h=9.0,
         canopy_w=15.5,
@@ -170,7 +173,7 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
         sign_scale=0.68,
     )
 
-    hero_sculpture_rings(part, "sculpture", -7.5, plaza_y + 0.2, site_z + 0.08, m["brand"], m["coral"], root, col, scale=ctx.scale * 0.95)
+    hero_sculpture_rings(part, "sculpture", -7.5, plaza_y + 0.2, site_z + 0.08, m["brand"], m["charcoal"], root, col, scale=ctx.scale * 0.95)
 
     stylized_tree(part, "tree.nw", -17.5, 8.5, 0.12, m, root, col, scale=ctx.scale * 0.9)
     stylized_tree(part, "tree.ne", 17.0, 7.8, 0.12, m, root, col, scale=ctx.scale * 0.85)
@@ -178,11 +181,32 @@ def recipe_bridge_complex_echt(ctx: "BuildingContext") -> None:
     stylized_planter(part, "planter.fl", -9.0, front + 2.5, 0.12, 1.0, 1.0, 0.55, m["charcoal"], m["canopy"], root, col)
     stylized_planter(part, "planter.fr", 9.2, front + 2.3, 0.12, 1.0, 1.0, 0.55, m["charcoal"], m["canopy"], root, col)
     stylized_bench(part, "bench", 6.5, plaza_y + 0.4, site_z + 0.08, m["paver"], m["charcoal"], root, col)
-    stylized_bike(part, "bike", -4.5, plaza_y - 0.3, site_z + 0.08, m["coral"], m["charcoal"], root, col)
+    stylized_bike(part, "bike", -4.5, plaza_y - 0.3, site_z + 0.08, m["brand"], m["charcoal"], root, col)
     for i, lx in enumerate((-3.5, 3.2)):
         stylized_lamp(part, f"lamp.{i}", lx, front + 2.6, 0.12, m["charcoal"], m["glow"], root, col)
     for i, bx in enumerate((-12.0, 12.0)):
         stylized_bollard(part, f"bollard.{i}", bx, front + 1.5, site_z + 0.06, m["charcoal"], root, col)
+
+    # Incubator runtime lot is 5 tiles wide — use that for site-car fit, not the wider authoring grid.
+    from .vehicle_scale import site_vehicle_fit_for_plot
+
+    car_fit = site_vehicle_fit_for_plot(5.0, W)
+    for i, (cx, body, cabin) in enumerate(
+        ((-5.5, m["brand"], m["glass"]), (5.8, m["charcoal"], m["glass"]))
+    ):
+        stylized_site_car(
+            part,
+            f"cars.car.{i}",
+            cx,
+            front + 3.8,
+            site_z + 0.1,
+            body,
+            cabin,
+            root,
+            col,
+            fit=car_fit,
+            along="y",
+        )
 
 
 from .building_recipes_procedural import (

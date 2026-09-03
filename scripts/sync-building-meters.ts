@@ -37,7 +37,9 @@ function upsertMeters(assetId: string, m: { w: number; d: number; h: number }) {
     depth: ${m.d},
     height: ${m.h},
   },`;
-  const re = new RegExp(`  ${escRe(JSON.stringify(assetId))}: \\{[\\s\\S]*?\\},`);
+  const re = new RegExp(
+    `  ${escRe(JSON.stringify(assetId))}: \\{[\\s\\S]*?height: [^,\\n]+,\\s*\\},`,
+  );
   if (re.test(src)) src = src.replace(re, entry);
   else {
     src = src.replace(
@@ -56,7 +58,9 @@ function upsertMeta(assetId: string, m: { w: number; d: number; h: number }, bui
     footprintMeters: { width: ${m.w}, depth: ${m.d} },
     heightMeters: ${m.h},
   },`;
-  const re = new RegExp(`  ${escRe(JSON.stringify(assetId))}: \\{[\\s\\S]*?\\},`);
+  const re = new RegExp(
+    `  ${escRe(JSON.stringify(assetId))}: \\{[\\s\\S]*?footprintMeters: \\{ width: [^}]+ \\},\\s*heightMeters: [^,\\n]+,\\s*\\},`,
+  );
   if (re.test(src)) src = src.replace(re, block);
   else {
     src = src.replace(

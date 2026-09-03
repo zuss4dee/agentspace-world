@@ -36,17 +36,19 @@ import {
   plotRect,
   remainingRects,
   workingLand,
+  expandedRect,
   type LotPlace,
   type TileRect,
 } from "@/lib/plots";
+import { defaultLogoPoseForLot } from "@/lib/brand-marker";
 import { poiById } from "@/lib/pois";
 import { DISTRICT_SPECS } from "@/lib/district-specs";
 import { gltfUrlForAssetId } from "@/lib/building-gltf";
 import { WORLD_BUILDINGS } from "@/lib/campus";
 import { specFromUse } from "@/lib/building-ai";
 import { paletteForUse } from "@/lib/building-grammar";
-import type { BuildingSpec } from "@/lib/building-spec";
-import type { CompanyProfile } from "@/lib/company-profile";
+import type { BuildingSpec, LogoPose } from "@/lib/building-spec";
+import type { CompanyProfile, CompanyProfilePatch } from "@/lib/company-profile";
 import { brandProfileFromCompanyProfile, defaultBuildingAssetId, withBrandAccent } from "@/lib/brand-profile";
 import {
   applyStoredProfiles,
@@ -58,6 +60,13 @@ import {
   saveStoredProfiles,
 } from "@/lib/company-profile";
 import { h } from "@/lib/coords";
+import {
+  mergeOccupancySpecs,
+  occupancyHas,
+  occupancyOrRetiredHas,
+  stripOccupancySpecs,
+  withOccupancyIds,
+} from "@/lib/generated-occupancy";
 import { clearClaimSessionStorage, loadStoredClaims, migrateClaimSessionIfNeeded, saveStoredClaims, type StoredClaims } from "@/lib/claimed-lots-storage";
 import {
   addCrewMember,
@@ -208,6 +217,17 @@ type WorldApi = {
     place?: LotPlace;
     extra?: number;
   }) => void;
+  adEditPlotId: string | null;
+  openAdEdit: (plotId: string) => void;
+  dismissAdEdit: () => void;
+  logoEditPlotId: string | null;
+  logoEditDraft: LogoPose | null;
+  openLogoEdit: (plotId: string) => void;
+  setLogoEditDraft: (pose: LogoPose) => void;
+  dismissLogoEdit: () => void;
+  saveLogoPose: () => void;
+  updatePlotProfile: (plotId: string, profile: CompanyProfilePatch) => void;
+  moveBuilding: (fromPlotId: string, toPlotId: string) => { ok: boolean; reason?: string };
   buildingCrew: BuildingCrewMap;
   addBotToBuilding: (plotId: string, input: {
     name: string;
@@ -250,7 +270,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [beaconBidCents, setBeaconBidCents] = useState(0);
   const [beaconOpen, setBeaconOpen] = useState(false);
   const [buildingSpecs, setBuildingSpecs] = useState<Record<string, BuildingSpec>>(
-    () => ({ ...DISTRICT_SPECS }),
+    () => mergeOccupancySpecs({ ...DISTRICT_SPECS }),
   );
   const [draftSpec, setDraftSpec] = useState<BuildingSpec | null>(null);
   const [studioOpen, setStudioOpen] = useState(false);
@@ -258,6 +278,9 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   const [creatorPacks, setCreatorPacks] = useState<string[]>([]);
   const [claimSetupId, setClaimSetupId] = useState<string | null>(null);
   const [claimSetupStep, setClaimSetupStep] = useState<ClaimSetupStep>("profile");
+  const [adEditPlotId, setAdEditPlotId] = useState<string | null>(null);
+  const [logoEditPlotId, setLogoEditPlotId] = useState<string | null>(null);
+  const [logoEditDraft, setLogoEditDraftState] = useState<LogoPose | null>(null);
   const [buildingCrew, setBuildingCrew] = useState<BuildingCrewMap>({});
   const [mapOverview, setMapOverview] = useState(false);
   const [topView, setTopView] = useState(false);
@@ -278,21 +301,30 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       setClaimedExtras({});
       setClaimedPlaces({});
       setClaimedUses({});
-      setBuildingSpecs({});
+      setBuildingSpecs(mergeOccupancySpecs({}));
       setBuildingCrew({});
       setStorageReady(true);
       if (fresh) window.history.replaceState({}, "", window.location.pathname);
       return;
     }
     const claims = loadStoredClaims();
+    const claimed = claims.claimedPlotIds.filter((id) => !occupancyOrRetiredHas(id));
+    const extras = { ...claims.claimedExtras };
+    const places = { ...claims.claimedPlaces };
+    const uses = { ...claims.claimedUses };
+    for (const id of Object.keys(extras)) if (occupancyOrRetiredHas(id)) delete extras[id];
+    for (const id of Object.keys(places)) if (occupancyOrRetiredHas(id)) delete places[id];
+    for (const id of Object.keys(uses)) if (occupancyOrRetiredHas(id)) delete uses[id];
     const profiles = loadStoredProfiles();
-    setClaimedPlotIds(claims.claimedPlotIds);
-    setClaimedExtras(claims.claimedExtras);
-    setClaimedPlaces(claims.claimedPlaces);
-    setClaimedUses(claims.claimedUses);
+    setClaimedPlotIds(claimed);
+    setClaimedExtras(extras);
+    setClaimedPlaces(places);
+    setClaimedUses(uses);
     setBuildingSpecs((prev) => {
       const base = applyStoredProfiles({ ...prev }, profiles);
-      return restoreClaimSpecs(base, claims, profiles);
+      return mergeOccupancySpecs(
+        stripOccupancySpecs(restoreClaimSpecs(base, { ...claims, claimedPlotIds: claimed }, profiles)),
+      );
     });
     setBuildingCrew(loadBuildingCrew());
     setStorageReady(true);
@@ -309,7 +341,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
         if (!profile?.name?.trim()) continue;
         if (profile.buildingStatus === "ready" && profile.buildingAssetId) continue;
         const brand = brandProfileFromCompanyProfile(id, profile);
-        const assetId = profile.buildingAssetId ?? defaultBuildingAssetId(brand);
+        const assetId = profile.buildingAssetId ?? defaultBuildingAssetId(brand, id);
         try {
           const res = await fetch(`/v1/brand/asset?assetId=${encodeURIComponent(assetId)}`);
           const data = (await res.json()) as {
@@ -352,7 +384,7 @@ export function WorldProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!storageReady) return;
-    saveStoredProfiles(profilesFromSpecs(buildingSpecs));
+    saveStoredProfiles(profilesFromSpecs(stripOccupancySpecs(buildingSpecs)));
   }, [buildingSpecs, storageReady]);
 
   useEffect(() => {
@@ -706,15 +738,19 @@ export function WorldProvider({ children }: { children: ReactNode }) {
   ) => {
     const unique = [...new Set(ids.filter(Boolean))];
     if (unique.length === 0) return { ok: false, count: 0, reason: "closed" };
-    let occupied = coverageOfClaims(claimedPlotIds, claimedExtras);
+    let occupied = coverageOfClaims(withOccupancyIds(claimedPlotIds), claimedExtras);
     const pending: { id: string; extra: number; place?: LotPlace; useId?: string }[] = [];
     for (const id of unique) {
       const base = getPlot(id);
-      if (!base || base.kind !== "sale") return { ok: false, count: 0, reason: "closed" };
+      if (!base || base.kind !== "sale" || occupancyHas(base.id)) return { ok: false, count: 0, reason: "closed" };
       const useSlice = id === selectedPlotId ? (slice ?? landSlice) : plotRect(base);
       const land = workingLand(base, useSlice);
       const claimId = claimIdFor(base, plotRect(land));
-      if (claimedPlotIds.includes(claimId) || pending.some((row) => row.id === claimId)) {
+      if (
+        occupancyHas(claimId) ||
+        claimedPlotIds.includes(claimId) ||
+        pending.some((row) => row.id === claimId)
+      ) {
         return { ok: false, count: 0, reason: "closed" };
       }
       if (expandBlocked(land, id === selectedPlotId ? extra : 0, occupied)) {
@@ -878,6 +914,193 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     saveClaimBuilding(input);
     dismissClaimSetup();
   }, [dismissClaimSetup, saveClaimBuilding]);
+
+  const openAdEdit = useCallback((plotId: string) => {
+    setAdEditPlotId(plotId);
+  }, []);
+
+  const dismissAdEdit = useCallback(() => {
+    setAdEditPlotId(null);
+  }, []);
+
+  const openLogoEdit = useCallback(
+    (plotId: string) => {
+      if (!claimedPlotIds.includes(plotId)) return;
+      const plot = getPlot(plotId);
+      if (!plot) return;
+      const extra = claimedExtras[plotId] ?? 0;
+      const lot = expandedRect(plot, extra);
+      const profile = buildingSpecs[plotId]?.profile;
+      const assetId = profile?.buildingAssetId;
+      const draft =
+        profile?.logoPose ??
+        defaultLogoPoseForLot({ x: lot.x, y: lot.y, w: lot.w, h: lot.h }, assetId) ??
+        ({ x: 0, z: 0, yaw: 0 } satisfies LogoPose);
+      setLogoEditDraftState(draft);
+      setLogoEditPlotId(plotId);
+      setAdEditPlotId(null);
+      selectPlot(plotId);
+    },
+    [buildingSpecs, claimedExtras, claimedPlotIds, selectPlot],
+  );
+
+  const setLogoEditDraft = useCallback((pose: LogoPose) => {
+    setLogoEditDraftState(pose);
+  }, []);
+
+  const dismissLogoEdit = useCallback(() => {
+    setLogoEditPlotId(null);
+    setLogoEditDraftState(null);
+  }, []);
+
+  const updatePlotProfile = useCallback((plotId: string, patch: CompanyProfilePatch) => {
+    if (!claimedPlotIds.includes(plotId)) return;
+    const plot = getPlot(plotId);
+    const useId = claimedUses[plotId] ?? previewUseId;
+    const extra = claimedExtras[plotId] ?? 0;
+    const place = claimedPlaces[plotId];
+    const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+    const pal = paletteForUse(useId);
+
+    setBuildingSpecs((prev) => {
+      const fp = plot ? buildingFootprint(plot, use, extra, place) : null;
+      const base =
+        prev[plotId] ??
+        (fp ? specFromUse(plotId, useId, fp.w, fp.h, h(fp.height), pal) : undefined);
+      if (!base) return prev;
+
+      const merged = mergeProfile(defaultClaimProfile(use.name), base.profile, patch);
+      const brand = brandProfileFromCompanyProfile(plotId, merged);
+      const palette = [...brand.primaryColours, ...brand.secondaryColours];
+      const profile: CompanyProfile = {
+        ...merged,
+        tier: brand.tier,
+        palette: palette.length ? palette : merged.palette,
+        brand,
+      };
+
+      return {
+        ...prev,
+        [plotId]: withBrandAccent({
+          ...base,
+          profile,
+          signage: profile.name
+            ? { ...base.signage, text: profile.name.slice(0, 18).toUpperCase() }
+            : base.signage,
+        }),
+      };
+    });
+  }, [claimedExtras, claimedPlaces, claimedPlotIds, claimedUses, previewUseId]);
+
+  const saveLogoPose = useCallback(() => {
+    if (!logoEditPlotId || !logoEditDraft) return;
+    updatePlotProfile(logoEditPlotId, { logoPose: logoEditDraft });
+    dismissLogoEdit();
+  }, [dismissLogoEdit, logoEditDraft, logoEditPlotId, updatePlotProfile]);
+
+  const moveBuilding = useCallback((fromPlotId: string, toPlotId: string) => {
+    if (fromPlotId === toPlotId) return { ok: false as const, reason: "same" };
+    if (!claimedPlotIds.includes(fromPlotId) || !claimedPlotIds.includes(toPlotId)) {
+      return { ok: false as const, reason: "not-owned" };
+    }
+
+    const fromSpec = buildingSpecs[fromPlotId];
+    const toSpec = buildingSpecs[toPlotId];
+    const fromProfile = fromSpec?.profile;
+    if (!fromProfile?.buildingAssetId) {
+      return { ok: false as const, reason: "no-building" };
+    }
+
+    const destProfile = toSpec?.profile;
+    if (destProfile?.buildingAssetId) {
+      return { ok: false as const, reason: "occupied" };
+    }
+
+    const fromPlot = getPlot(fromPlotId);
+    const toPlot = getPlot(toPlotId);
+    if (!fromPlot || !toPlot) return { ok: false as const, reason: "missing" };
+
+    const useId = claimedUses[fromPlotId] ?? claimedUses[toPlotId] ?? "office";
+    const extra = claimedExtras[fromPlotId] ?? claimedExtras[toPlotId] ?? 0;
+    const place = claimedPlaces[fromPlotId] ?? claimedPlaces[toPlotId];
+    const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+    const pal = paletteForUse(useId);
+
+    const movedProfile = mergeProfile(fromProfile);
+    const brand = brandProfileFromCompanyProfile(toPlotId, movedProfile);
+    const profile: CompanyProfile = {
+      ...movedProfile,
+      tier: brand.tier,
+      palette: movedProfile.palette?.length
+        ? movedProfile.palette
+        : [...brand.primaryColours, ...brand.secondaryColours],
+      brand,
+    };
+
+    const emptyUse = LAND_USES.find((u) => u.id === (claimedUses[fromPlotId] ?? "office")) ?? LAND_USES[0]!;
+    const emptyProfile = defaultClaimProfile(emptyUse.name);
+
+    setClaimedUses((prev) => ({ ...prev, [toPlotId]: useId }));
+    setClaimedExtras((prev) => ({ ...prev, [toPlotId]: extra }));
+    if (place) setClaimedPlaces((prev) => ({ ...prev, [toPlotId]: place }));
+
+    setBuildingSpecs((prev) => {
+      const toFp = buildingFootprint(toPlot, use, extra, place);
+      const fromFp = buildingFootprint(fromPlot, emptyUse, claimedExtras[fromPlotId] ?? 0, claimedPlaces[fromPlotId]);
+      const destBase =
+        prev[toPlotId] ??
+        (toFp ? specFromUse(toPlotId, useId, toFp.w, toFp.h, h(toFp.height), pal) : undefined);
+      const sourceBase =
+        prev[fromPlotId] ??
+        (fromFp
+          ? specFromUse(fromPlotId, emptyUse.id, fromFp.w, fromFp.h, h(fromFp.height), paletteForUse(emptyUse.id))
+          : undefined);
+      if (!destBase || !sourceBase) return prev;
+
+      const next = { ...prev };
+      next[toPlotId] = withBrandAccent({
+        ...destBase,
+        profile,
+        signage: profile.name
+          ? { ...destBase.signage, text: profile.name.slice(0, 18).toUpperCase() }
+          : destBase.signage,
+      });
+      next[fromPlotId] = withBrandAccent({
+        ...sourceBase,
+        profile: emptyProfile,
+        signage: { ...sourceBase.signage, text: "" },
+      });
+      return next;
+    });
+
+    setBuildingCrew((prev) => {
+      const crew = prev[fromPlotId];
+      if (!crew?.length) return prev;
+      const next = { ...prev };
+      delete next[fromPlotId];
+      next[toPlotId] = crew;
+      return next;
+    });
+
+    if (interiorId === fromPlotId) setInteriorId(null);
+    setSelectedPlotId(toPlotId);
+    setSelectedPlotIds([]);
+    setMapOverview(false);
+    setCameraFocus({ x: toPlot.x + toPlot.w / 2, y: toPlot.y + toPlot.h / 2 });
+    setCameraScaleState(1.05);
+    setCameraTick((t) => t + 1);
+
+    apply((prev) => ({
+      ...prev,
+      events: pushEvent(prev.events, {
+        kind: "work",
+        mapId: "lot",
+        text: `${profile.name || "Your company"} HQ moved to ${toPlot.groupLabel}.`,
+      }),
+    }));
+
+    return { ok: true as const };
+  }, [apply, buildingSpecs, claimedExtras, claimedPlaces, claimedPlotIds, claimedUses, interiorId]);
 
   const claimPlot = useCallback((id: string, extra = 0, place?: LotPlace, useId?: string, slice?: TileRect | null) => {
     return claimPlots([id], extra, place, useId, slice ?? landSlice).ok;
@@ -1109,6 +1332,17 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       dismissClaimSetup,
       saveClaimBuilding,
       finishClaimSetup,
+      adEditPlotId,
+      openAdEdit,
+      dismissAdEdit,
+      logoEditPlotId,
+      logoEditDraft,
+      openLogoEdit,
+      setLogoEditDraft,
+      dismissLogoEdit,
+      saveLogoPose,
+      updatePlotProfile,
+      moveBuilding,
       buildingCrew,
       addBotToBuilding,
     }),
@@ -1174,6 +1408,17 @@ export function WorldProvider({ children }: { children: ReactNode }) {
       dismissClaimSetup,
       saveClaimBuilding,
       finishClaimSetup,
+      adEditPlotId,
+      openAdEdit,
+      dismissAdEdit,
+      logoEditPlotId,
+      logoEditDraft,
+      openLogoEdit,
+      setLogoEditDraft,
+      dismissLogoEdit,
+      saveLogoPose,
+      updatePlotProfile,
+      moveBuilding,
       buildingCrew,
       addBotToBuilding,
     ],

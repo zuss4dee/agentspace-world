@@ -149,6 +149,19 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
           logo: !prev.logo.trim() && derived.logo.imageUrl ? derived.logo.imageUrl : prev.logo,
           tier: error ? prev.tier : derived.tier,
           palette: derivedPalette.length ? derivedPalette : prev.palette,
+          description:
+            (!prev.description.trim() ||
+              prev.description ===
+                "You just claimed this lot. Write who you are — name, trade, and a line for the people who knock.") &&
+            derived.tagline
+              ? derived.tagline
+              : prev.description,
+          does:
+            (!prev.does.trim() || prev.does === "A new house on claimed land.") && derived.industry
+              ? derived.industry === "general"
+                ? prev.does
+                : derived.industry.replace(/\b\w/g, (c) => c.toUpperCase())
+              : prev.does,
           brand: derived,
         };
       });
@@ -209,7 +222,7 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
       if (!data.ok) {
         throw new Error(data.error ?? "Build failed");
       }
-      const assetId = data.assetId ?? defaultBuildingAssetId(brandForExport);
+      const assetId = data.assetId ?? defaultBuildingAssetId(brandForExport, claimSetupId);
       finishClaimSetup({
         ...buildPayload,
         profile: {
@@ -553,7 +566,7 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
                 Export brand JSON
               </button>
               <p className="ns-plot-hint">
-                Asset id: <code>{defaultBuildingAssetId(brandForExport)}</code> — requires Blender open with MCP
+                Asset id: <code>{defaultBuildingAssetId(brandForExport, claimSetupId)}</code> — requires Blender open with MCP
                 connected.
               </p>
             </div>

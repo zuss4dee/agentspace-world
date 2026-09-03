@@ -15,9 +15,9 @@ from .company_building_spec import BrandSpec, GeneratedBuildingSpec
 from .geom import box, ensure_collection, link
 from .param_rng import deterministic_seed
 from .plot_validator import assert_no_interior_kinds, validate_footprint
-from .plot_validator import validate_asset_id
+from .plot_validator import validate_asset_id, validate_logo_anchors
 from .pbr_library import ensure_mats
-from .building_composition import apply_toy_composition
+from .building_composition import apply_toy_composition, enrich_recipe_facades
 from .recipe_templates import compose
 from .registry import tag
 from .spec_compiler import compile_spec
@@ -201,7 +201,10 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     )
 
     compose(compiled.recipe, ctx)
+    facade_enrichment = enrich_recipe_facades(ctx)
     composition = apply_toy_composition(ctx)
+
+    bpy.context.view_layer.update()
 
     interior_check = assert_no_interior_kinds(compiled.asset_id)
     if not interior_check["ok"]:
@@ -243,7 +246,10 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
 
     report["recipe"] = compiled.recipe
     report["preset"] = compiled.recipe_params.get("preset")
+    report["structuralFingerprint"] = compiled.recipe_params.get("structuralFingerprint")
+    report["uniquenessKey"] = compiled.recipe_params.get("uniquenessKey")
     report["composition"] = composition
+    report["facadeEnrichment"] = facade_enrichment
     report["assetIdValidation"] = asset_id_check
     report["componentValidation"] = {
         "ok": unique_component_ids,
@@ -251,6 +257,10 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
         "unique": len(set(component_ids)),
     }
     report["logo"] = logo_report
+    logo_anchor_check = validate_logo_anchors(compiled.asset_id)
+    report["logoAnchorValidation"] = logo_anchor_check
+    if logo_report.get("available") and not logo_anchor_check["ok"]:
+        raise RuntimeError("official logo supplied but no logo anchors or meshes were placed")
     report["detailDensity"] = compiled.detail_density
     return report
 

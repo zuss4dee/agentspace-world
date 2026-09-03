@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useWorld } from "@/components/world/world-store";
 import { distFromScale, h, MAX_VIEW_DIST, MIN_VIEW_DIST, OVERVIEW_DIST, TILE, ZOOM_IN, ZOOM_OUT, wx, wz } from "@/lib/coords";
+import { atmospherePreset, DEFAULT_ATMOSPHERE, fogDistances } from "@/lib/atmosphere";
 import { cameraFlyLimits, cameraPanLimits } from "@/lib/world-sections";
 import { archCameraWorld } from "@/lib/arch-viz";
 
@@ -370,14 +371,12 @@ export function ExplorerCamera() {
 
     const fog = scene.fog;
     if (fog instanceof THREE.Fog) {
-      if (mapOverview || (topRef.current && !interiorId)) {
-        fog.near = h(150);
-        fog.far = h(420);
-      } else {
-        const d = camera.position.distanceTo(t);
-        fog.near = Math.max(h(160), d * 3.2);
-        fog.far = Math.max(h(320), Math.min(h(640), d * 9));
-      }
+      const preset = atmospherePreset(DEFAULT_ATMOSPHERE);
+      const viewD = camera.position.distanceTo(t);
+      const { near, far } = fogDistances(preset, viewD, mapOverview || (topRef.current && !interiorId));
+      fog.near = near;
+      fog.far = far;
+      fog.color.set(preset.fog.color);
       if (archView) {
         fog.near = 140;
         fog.far = 900;

@@ -4,10 +4,13 @@
  * the generator never invents one. Echt remains the handwritten frozen spec.
  */
 
+import type { BrandColourRoles } from "./brand-profile";
+
 export type BrandSpec = {
   companyId: string;
   companyName: string;
   website?: string;
+  colourRoles?: BrandColourRoles;
   logo?: {
     assetId?: string;
     wordmark: string;
@@ -58,12 +61,26 @@ export type GeneratedBuildingSpec = {
 export const ECHT_BRAND: BrandSpec = {
   companyId: "echt",
   companyName: "Echt",
-  website: "https://echt.studio",
-  logo: { wordmark: "ECHT" },
-  primaryColours: ["#c8cfc2", "#6a8a4a", "#111827"],
-  secondaryColours: ["#5a6a54", "#e8eee4"],
+  website: "https://www.useecht.com",
+  colourRoles: {
+    primary: "#22a94f",
+    secondary: "#cdd6d1",
+    accent: "#22c55e",
+    background: "#f4f6f5",
+    foreground: "#0f1211",
+    logo: ["#22a94f", "#5fd98a", "#0d6b2c", "#f4f6f5", "#0f1211"],
+  },
+  logo: {
+    wordmark: "ECHT",
+    assetId: "public/assets/brands/echt/logo.svg",
+    sourceUrl: "https://www.useecht.com/icon.svg",
+    format: "svg",
+    provenance: "official",
+  },
+  primaryColours: ["#22a94f", "#22c55e", "#0f1211"],
+  secondaryColours: ["#f4f6f5", "#cdd6d1", "#5a6a54"],
   typography: { display: "Geist", body: "Geist" },
-  visualStyle: "quiet contemporary studio, olive plaster, dark metal",
+  visualStyle: "quiet contemporary studio, white plaster, olive green, dark metal",
   industry: "design / campaigns",
   personality: ["precise", "calm", "editorial"],
   imageryStyle: "daylight interiors, product stills, muted greens",
