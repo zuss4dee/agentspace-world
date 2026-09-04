@@ -18,6 +18,7 @@ import {
   placeFromAnchor,
   plotArea,
   usesForPlot,
+  TILE_METERS,
   type Plot,
 } from "@/lib/plots";
 import {
@@ -40,6 +41,7 @@ import {
   type CompanyTier,
   type DerivedBrandProfile,
 } from "@/lib/brand-profile";
+import type { HqLibraryBuilding } from "@/lib/hq-library";
 
 function hostOf(url: string | undefined): string | null {
   if (!url) return null;
@@ -80,13 +82,58 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
   const [place, setPlace] = useState(claimedPlaces[claimSetupId] ?? { ox: 0, oy: 0 });
   const [deriving, setDeriving] = useState(false);
   const [buildingHq, setBuildingHq] = useState(false);
+  const [buildError, setBuildError] = useState<string | null>(null);
+  const [library, setLibrary] = useState<HqLibraryBuilding[] | null>(null);
+  const [libraryError, setLibraryError] = useState<string | null>(null);
+  const [libraryEnvelope, setLibraryEnvelope] = useState<{
+    tilesW: number;
+    tilesH: number;
+    usableW: number;
+    usableD: number;
+  } | null>(null);
+  const [placingId, setPlacingId] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const lastDerivedUrl = useRef<string | null>(profile.brand?.derivedFrom?.url ?? null);
   const deriveSeq = useRef(0);
+  const buildAbort = useRef<AbortController | null>(null);
+  const buildIgnore = useRef(false);
 
   useEffect(() => {
     setStep(claimSetupStep);
   }, [claimSetupStep, claimSetupId]);
+
+  useEffect(() => {
+    if (step !== "build") return;
+    let cancelled = false;
+    setLibraryError(null);
+    void (async () => {
+      try {
+        const res = await fetch(`/v1/brand/library?plotId=${encodeURIComponent(claimSetupId)}`);
+        const data = (await res.json()) as {
+          ok: boolean;
+          buildings?: HqLibraryBuilding[];
+          envelope?: { tilesW: number; tilesH: number; usableW: number; usableD: number };
+          error?: string;
+        };
+        if (cancelled) return;
+        if (!data.ok || !data.buildings) {
+          setLibraryError(data.error ?? "Couldn't load the HQ library.");
+          setLibrary([]);
+          return;
+        }
+        setLibrary(data.buildings);
+        if (data.envelope) setLibraryEnvelope(data.envelope);
+      } catch {
+        if (!cancelled) {
+          setLibraryError("Couldn't load the HQ library.");
+          setLibrary([]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [step, claimSetupId]);
 
   const grown = expandedRect(plot, extra);
   const uses = usesForPlot(plot, extra);
@@ -195,16 +242,73 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
     extra,
   };
 
+  const stopGenerate = (markFailed: boolean) => {
+    buildIgnore.current = true;
+    buildAbort.current?.abort();
+    buildAbort.current = null;
+    setBuildingHq(false);
+    if (markFailed) {
+      setBuildError("Generation stopped. Pick a library HQ or try again.");
+      saveClaimBuilding({
+        ...buildPayload,
+        profile: { ...profile, buildingStatus: "failed" },
+      });
+    }
+  };
+
+  const placeLibraryHq = (item: HqLibraryBuilding) => {
+    if (buildingHq) stopGenerate(false);
+    setPlacingId(item.assetId);
+    finishClaimSetup({
+      ...buildPayload,
+      profile: {
+        ...profile,
+        buildingAssetId: item.assetId,
+        buildingMeters: item.buildingMeters,
+        buildingYaw: item.yaw,
+        buildingStatus: "ready",
+        companyAdAssetId: item.companyAdAssetId,
+      },
+    });
+    toast.success(`${item.label} placed on your lot.`);
+  };
+
   const buildHqOnMap = async () => {
     const name = profile.name.trim() || companyName;
+    setBuildError(null);
+    buildIgnore.current = false;
     saveClaimBuilding({
       ...buildPayload,
       profile: { ...profile, buildingStatus: "building" },
     });
     setBuildingHq(true);
     const ac = new AbortController();
-    const timer = window.setTimeout(() => ac.abort(), 210_000);
+    buildAbort.current = ac;
+    const timer = window.setTimeout(() => ac.abort(), 480_000);
+    const expectedId = defaultBuildingAssetId(brandForExport, claimSetupId);
     try {
+      const existing = await fetch(`/v1/brand/asset?assetId=${encodeURIComponent(expectedId)}`, {
+        signal: ac.signal,
+      });
+      const existingData = (await existing.json()) as {
+        ok?: boolean;
+        exists?: boolean;
+        assetId?: string;
+        buildingMeters?: { width: number; depth: number; height: number };
+      };
+      if (!buildIgnore.current && existingData.ok && existingData.exists && existingData.assetId) {
+        finishClaimSetup({
+          ...buildPayload,
+          profile: {
+            ...profile,
+            buildingAssetId: existingData.assetId,
+            buildingMeters: existingData.buildingMeters,
+            buildingStatus: "ready",
+          },
+        });
+        toast.success(`${name} HQ is already on disk — placed on your lot.`);
+        return;
+      }
       const res = await fetch("/v1/brand/build", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -216,13 +320,16 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
         assetId?: string;
         url?: string;
         buildingMeters?: { width: number; depth: number; height: number };
+        generationFingerprint?: string;
+        companyAdAssetId?: string;
         error?: string;
         detail?: string;
       };
+      if (buildIgnore.current) return;
       if (!data.ok) {
         throw new Error(data.error ?? "Build failed");
       }
-      const assetId = data.assetId ?? defaultBuildingAssetId(brandForExport, claimSetupId);
+      const assetId = data.assetId ?? expectedId;
       finishClaimSetup({
         ...buildPayload,
         profile: {
@@ -230,23 +337,28 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
           buildingAssetId: assetId,
           buildingMeters: data.buildingMeters,
           buildingStatus: "ready",
+          generationFingerprint: data.generationFingerprint,
+          companyAdAssetId: data.companyAdAssetId,
         },
       });
       toast.success(`${name} HQ built and placed on your lot.`);
     } catch (e) {
-      const msg =
-        e instanceof DOMException && e.name === "AbortError"
-          ? "Build timed out"
-          : e instanceof Error
-            ? e.message
-            : "Build failed";
-      finishClaimSetup({
+      if (buildIgnore.current) return;
+      const aborted = e instanceof DOMException && e.name === "AbortError";
+      const msg = aborted
+        ? "Build cancelled"
+        : e instanceof Error
+          ? e.message
+          : "Build failed";
+      saveClaimBuilding({
         ...buildPayload,
         profile: { ...profile, buildingStatus: "failed" },
       });
-      toast.error(`${msg}. Keep Blender open with the MCP addon, then retry from your plot.`);
+      setBuildError(aborted ? "Generation stopped. Pick a library HQ or try again." : msg);
+      if (!aborted) toast.error(`${msg}. Pick a library HQ or try again.`);
     } finally {
       window.clearTimeout(timer);
+      if (buildAbort.current === ac) buildAbort.current = null;
       setBuildingHq(false);
     }
   };
@@ -265,12 +377,13 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
       className="ns-bid-scrim"
       role="presentation"
       onClick={() => {
-        if (buildingHq) return;
+        if (buildingHq) stopGenerate(true);
         dismissClaimSetup();
       }}
     >
       <div
         className="ns-bid ns-claim-setup"
+        data-step={step}
         role="dialog"
         aria-labelledby="claim-setup-title"
         onClick={(e) => e.stopPropagation()}
@@ -278,9 +391,19 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
         <div className="ns-claim-setup-head">
           <div>
             <p className="ns-bid-kicker">{stepLabel}</p>
-            <h2 id="claim-setup-title">{stepTitle}</h2>
+            <h2 id="claim-setup-title" className="font-heading">
+              {stepTitle}
+            </h2>
           </div>
-          <button type="button" className="ns-icon-btn" aria-label="Close" onClick={() => dismissClaimSetup()}>
+          <button
+            type="button"
+            className="ns-icon-btn"
+            aria-label="Close"
+            onClick={() => {
+              if (buildingHq) stopGenerate(true);
+              dismissClaimSetup();
+            }}
+          >
             <X className="size-4" />
           </button>
         </div>
@@ -288,8 +411,8 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
         {step === "profile" ? (
           <>
             <p className="ns-bid-copy">
-              You secured {formatSqFt(area.sqft)} on the south field. Before we raise walls, tell visitors who lives
-              here — pull your website brand so the HQ is unique to your company.
+              You secured {formatSqFt(area.sqft)} on the south field. Name the house, then pull your website so the HQ
+              is yours — not a generic pad.
             </p>
             <div className="ns-claim-preview">
               <div className="ns-company-mark" aria-hidden>
@@ -301,8 +424,10 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
                 )}
               </div>
               <div className="ns-claim-preview-copy">
-                <strong>{profile.name.trim() || "Your company"}</strong>
-                <span>{plot.groupLabel}</span>
+                <strong className="font-heading">{profile.name.trim() || "Your company"}</strong>
+                <span>
+                  {plot.groupLabel} · {formatSqFt(area.sqft)}
+                </span>
               </div>
               <button
                 type="button"
@@ -336,6 +461,13 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
               </label>
               <label className="ns-claim-upload">
                 Upload logo
+                <button
+                  type="button"
+                  className="ns-ghost ns-claim-upload-btn"
+                  onClick={() => logoInputRef.current?.click()}
+                >
+                  {profile.logo.trim() ? "Replace image" : "Choose image"}
+                </button>
                 <input
                   ref={logoInputRef}
                   type="file"
@@ -532,62 +664,86 @@ function ClaimSetupWizardBody({ claimSetupId, plot }: { claimSetupId: string; pl
         ) : (
           <>
             <p className="ns-bid-copy">
-              Lock in <strong>{profile.name.trim() || companyName}</strong>. We generate your HQ from your website
-              brand in Blender, publish it, and place it on your lot — colours, logo, and unique massing included.
+              Pick a published HQ that already fits this lot, or generate a new one from{" "}
+              <strong>{profile.name.trim() || companyName}</strong>.
             </p>
-            <div className="ns-claim-preview">
-              <div className="ns-company-mark" aria-hidden>
-                {profile.logo.trim() ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profile.logo} alt="" />
-                ) : (
-                  <span>{mark}</span>
-                )}
-              </div>
-              <div className="ns-claim-preview-copy">
-                <strong>{profile.name.trim() || companyName}</strong>
-                <span>
-                  {TIER_LABELS[profile.tier ?? brandForExport.tier]} · {placementSummary}
-                </span>
-              </div>
+            <div className="ns-hq-lot">
+              <span className="font-heading">{plot.groupLabel}</span>
+              <span>
+                {grown.w}×{grown.h} tiles · {Math.round(grown.w * TILE_METERS)}×{Math.round(grown.h * TILE_METERS)} m lot
+                {libraryEnvelope
+                  ? ` · ${libraryEnvelope.usableW.toFixed(1)}×${libraryEnvelope.usableD.toFixed(1)} m usable`
+                  : ""}
+              </span>
             </div>
-            {palette.length ? (
-              <ul className="ns-swatches" aria-label="Brand palette">
-                {palette.map((hex, i) => (
-                  <li key={hex} data-primary={i === 0 ? "1" : "0"}>
-                    <span className="ns-swatch" style={{ background: hex }} title={hex} />
+            {library === null ? (
+              <p className="ns-plot-hint ns-hq-loading">Measuring which HQs fit this pad…</p>
+            ) : library.length ? (
+              <ul className="ns-hq-grid" aria-label="Library HQs that fit this lot">
+                {library.map((item) => (
+                  <li key={item.assetId}>
+                    <button
+                      type="button"
+                      className="ns-hq-card"
+                      disabled={placingId === item.assetId}
+                      onClick={() => placeLibraryHq(item)}
+                    >
+                      <strong className="font-heading">{item.label}</strong>
+                      <span>
+                        {item.buildingMeters.width.toFixed(0)}×{item.buildingMeters.depth.toFixed(0)} m
+                        {item.rotated ? " · turned 90°" : ""}
+                      </span>
+                    </button>
                   </li>
                 ))}
               </ul>
+            ) : (
+              <div className="ns-hq-empty">
+                <p className="font-heading">None of the library HQs fit this lot</p>
+                <p>Generate a new HQ from your brand, sized to this pad.</p>
+                {libraryError ? <p className="ns-plot-hint">{libraryError}</p> : null}
+              </div>
+            )}
+            {buildingHq ? (
+              <div className="ns-hq-progress">
+                <Loader2 className="size-3.5 ns-spin" />
+                <p>Blender is generating a new HQ. You can cancel and pick from the library instead.</p>
+                <button type="button" className="ns-ghost" onClick={() => stopGenerate(true)}>
+                  Cancel generate
+                </button>
+              </div>
             ) : null}
+            {buildError && !buildingHq ? <p className="ns-hq-error">{buildError}</p> : null}
+            <div className="ns-hq-generate">
+              <div className="ns-hq-generate-copy">
+                <strong>Build a new HQ</strong>
+                <span>From your website brand in Blender — secondary path.</span>
+              </div>
+              <button
+                type="button"
+                className="ns-ghost"
+                disabled={buildingHq}
+                onClick={() => void buildHqOnMap()}
+              >
+                {buildingHq ? "Generating…" : "Generate"}
+              </button>
+            </div>
             <div className="ns-brand-export">
               <button type="button" className="ns-ghost" onClick={exportBrand}>
                 <Download className="size-3.5" />
                 Export brand JSON
               </button>
-              <p className="ns-plot-hint">
-                Asset id: <code>{defaultBuildingAssetId(brandForExport, claimSetupId)}</code> — requires Blender open with MCP
-                connected.
-              </p>
             </div>
             <div className="ns-bid-actions">
-              <button type="button" className="ns-ghost" onClick={() => setStep("placement")}>
-                Back
-              </button>
               <button
                 type="button"
-                className="ns-game-btn"
-                disabled={buildingHq}
-                onClick={() => void buildHqOnMap()}
+                className="ns-ghost"
+                onClick={() => {
+                  if (buildingHq) stopGenerate(true);
+                  setStep("placement");
+                }}
               >
-                {buildingHq ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Building in Blender…
-                  </>
-                ) : (
-                  "Build HQ"
-                )}
+                Back
               </button>
             </div>
           </>

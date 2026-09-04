@@ -1,0 +1,52 @@
+{
+  "assetId": "pack.agentspace.building.grove.land-parklands-2.01",
+  "plotId": "land-parklands-2",
+  "recipe": "bridge_complex",
+  "generationFingerprint": "11568ac31d3ffcdc",
+  "localMeters": {
+    "w": 23.65,
+    "d": 19.329,
+    "h": 18.16,
+    "z0": 0
+  },
+  "qualityGate": {
+    "ok": true,
+    "issues": [],
+    "kinds": {
+      "brand_logo": 14,
+      "structure": 3,
+      "canopy": 18,
+      "window": 129,
+      "brand": 49,
+      "door": 5,
+      "site": 7,
+      "signage": 82,
+      "facade": 5,
+      "roof": 11,
+      "prop": 60,
+      "landscape": 38
+    },
+    "meshes": 421,
+    "windows": 129,
+    "signage": 145,
+    "officialLogo": 14,
+    "stackedMasses": 0,
+    "enrichRoofs": 0,
+    "roofs": 11,
+    "fingerprint": "11568ac31d3ffcdc"
+  },
+  "logoAssetId": null,
+  "companyAdAssetId": "pack.agentspace.ad.grove.01",
+  "logo": {
+    "available": true,
+    "fallback": false,
+    "path": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/grove/logo.svg",
+    "format": "svg",
+    "sha256": "91eb554eacf9b3c6ffd53fc080b530047580383f3ed897be31929f2dc0cc9bf3",
+    "aspectRatio": 2.5,
+    "sourceUrl": "https://www.grove.co/cdn/shop/files/Green-Rewards-Logo-Left-Light.svg?v=1761682829",
+    "fetchedAt": null,
+    "manifest": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/grove/manifest.json"
+  },
+  "attempts": 1
+}

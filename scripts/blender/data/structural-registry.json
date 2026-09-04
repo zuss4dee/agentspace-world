@@ -62,6 +62,249 @@
       "plotId": "gallery-forge",
       "recipe": "industrial_hall",
       "registeredAt": "2026-09-03T11:48:24.970751+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.land-ridge-2.land-ridge-2.01",
+      "attempt": 0,
+      "companyId": "land-ridge-2",
+      "fingerprint": "799c5d58829c8da2",
+      "plotId": "land-ridge-2",
+      "recipe": "hybrid",
+      "registeredAt": "2026-09-03T12:46:11.150985+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa.qa-stripe.01",
+      "attempt": 0,
+      "companyId": "qa-stripe",
+      "fingerprint": "0c65c969695a1648",
+      "plotId": "qa-qa-stripe",
+      "recipe": "vertical_landmark",
+      "registeredAt": "2026-09-03T14:29:16.996527+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa.qa-figma.01",
+      "attempt": 0,
+      "companyId": "qa-figma",
+      "fingerprint": "c124362f0d29b87c",
+      "plotId": "qa-qa-figma",
+      "recipe": "courtyard_block",
+      "registeredAt": "2026-09-03T14:29:18.051191+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-stripe.01",
+      "attempt": 0,
+      "companyId": "qa-stripe",
+      "fingerprint": "9925cbb94aa3250d",
+      "plotId": "qa-stripe",
+      "recipe": "pavilion",
+      "registeredAt": "2026-09-03T17:01:03.369806+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-figma.01",
+      "attempt": 0,
+      "companyId": "qa-figma",
+      "fingerprint": "fc243572be954722",
+      "plotId": "qa-figma",
+      "recipe": "tower_campus",
+      "registeredAt": "2026-09-03T16:56:41.701373+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-ledger.01",
+      "attempt": 0,
+      "companyId": "qa-ledger",
+      "fingerprint": "391a196511feaa8b",
+      "plotId": "qa-ledger",
+      "recipe": "sculpture_hq",
+      "registeredAt": "2026-09-03T16:56:44.992962+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-grove.01",
+      "attempt": 0,
+      "companyId": "qa-grove",
+      "fingerprint": "ee3b05c347510502",
+      "plotId": "qa-grove",
+      "recipe": "pavilion",
+      "registeredAt": "2026-09-03T17:01:06.979926+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-forge.01",
+      "attempt": 0,
+      "companyId": "qa-forge",
+      "fingerprint": "5003057fa75adfa9",
+      "plotId": "qa-forge",
+      "recipe": "stepped_terrace",
+      "registeredAt": "2026-09-03T16:56:51.066835+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-loft.01",
+      "attempt": 0,
+      "companyId": "qa-loft",
+      "fingerprint": "1338e9de609b8a4b",
+      "plotId": "qa-loft",
+      "recipe": "tower_campus",
+      "registeredAt": "2026-09-03T16:56:55.235049+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-orbit.01",
+      "attempt": 0,
+      "companyId": "qa-orbit",
+      "fingerprint": "6f0f67338bb8a55d",
+      "plotId": "qa-orbit",
+      "recipe": "sculpture_hq",
+      "registeredAt": "2026-09-03T16:56:58.608748+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qa-ridge.01",
+      "attempt": 0,
+      "companyId": "qa-ridge",
+      "fingerprint": "6203eebcd5f74ff1",
+      "plotId": "qa-ridge",
+      "recipe": "bridge_complex",
+      "registeredAt": "2026-09-03T16:57:01.568896+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-stripe.01",
+      "attempt": 0,
+      "companyId": "qagallery-stripe",
+      "fingerprint": "b354fe59040002bb",
+      "plotId": "qagallery-stripe",
+      "recipe": "pavilion",
+      "registeredAt": "2026-09-03T17:17:12.043320+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-figma.01",
+      "attempt": 0,
+      "companyId": "qagallery-figma",
+      "fingerprint": "77f51e65b375c3d9",
+      "plotId": "qagallery-figma",
+      "recipe": "asymmetric_campus",
+      "registeredAt": "2026-09-03T17:17:28.741127+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-openai.01",
+      "attempt": 0,
+      "companyId": "qagallery-openai",
+      "fingerprint": "4e815866ffe6aad8",
+      "plotId": "qagallery-openai",
+      "recipe": "hybrid",
+      "registeredAt": "2026-09-03T17:18:06.292975+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-anthropic.01",
+      "attempt": 0,
+      "companyId": "qagallery-anthropic",
+      "fingerprint": "8fd1065de7a5d73a",
+      "plotId": "qagallery-anthropic",
+      "recipe": "sculpture_hq",
+      "registeredAt": "2026-09-03T17:18:36.381186+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-grove.01",
+      "attempt": 0,
+      "companyId": "qagallery-grove",
+      "fingerprint": "49269e45a9fbb3d1",
+      "plotId": "qagallery-grove",
+      "recipe": "pavilion",
+      "registeredAt": "2026-09-03T17:26:07.632965+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-forge.01",
+      "attempt": 0,
+      "companyId": "qagallery-forge",
+      "fingerprint": "c0254571f5a41fc8",
+      "plotId": "qagallery-forge",
+      "recipe": "asymmetric_campus",
+      "registeredAt": "2026-09-03T17:24:43.053871+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-orbit.01",
+      "attempt": 0,
+      "companyId": "qagallery-orbit",
+      "fingerprint": "e9f90fb11e6a4a80",
+      "plotId": "qagallery-orbit",
+      "recipe": "courtyard_block",
+      "registeredAt": "2026-09-03T17:19:58.888694+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-ledger.01",
+      "attempt": 0,
+      "companyId": "qagallery-ledger",
+      "fingerprint": "27353cd29b3b38fe",
+      "plotId": "qagallery-ledger",
+      "recipe": "hybrid",
+      "registeredAt": "2026-09-03T17:20:26.057427+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-notion.01",
+      "attempt": 0,
+      "companyId": "qagallery-notion",
+      "fingerprint": "6556617cbeec57f0",
+      "plotId": "qagallery-notion",
+      "recipe": "pavilion",
+      "registeredAt": "2026-09-03T17:20:44.615522+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-linear.01",
+      "attempt": 0,
+      "companyId": "qagallery-linear",
+      "fingerprint": "2241d839108eff20",
+      "plotId": "qagallery-linear",
+      "recipe": "asymmetric_campus",
+      "registeredAt": "2026-09-03T17:26:25.606669+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-vercel.01",
+      "attempt": 0,
+      "companyId": "qagallery-vercel",
+      "fingerprint": "11527d2e856ae95e",
+      "plotId": "qagallery-vercel",
+      "recipe": "vertical_landmark",
+      "registeredAt": "2026-09-03T17:21:35.216733+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.qagallery-midfield.01",
+      "attempt": 0,
+      "companyId": "qagallery-midfield",
+      "fingerprint": "e760f62799bbdbf3",
+      "plotId": "qagallery-midfield",
+      "recipe": "courtyard_block",
+      "registeredAt": "2026-09-03T17:21:55.982189+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.stripe.land-corporate-3.01",
+      "attempt": 0,
+      "companyId": "stripe",
+      "fingerprint": "dc94bcd8572dbf16",
+      "plotId": "land-corporate-3",
+      "recipe": "vertical_landmark",
+      "registeredAt": "2026-09-03T18:30:26.830085+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.grove.land-parklands-2.01",
+      "attempt": 0,
+      "companyId": "grove",
+      "fingerprint": "11568ac31d3ffcdc",
+      "plotId": "land-parklands-2",
+      "recipe": "bridge_complex",
+      "registeredAt": "2026-09-03T18:38:12.610389+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.linear.land-meadow-1.01",
+      "attempt": 0,
+      "companyId": "linear",
+      "fingerprint": "5558ebdfa3345ddb",
+      "plotId": "land-meadow-1",
+      "recipe": "bridge_complex",
+      "registeredAt": "2026-09-03T18:49:13.397690+00:00"
+    },
+    {
+      "assetId": "pack.agentspace.building.echt.land-campus-1.01",
+      "attempt": 0,
+      "companyId": "echt",
+      "fingerprint": "0b5ff075954124ac",
+      "plotId": "land-campus-1",
+      "recipe": "bridge_complex",
+      "registeredAt": "2026-09-04T11:32:42.551003+00:00"
     }
   ],
   "version": 1

@@ -26,7 +26,6 @@ from .mini_city_style import (
     vertical_fin_grooves,
 )
 from .mini_city_style_v2 import (
-    apply_night_facade,
     arch_portal_entrance,
     balcony_ledge,
     cantilever_volume,
@@ -44,13 +43,22 @@ from .mini_city_style_v2 import (
     wishbone_tower,
     zigzag_terrace,
 )
+from .building_architecture import (
+    alive_entrance,
+    mass_mat,
+    punched_facade,
+    roof_finish,
+    setback_terrace,
+    site_life,
+    storefront_frontage,
+)
 from .param_rng import ParamRNG
 
 if TYPE_CHECKING:
     from .company_building import BuildingContext
 
-# Primary mass colours — brand/coral first; cream is trim-only (see BUILDING_VISUAL_STYLE.md).
-MASS_SLOTS = ("brand", "coral", "cream_dark", "brand")
+# Primary masses: brand + cream. Coral is reserved for awnings / accents.
+MASS_SLOTS = ("brand", "cream", "cream_dark", "brand")
 
 
 def _mass_key(ctx: "BuildingContext", index: int) -> str:
@@ -93,6 +101,55 @@ def _face_y(ctx: "BuildingContext", y: float, d: float) -> float:
     return y - d / 2 - 0.06
 
 
+def _storey(ctx: "BuildingContext") -> float:
+    return _p(ctx, "storey_h", 3.4)
+
+
+def _ground_h(ctx: "BuildingContext") -> float:
+    return _p(ctx, "ground_storey_h", 4.6)
+
+
+def _bay(ctx: "BuildingContext") -> float:
+    return _p(ctx, "window_bay", 2.8)
+
+
+def _street_facade(ctx: "BuildingContext", prefix: str, cx: float, face_y: float, z0: float, z1: float, span: float, *, skip_ground: bool = True) -> None:
+    punched_facade(
+        ctx.part,
+        prefix,
+        cx,
+        face_y,
+        z0,
+        z1,
+        span,
+        ctx.mats,
+        ctx.root,
+        ctx.col,
+        storey_h=_storey(ctx),
+        bay=_bay(ctx),
+        skip_ground=skip_ground,
+        ground_h=_ground_h(ctx),
+        seed=(int(ctx.seed) + sum(ord(ch) for ch in prefix) * 17) & 0xFFFFFFFF,
+    )
+
+
+def _shop(ctx: "BuildingContext", prefix: str, cx: float, face_y: float, z0: float, span: float) -> None:
+    storefront_frontage(
+        ctx.part,
+        prefix,
+        cx,
+        face_y,
+        z0,
+        min(span, ctx.W * 0.55),
+        ctx.mats,
+        ctx.root,
+        ctx.col,
+        height=min(_ground_h(ctx) * 0.78, 4.2),
+        cols=max(3, int(span / _bay(ctx))),
+        canopy_depth=_p(ctx, "canopy_depth", 1.8),
+    )
+
+
 def recipe_bridge_complex_procedural(ctx: "BuildingContext") -> None:
     """Offset masses + sky bridges + round tower — parametric cousin of Echt."""
     m, part = ctx.mats, ctx.part
@@ -120,15 +177,15 @@ def recipe_bridge_complex_procedural(ctx: "BuildingContext") -> None:
     th = _p(ctx, "tower_height", rng.uniform("tower_h", 22.0, 32.0))
     cx, cy = rng.uniform("tower.x", -1.5, 2.0), rng.uniform("tower.y", 0.5, 3.0)
     cylinder_tower(part, "mass.tower", tr, th, cx, cy, base_z, m["brand"], m["glass"], m["charcoal"], root, col, bands=5, glow_mat=m["glow"])
-    apply_night_facade(part, "facade.tower", cx, cy - tr - 0.08, base_z + 2.5, base_z + th - 1.0, tr * 1.8, m, root, col, style="mixed", seed=rng.randint("facade.tower", 0, 9999))
+    _street_facade(ctx, "facade.tower", cx, cy - tr - 0.08, base_z, base_z + th, tr * 1.8)
     toy_spire(part, "spire.tower", cx, cy + tr + 0.2, base_z + th, 3.2, m["charcoal"], m["coral"], root, col)
 
     # Right coral mass with terrace
     rx = W * 0.26 + rng.uniform("mass.r.x", -1.0, 2.5)
     ry = rng.uniform("mass.r.y", -2.0, 1.5)
     rw, rd, rh = W * 0.34, D * 0.44, rng.uniform("wing.r.h", 10.0, 16.0)
-    rounded_mass(part, "mass.right", rw, rd, rh, rx, ry, base_z, m["coral"], root, col, bevel=0.34, cid="mass.right")
-    apply_night_facade(part, "facade.right", rx, _face_y(ctx, ry, rd), base_z + 2.0, base_z + rh - 0.8, rw * 0.7, m, root, col, style="slots", seed=rng.randint("facade.r", 0, 9999))
+    rounded_mass(part, "mass.right", rw, rd, rh, rx, ry, base_z, m["cream_dark"], root, col, bevel=0.34, cid="mass.right")
+    _street_facade(ctx, "facade.right", rx, _face_y(ctx, ry, rd), base_z, base_z + rh, rw * 0.7)
     terrace_garden(part, "terrace.right", rx, ry - rd * 0.12, base_z + rh + 0.5, rw * 0.55, rd * 0.35, m, root, col)
 
     # Rear offset slab
@@ -149,6 +206,7 @@ def recipe_bridge_complex_procedural(ctx: "BuildingContext") -> None:
     projecting_box(part, "facade.proj", 5.5, 2.2, 8.0, lx, ly - ld / 2, base_z + 3.0, m["cream_dark"], root, col, proj_y=-1.0)
     balcony_ledge(part, "balcony.right", rw * 0.45, 1.0, rx, ry - rd / 2, base_z + rh * 0.55, m["coral"], m["charcoal"], root, col)
     roof_deck_platform(part, "roof.deck", 6.0, 4.5, cx, cy + 1.5, base_z + th, m["paver"], m["charcoal"], root, col)
+    site_life(ctx, front_y=front, width=ctx.W, density=_p(ctx, "prop_density", 0.75))
 
     _set_anchors(ctx, entrance=(0, front + 2.4, base_z), roof_center=(cx, cy), roof_z=base_z + th + 3.5)
 
@@ -171,24 +229,23 @@ def recipe_tower_campus_procedural(ctx: "BuildingContext") -> None:
     elif tower_style == "cantilever":
         cantilever_volume(part, "mass.tower", tw, td, th, tx, ty, base_z, m["brand"], m["coral"], ctx.root, ctx.col,
                           overhang=rng.uniform("overhang", 2.0, 4.5))
-        apply_night_facade(part, "facade.tower", tx, _face_y(ctx, ty, td), base_z + 3.0, base_z + th - 1.0, tw * 0.75, m, ctx.root, ctx.col, style="fins", seed=rng.randint("facade.t", 0, 9999))
+        _street_facade(ctx, "facade.tower", tx, _face_y(ctx, ty, td), base_z, base_z + th, tw * 0.75)
     elif tower_style == "wishbone":
         wishbone_tower(part, "mass.tower", tw, td, th, tx, ty, base_z, m["brand"], m["coral"], m["glass"], ctx.root, ctx.col, bevel=0.36)
     else:
         toy_setback_tower(part, "mass.tower", tw, td, th, tx, ty, base_z, m["brand"], ctx.root, ctx.col, bevel=0.4, cid="mass.tower",
                           glow_mat=m["glow"], fin_mat=_fin(ctx))
-        apply_night_facade(part, "facade.tower", tx, _face_y(ctx, ty, td), base_z + 2.5, base_z + th - 1.0, tw * 0.7, m, ctx.root, ctx.col, style="mixed", seed=rng.randint("facade.t", 0, 9999))
+        _street_facade(ctx, "facade.tower", tx, _face_y(ctx, ty, td), base_z, base_z + th, tw * 0.7)
 
     # Asymmetric wings — different heights and offsets
     wing_specs = (
         ("west", -W * 0.32, rng.uniform("wing.w.y", -2.0, 1.5), W * 0.28, D * 0.5, rng.uniform("wing.w.h", 6.0, 12.0), "cream"),
-        ("east", W * 0.3, rng.uniform("wing.e.y", -1.0, 2.5), W * 0.26, D * 0.46, rng.uniform("wing.e.h", 8.0, 14.0), "coral"),
+        ("east", W * 0.3, rng.uniform("wing.e.y", -1.0, 2.5), W * 0.26, D * 0.46, rng.uniform("wing.e.h", 8.0, 14.0), "cream_dark"),
     )
     for name, sx, sy, sw, sd, sh, mk in wing_specs:
         skewed_mass(part, f"mass.{name}", sw, sd, sh, sx, sy, base_z, m[mk], ctx.root, ctx.col,
                     skew_x=rng.uniform(f"skew.{name}", -1.8, 2.2), skew_y=0.0, bevel=0.3)
-        apply_night_facade(part, f"facade.{name}", sx, _face_y(ctx, sy, sd), base_z + 2.0, base_z + sh - 0.6, sw * 0.55, m, ctx.root, ctx.col,
-                           style="slots" if name == "east" else "band", seed=rng.randint(f"facade.{name}", 0, 9999))
+        _street_facade(ctx, f"facade.{name}", sx, _face_y(ctx, sy, sd), base_z, base_z + sh, sw * 0.7)
         slanted_wedge_roof(part, f"roof.{name}", sw, sd, sx, sy, base_z + sh, m["roof"], m["coral"], ctx.root, ctx.col,
                            rise=rng.uniform(f"wedge.{name}", 0.8, 1.8))
         if name == "east":
@@ -205,52 +262,51 @@ def recipe_tower_campus_procedural(ctx: "BuildingContext") -> None:
         toy_roof_stack(part, "roof.tower", tw + 0.6, td + 0.6, tx, ty, base_z + th, m["roof"], m["charcoal"], ctx.root, ctx.col, lip=0.52)
         toy_spire(part, "spire", tx, ty + 0.4, base_z + th + 1.2, 4.5, m["charcoal"], m["brand"], ctx.root, ctx.col, r=0.65)
 
-    arch_portal_entrance(part, "entrance", 0, front + 2.2, base_z, m, ctx.root, ctx.col, span=12.5, height=9.0)
+    _shop(ctx, "ground.shop", 0, front + 0.2, base_z, min(W * 0.62, 18.0))
+    alive_entrance(ctx, 0, front + 2.2, base_z, span=_p(ctx, "entrance_span", 11.5), height=_ground_h(ctx) + 1.2, canopy_d=_p(ctx, "canopy_depth", 2.0))
     signage_from_brand(part, "facade", ctx.brand, tx, ty - td / 2 - 0.34, base_z + th * 0.4, m["sign"], ctx.root, ctx.col, s=0.54, d=0.22)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.94, podium_d=ctx.D * 0.9,
                      plaza_w=_s(ctx, 9.5), plaza_d=_s(ctx, 3.8), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=front, width=ctx.W, density=_p(ctx, "prop_density", 0.8))
     roof_deck_platform(part, "roof.deck", tw * 0.85, td * 0.55, tx, ty - 1.2, base_z + th, m["paver"], m["charcoal"], ctx.root, ctx.col)
     _set_anchors(ctx, entrance=(0, front + 2.2, base_z), roof_center=(tx, ty), roof_z=base_z + th + 2.0)
 
 
 def recipe_stepped_terrace_procedural(ctx: "BuildingContext") -> None:
-    """Off-axis wedding cake + zigzag terraces — cascading silhouette."""
+    """Receding campus: wide podium, set-back main mass, side wing, roof terraces."""
     m, part = ctx.mats, ctx.part
     rng = _rng(ctx)
-    steps = int(_p(ctx, "step_count", rng.randint("steps", 4, 6)))
-    ox = rng.uniform("base.ox", -3.5, 3.5)
-    base_z = shared_podium(part, "podium", ctx.W * 0.86, ctx.D * 0.78, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.44, bevel=0.22)
-    z = base_z
-    oy = rng.uniform("base.oy", -1.5, 2.0)
+    front = _front(ctx)
+    storey, ground = _storey(ctx), _ground_h(ctx)
+    setback = _p(ctx, "setback_m", 2.6)
+    base_z = shared_podium(part, "podium", ctx.W * 0.9, ctx.D * 0.82, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.46, bevel=0.22)
 
-    for i in range(steps):
-        t = i / max(1, steps - 1)
-        sw = ctx.W * (0.98 - t * 0.22) + rng.uniform(f"step.{i}.sw", -0.6, 0.6)
-        sd = ctx.D * (0.96 - t * 0.18) + rng.uniform(f"step.{i}.sd", -0.5, 0.5)
-        sh = 3.8 + rng.uniform(f"step.{i}.h", 0.8, 2.8)
-        step_ox = ox + rng.uniform(f"step.{i}.ox", -2.5, 2.5)
-        step_oy = oy + i * 0.65 + rng.uniform(f"step.{i}.oy", -0.8, 0.8)
-        mk = ["cream", "brand", "coral", "cream_dark"][i % 4]
-        rounded_mass(part, f"step.{i}", sw, sd, sh, step_ox, step_oy, z, m[mk], ctx.root, ctx.col, bevel=0.24, cid=f"step.{i}")
-        if i < steps - 1:
-            emissive_glow_band(part, f"step.{i}.crown", step_ox, step_oy - sd / 2 - 0.06, z + sh - 0.32, sw * 0.82, 0.35, m["glow"], ctx.root, ctx.col)
-        vertical_fin_grooves(part, f"step.{i}.fin", step_ox, step_oy - sd / 2 - 0.08, z + 1.2, z + sh - 0.5, sw * 0.7, _fin(ctx), ctx.root, ctx.col, count=4)
-        if i % 2 == 0:
-            zigzag_terrace(part, f"zig.{i}", step_ox + sw * 0.15, step_oy - sd / 2 - 0.5, z + sh * 0.55, sw * 0.55, sd * 0.3, m["cream_dark"], m["paver"], ctx.root, ctx.col, tiers=2)
-        else:
-            terrace_garden(part, f"terrace.{i}", step_ox - sw * 0.1, step_oy + sd * 0.08, z + sh + 0.35, sw * 0.4, sd * 0.32, m, ctx.root, ctx.col)
-        toy_window_band(part, f"step.{i}.win", step_ox, step_oy - sd / 2 - 0.06, z + 1.6, sw * 0.32, 2.6, m["charcoal"], m["glass"], ctx.root, ctx.col)
-        glow_window_slots(part, f"step.{i}.slots", step_ox, step_oy - sd / 2 - 0.04, z + 2.0, z + sh - 1.0, sw * 0.55, m["glass"], ctx.root, ctx.col,
-                          cols=3, rows=4, fill=0.45, seed=rng.randint(f"step.{i}.seed", 0, 9999))
-        z += sh - 0.22
+    pod_w, pod_d, pod_h = ctx.W * 0.9, ctx.D * 0.52, ground + storey * max(0, int(_p(ctx, "podium_storeys", 1)) - 1)
+    rounded_mass(part, "mass.podium", pod_w, pod_d, pod_h, 0, front + pod_d / 2 + 1.2, base_z, mass_mat(ctx, "secondary"), ctx.root, ctx.col, bevel=0.26, cid="mass.podium")
+    _shop(ctx, "ground.shop", 0, front + 1.1, base_z, min(pod_w * 0.7, 20.0))
+    _street_facade(ctx, "facade.podium", 0, front + 1.1, base_z, base_z + pod_h, pod_w * 0.72)
 
-    slanted_wedge_roof(part, "roof.crown", ctx.W * 0.35, ctx.D * 0.28, ox, oy + steps * 0.4, z, m["roof"], m["brand"], ctx.root, ctx.col, rise=2.2)
-    toy_spire(part, "spire", ox, oy, z + 1.8, 3.8, m["charcoal"], m["coral"], ctx.root, ctx.col)
-    arch_portal_entrance(part, "entrance", ox * 0.3, _front(ctx) + 2.0, base_z, m, ctx.root, ctx.col, span=11.0, height=8.0)
-    signage_from_brand(part, "facade", ctx.brand, ox, _front(ctx) - 0.22, base_z + 8.0, m["sign"], ctx.root, ctx.col, s=0.48, d=0.2)
+    main_w, main_d = ctx.W * 0.58, ctx.D * 0.42
+    main_h = storey * rng.randint("main.floors", 2, 3)
+    main_y = front + pod_d + setback * 0.35 + main_d / 2
+    rounded_mass(part, "mass.main", main_w, main_d, main_h, rng.uniform("main.x", -2.2, 2.2), main_y, base_z + pod_h * 0.15, mass_mat(ctx, "primary"), ctx.root, ctx.col, bevel=0.3, cid="mass.main")
+    _street_facade(ctx, "facade.main", 0, main_y - main_d / 2 - 0.06, base_z + pod_h * 0.15, base_z + pod_h * 0.15 + main_h, main_w * 0.7, skip_ground=False)
+    setback_terrace(ctx, "terrace.front", 0, front + pod_d * 0.55, base_z + pod_h + 0.2, pod_w * 0.4, 3.2)
+    roof_finish(part, "roof.main", main_w + 0.3, main_d + 0.25, 0, main_y, base_z + pod_h * 0.15 + main_h, m, ctx.root, ctx.col, parapet_h=_p(ctx, "parapet_h", 0.55))
+
+    wing_w, wing_d = ctx.W * 0.28, ctx.D * 0.62
+    wing_h = storey * rng.randint("wing.floors", 1, 2) + ground * 0.35
+    wing_x = ctx.W * 0.28 * (1 if rng.choice("wing.side", ["L", "R"]) == "R" else -1)
+    rounded_mass(part, "mass.wing", wing_w, wing_d, wing_h, wing_x, front + wing_d / 2 + 1.6, base_z, mass_mat(ctx, "tertiary"), ctx.root, ctx.col, bevel=0.24, cid="mass.wing")
+    _street_facade(ctx, "facade.wing", wing_x, front + 1.5, base_z, base_z + wing_h, wing_w * 0.8)
+    balcony_ledge(part, "balcony.wing", wing_w * 0.55, 0.95, wing_x, front + 1.4, base_z + wing_h * 0.55, m["cream_dark"], m["charcoal"], ctx.root, ctx.col)
+
+    alive_entrance(ctx, 0, front + 2.0, base_z, span=_p(ctx, "entrance_span", 11.0), height=ground + 0.8, canopy_d=_p(ctx, "canopy_depth", 2.0))
+    signage_from_brand(part, "facade", ctx.brand, 0, front - 0.18, base_z + pod_h + 1.4, m["sign"], ctx.root, ctx.col, s=0.48, d=0.2)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W, podium_d=ctx.D,
                      plaza_w=_s(ctx, 8.5), plaza_d=_s(ctx, 3.4), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
-    _set_anchors(ctx, entrance=(ox * 0.3, _front(ctx) + 2.0, base_z), roof_center=(ox, oy + steps * 0.4), roof_z=z + 2.5)
+    site_life(ctx, front_y=front, width=ctx.W, density=_p(ctx, "prop_density", 0.8))
+    _set_anchors(ctx, entrance=(0, front + 2.0, base_z), roof_center=(0, main_y), roof_z=base_z + pod_h * 0.15 + main_h + 1.0)
 
 
 def recipe_courtyard_block_procedural(ctx: "BuildingContext") -> None:
@@ -276,14 +332,13 @@ def recipe_courtyard_block_procedural(ctx: "BuildingContext") -> None:
                      m["cream" if name in {"north", "west"} else "cream_dark"], ctx.root, ctx.col, bevel=0.22, cid=f"ring.{name}")
         toy_roof_stack(part, f"roof.{name}", rw + 0.25, rd + 0.25, loc[0], loc[1], base_z + h_main, m["roof"], m["charcoal"], ctx.root, ctx.col, lip=0.28)
         if name in {"north", "south"}:
-            apply_night_facade(part, f"ring.{name}", loc[0], loc[1] - rd / 2 - 0.06, base_z + 2.5, base_z + h_main - 0.8, rw * 0.65, m, ctx.root, ctx.col,
-                               style="slots", seed=rng.randint(f"ring.{name}", 0, 9999))
+            _street_facade(ctx, f"ring.{name}", loc[0], loc[1] - rd / 2 - 0.06, base_z, base_z + h_main, rw * 0.65)
 
     # Corner round turrets
     for i, (tx, ty) in enumerate(((-ring_w / 2 + wall_t, ring_d / 2 - wall_t), (ring_w / 2 - wall_t, ring_d / 2 - wall_t))):
         tr = wall_t * 0.55
         th = h_main + rng.uniform(f"turret.{i}.h", 4.0, 9.0)
-        cylinder_tower(part, f"turret.{i}", tr, th, tx, ty, base_z, m["brand"] if i == 0 else "coral", m["glass"], m["charcoal"], ctx.root, ctx.col, bands=3)
+        cylinder_tower(part, f"turret.{i}", tr, th, tx, ty, base_z, m["brand"] if i == 0 else m["cream_dark"], m["glass"], m["charcoal"], ctx.root, ctx.col, bands=3)
 
     gate_h = h_main + rng.uniform("gate.h", 5.0, 10.0)
     rounded_mass(part, "gate.tower", 8.5, 4.5, gate_h, 0, -ring_d / 2 + 2.0, base_z, m["brand"], ctx.root, ctx.col, bevel=0.2, cid="gate.tower")
@@ -295,93 +350,87 @@ def recipe_courtyard_block_procedural(ctx: "BuildingContext") -> None:
     recessed_niche(part, "facade.niche", 5.0, 1.2, 6.5, -ring_w * 0.15, -ring_d / 2, base_z + 2.5, m["cream"], m["glass"], ctx.root, ctx.col)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W, podium_d=ctx.D,
                      plaza_w=_s(ctx, 7.5), plaza_d=_s(ctx, 3.0), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=_front(ctx), width=ctx.W, density=_p(ctx, "prop_density", 0.75))
     _set_anchors(ctx, entrance=(0, _front(ctx) + 1.8, base_z), roof_center=(0, 0), roof_z=base_z + gate_h + 1.0)
 
 
 def recipe_pavilion_procedural(ctx: "BuildingContext") -> None:
-    """Multi-level pilotis + stacked canopies — horizontal landmark."""
+    """Low studio HQ + detached glass pavilion + garden court — side-by-side, not stacked."""
     m, part = ctx.mats, ctx.part
     rng = _rng(ctx)
     front = _front(ctx)
-    base_z = ctx.site_z + 0.12
+    storey, ground = _storey(ctx), _ground_h(ctx)
+    base_z = shared_podium(part, "podium", ctx.W * 0.92, ctx.D * 0.82, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.4, bevel=0.2)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W, podium_d=ctx.D,
-                     plaza_w=ctx.W * 0.78, plaza_d=_s(ctx, 4.5), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+                     plaza_w=ctx.W * 0.7, plaza_d=_s(ctx, 4.2), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
 
-    span_w, span_d = ctx.W * 0.78, ctx.D * 0.62
-    lift = _p(ctx, "canopy_lift", rng.uniform("lift", 5.5, 8.5))
-    ox = rng.uniform("canopy.ox", -2.5, 2.5)
+    main_w, main_d = ctx.W * 0.52, ctx.D * 0.58
+    main_h = ground + storey * rng.randint("main.floors", 1, 2)
+    main_x = -ctx.W * 0.18
+    main_y = front + main_d / 2 + 2.2
+    rounded_mass(part, "mass.studio", main_w, main_d, main_h, main_x, main_y, base_z, mass_mat(ctx, "secondary"), ctx.root, ctx.col, bevel=0.28, cid="mass.studio")
+    _shop(ctx, "ground.shop", main_x, front + 1.8, base_z, min(main_w * 0.72, 16.0))
+    _street_facade(ctx, "facade.studio", main_x, front + 1.8, base_z, base_z + main_h, main_w * 0.78)
+    vertical_fin_grooves(part, "facade.studio.fins", main_x, front + 1.7, base_z + ground * 0.15, base_z + main_h - 0.3, main_w * 0.72, _fin(ctx), ctx.root, ctx.col, count=max(4, int(main_w / 3.2)), depth=0.28)
+    recessed_niche(part, "facade.studio.niche", min(5.2, main_w * 0.28), 0.85, ground * 0.72, main_x - main_w * 0.18, front + 2.0, base_z + 0.35, m["cream"], m["glass"], ctx.root, ctx.col)
+    balcony_ledge(part, "balcony.studio", main_w * 0.42, 1.05, main_x + main_w * 0.08, front + 1.7, base_z + ground + 0.15, m["cream_dark"], m["charcoal"], ctx.root, ctx.col)
+    projecting_box(part, "proj.studio", main_w * 0.22, 1.6, storey * 0.7, main_x + main_w * 0.22, front + 1.5, base_z + ground + storey * 0.15, m["cream_dark"], ctx.root, ctx.col)
+    slanted_wedge_roof(part, "roof.studio", main_w, main_d, main_x, main_y, base_z + main_h, m["roof"], m["charcoal"], ctx.root, ctx.col, rise=rng.uniform("studio.roof", 0.9, 1.6))
 
-    # Pilotis — irregular grid
-    col_positions = [
-        (-span_w * 0.38 + ox, -span_d * 0.28),
-        (span_w * 0.35 + ox, -span_d * 0.32),
-        (-span_w * 0.32 + ox, span_d * 0.25),
-        (span_w * 0.4 + ox, span_d * 0.22),
-        (ox, 0),
-    ]
-    for i, (px, py) in enumerate(col_positions):
-        h_col = lift - 0.6 if i < 4 else lift * 0.5
-        part(f"col.{i}", 0.78, 0.78, h_col, (px, py, base_z + h_col / 2), m["charcoal"], ctx.root, ctx.col, f"col.{i}", bevel=0.08)
+    pav_w, pav_d = ctx.W * 0.26, ctx.D * 0.34
+    pav_h = ground * 0.92
+    pav_x = ctx.W * 0.26
+    pav_y = front + pav_d / 2 + 3.4
+    rounded_mass(part, "mass.pavilion", pav_w, pav_d, pav_h, pav_x, pav_y, base_z, mass_mat(ctx, "primary"), ctx.root, ctx.col, bevel=0.22, cid="mass.pavilion")
+    toy_curtain_wall(part, "facade.pavilion", pav_x, pav_y - pav_d / 2 - 0.08, base_z + 0.35, base_z + pav_h - 0.35, pav_w * 0.78, m["glass"], m["charcoal"], ctx.root, ctx.col, depth=0.34, cols=3)
+    toy_curtain_wall(part, "facade.pavilion.side", pav_x - pav_w / 2 - 0.06, pav_y, base_z + 0.35, base_z + pav_h - 0.35, pav_d * 0.7, m["glass"], m["charcoal"], ctx.root, ctx.col, depth=0.28, cols=2)
+    roof_finish(part, "roof.pavilion", pav_w + 0.2, pav_d + 0.16, pav_x, pav_y, base_z + pav_h, m, ctx.root, ctx.col, parapet_h=0.4)
+    terrace_garden(part, "terrace.pavilion", pav_x, pav_y, base_z + pav_h + 0.45, pav_w * 0.55, pav_d * 0.4, m, ctx.root, ctx.col)
 
-    # Lower canopy slab + upper offset cap
-    part("canopy.lower", span_w, span_d * 0.72, 1.1, (ox, -span_d * 0.06, base_z + lift * 0.72), m["brand"], ctx.root, ctx.col, "canopy.lower", bevel=0.12)
-    part("canopy.upper", span_w * 0.72, span_d * 0.58, 0.95, (ox + rng.uniform("cap.ox", -2.0, 2.5), span_d * 0.08, base_z + lift), m["coral"], ctx.root, ctx.col, "canopy.upper", bevel=0.14)
-    part("canopy.skylight", span_w * 0.28, span_d * 0.22, 0.2, (ox, -span_d * 0.05, base_z + lift + 0.58), m["glass"], ctx.root, ctx.col, "canopy.skylight")
+    court_x = (main_x + main_w * 0.42 + pav_x - pav_w * 0.35) / 2
+    court_y = front + 5.2
+    part("court.pad", ctx.W * 0.16, 6.4, 0.12, (court_x, court_y, ctx.site_z + 0.06), m["paver"], ctx.root, ctx.col, "court.pad", bevel=0.03)
+    link_y = front + 3.8
+    part("link.canopy", abs(pav_x - main_x) * 0.55, 2.6, 0.22, (court_x, link_y, base_z + ground * 0.78), m["charcoal"], ctx.root, ctx.col, "link.canopy", bevel=0.04)
+    for i, px in enumerate((main_x + main_w * 0.38, court_x, pav_x - pav_w * 0.32)):
+        part(f"link.col.{i}", 0.38, 0.38, ground * 0.74, (px, link_y, base_z + ground * 0.36), m["charcoal"], ctx.root, ctx.col, f"link.col.{i}", bevel=0.04)
 
-    rounded_mass(part, "core", span_w * 0.24, span_d * 0.2, 3.2, ox, span_d * 0.12, base_z, m["cream_dark"], ctx.root, ctx.col, bevel=0.18, cid="core")
-    skewed_mass(part, "core.cap", span_w * 0.18, span_d * 0.15, 2.4, ox + 1.2, span_d * 0.05, base_z + 3.0, m["cream"], ctx.root, ctx.col,
-                skew_x=1.5, skew_y=-0.8, bevel=0.2)
-
-    toy_spire(part, "beacon", ox + span_w * 0.25, -span_d * 0.15, base_z + lift + 0.8, 2.8, m["charcoal"], m["brand"], ctx.root, ctx.col, r=0.45)
-    signage_from_brand(part, "facade", ctx.brand, ox, -span_d / 2 - 0.2, base_z + lift + 0.2, m["sign"], ctx.root, ctx.col, s=0.44, d=0.16)
-    _set_anchors(ctx, entrance=(ox, front + 1.5, base_z), roof_center=(ox, 0), roof_z=base_z + lift + 1.2)
+    alive_entrance(ctx, main_x, front + 2.2, base_z, span=min(_p(ctx, "entrance_span", 9.5), main_w * 0.52), height=ground * 0.95, canopy_d=_p(ctx, "canopy_depth", 1.8))
+    signage_from_brand(part, "facade", ctx.brand, main_x, front + 1.4, base_z + ground + 0.8, m["sign"], ctx.root, ctx.col, s=0.42, d=0.16)
+    site_life(ctx, front_y=front, width=ctx.W, density=_p(ctx, "prop_density", 0.8))
+    _set_anchors(ctx, entrance=(main_x, front + 2.2, base_z), roof_center=(main_x, main_y), roof_z=base_z + main_h + 1.2)
 
 
 def recipe_stacked_volumes_procedural(ctx: "BuildingContext") -> None:
-    """Pod stacks + skewed slabs + sky bridge — vertical collage."""
+    """Mixed-height campus: side-by-side volumes of different heights, not a cake."""
     m, part = ctx.mats, ctx.part
     rng = _rng(ctx)
-    base_z = shared_podium(part, "podium", ctx.W * 0.74, ctx.D * 0.7, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.42, bevel=0.2)
+    front = _front(ctx)
+    storey, ground = _storey(ctx), _ground_h(ctx)
+    base_z = shared_podium(part, "podium", ctx.W * 0.86, ctx.D * 0.76, ctx.site_z, m["cream_dark"], m["charcoal"], ctx.root, ctx.col, h=0.44, bevel=0.2)
 
-    # Primary pod tower
-    px = rng.uniform("pod.x", -2.0, 2.5)
-    py = rng.uniform("pod.y", -1.5, 2.0)
-    pods = []
-    n_pods = rng.randint("pods", 3, 5)
-    for i in range(n_pods):
-        scale = 1.0 - i * 0.12
-        pods.append((ctx.W * 0.22 * scale, ctx.D * 0.2 * scale, 3.2 + rng.uniform(f"pod.{i}.h", 0.4, 1.8), _mass_key(ctx, i)))
-    pod_tower(part, "stack.main", px, py, base_z, m, ctx.root, ctx.col, pods=pods)
+    left_w, left_d = ctx.W * 0.42, ctx.D * 0.58
+    left_h = ground + storey * rng.randint("left.floors", 1, 2)
+    rounded_mass(part, "mass.left", left_w, left_d, left_h, -ctx.W * 0.22, front + left_d / 2 + 1.4, base_z, mass_mat(ctx, "secondary"), ctx.root, ctx.col, bevel=0.28, cid="mass.left")
+    _shop(ctx, "ground.shop", -ctx.W * 0.1, front + 1.2, base_z, min(left_w * 0.85, 14.0))
+    _street_facade(ctx, "facade.left", -ctx.W * 0.22, front + 1.2, base_z, base_z + left_h, left_w * 0.7)
 
-    # Secondary skewed stack offset
-    sx = px + rng.uniform("sec.x", 5.0, 9.0)
-    sy = py + rng.uniform("sec.y", -3.0, 3.0)
-    stacks = int(_p(ctx, "stack_count", rng.randint("stacks", 3, 5)))
-    z = base_z
-    for i in range(stacks):
-        bw = ctx.W * (0.42 - i * 0.06)
-        bd = ctx.D * (0.38 - i * 0.05)
-        bh = 3.2 + rng.uniform(f"stack.{i}.h", 0.8, 2.2)
-        jx = sx + rng.uniform(f"stack.{i}.ox", -1.5, 1.5)
-        skewed_mass(part, f"stack.{i}", bw, bd, bh, jx, sy, z,
-                    m[_mass_key(ctx, i + 1)], ctx.root, ctx.col,
-                    skew_x=rng.uniform(f"skew.{i}", -2.0, 2.5), skew_y=0.0, bevel=0.26)
-        apply_night_facade(part, f"stack.{i}.facade", jx, _face_y(ctx, sy, bd), z + 1.4, z + bh - 0.6, bw * 0.58, m, ctx.root, ctx.col,
-                           style="slots" if i % 2 else "band", seed=rng.randint(f"stack.{i}.fac", 0, 9999))
-        toy_roof_stack(part, f"stack.{i}.roof", bw + 0.25, bd + 0.2, jx, sy, z + bh, m["roof"], m["charcoal"], ctx.root, ctx.col, lip=0.32)
-        z += bh - 0.2
+    right_w, right_d = ctx.W * 0.36, ctx.D * 0.48
+    right_h = storey * rng.randint("right.floors", 3, 4)
+    rounded_mass(part, "mass.right", right_w, right_d, right_h, ctx.W * 0.24, front + right_d / 2 + 2.4, base_z, mass_mat(ctx, "primary"), ctx.root, ctx.col, bevel=0.3, cid="mass.right")
+    _street_facade(ctx, "facade.right", ctx.W * 0.24, front + 2.3, base_z, base_z + right_h, right_w * 0.72, skip_ground=False)
+    roof_finish(part, "roof.right", right_w + 0.28, right_d + 0.22, ctx.W * 0.24, front + right_d / 2 + 2.4, base_z + right_h, m, ctx.root, ctx.col, parapet_h=_p(ctx, "parapet_h", 0.5))
 
-    mid_z = base_z + (z - base_z) * 0.55
-    diagonal_bridge(part, "link.sky", (px + sx) / 2, (py + sy) / 2, mid_z, 9.0, 2.5, 0.48, m["cream_dark"], ctx.root, ctx.col, rise=2.5)
-    cantilever_volume(part, "stack.cant", ctx.W * 0.28, ctx.D * 0.22, 11.0, px - 6.0, py + 2.0, base_z, m["brand"], m["coral"], ctx.root, ctx.col,
-                      overhang=rng.uniform("cant.over", 2.5, 4.0))
+    link_w = ctx.W * 0.18
+    rounded_mass(part, "mass.link", link_w, ctx.D * 0.28, ground * 0.85, 0.0, front + 4.5, base_z, mass_mat(ctx, "tertiary"), ctx.root, ctx.col, bevel=0.18, cid="mass.link")
+    bridge_connector(part, "link.deck", 0.0, front + 5.2, base_z + ground * 0.7, ctx.W * 0.22, 2.2, 0.45, m["cream_dark"], ctx.root, ctx.col)
 
-    arch_portal_entrance(part, "entrance", px * 0.2, _front(ctx) + 1.8, base_z, m, ctx.root, ctx.col, span=10.0, height=7.5)
-    signage_from_brand(part, "facade", ctx.brand, px, _front(ctx) - 0.2, base_z + 6.0, m["sign"], ctx.root, ctx.col, s=0.5, d=0.2)
-    projecting_box(part, "facade.short", ctx.W * 0.22, 2.0, 5.5, px - 3.0, _front(ctx) + 1.0, base_z + 1.5, m["brand"], ctx.root, ctx.col)
-    site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.88, podium_d=ctx.D * 0.82,
-                     plaza_w=_s(ctx, 7.0), plaza_d=_s(ctx, 3.2), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
-    _set_anchors(ctx, entrance=(px * 0.2, _front(ctx) + 1.8, base_z), roof_center=(px, py), roof_z=z + 0.5)
+    alive_entrance(ctx, -ctx.W * 0.08, front + 2.0, base_z, span=_p(ctx, "entrance_span", 10.0), height=ground + 0.6, canopy_d=_p(ctx, "canopy_depth", 1.9))
+    signage_from_brand(part, "facade", ctx.brand, ctx.W * 0.24, front + 1.8, base_z + right_h * 0.45, m["sign"], ctx.root, ctx.col, s=0.48, d=0.2)
+    site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.9, podium_d=ctx.D * 0.84,
+                     plaza_w=_s(ctx, 7.5), plaza_d=_s(ctx, 3.2), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=front, width=ctx.W, density=_p(ctx, "prop_density", 0.75))
+    _set_anchors(ctx, entrance=(-ctx.W * 0.08, front + 2.0, base_z), roof_center=(ctx.W * 0.24, front + 4.0), roof_z=base_z + right_h + 0.8)
 
 
 def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
@@ -394,7 +443,7 @@ def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
     blobs = [
         ("a", -ctx.W * 0.28, -2.0, ctx.W * 0.32, ctx.D * 0.38, rng.uniform("blob.a.h", 14.0, 18.0), "cream"),
         ("b", ctx.W * 0.12, 2.5, ctx.W * 0.28, ctx.D * 0.42, rng.uniform("blob.b.h", 22.0, 30.0), "brand"),
-        ("c", ctx.W * 0.32, -3.0, ctx.W * 0.24, ctx.D * 0.34, rng.uniform("blob.c.h", 11.0, 15.0), "coral"),
+        ("c", ctx.W * 0.32, -3.0, ctx.W * 0.24, ctx.D * 0.34, rng.uniform("blob.c.h", 11.0, 15.0), "cream_dark"),
         ("d", -ctx.W * 0.05, ctx.D * 0.22, ctx.W * 0.26, ctx.D * 0.28, rng.uniform("blob.d.h", 9.0, 13.0), "cream_dark"),
     ]
     positions: dict[str, tuple[float, float, float, float]] = {}
@@ -411,8 +460,7 @@ def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
                               overhang=rng.uniform(f"over.{key}", 2.0, 3.8))
         else:
             rounded_mass(part, f"blob.{key}", bw, bd, bh, jx, jy, base_z, m[mk], ctx.root, ctx.col, bevel=0.26 + asym * 0.1, cid=f"blob.{key}")
-        apply_night_facade(part, f"facade.{key}", jx, _face_y(ctx, jy, bd), base_z + 2.5, base_z + bh - 1.0, bw * 0.55, m, ctx.root, ctx.col,
-                           style="slots" if bh > 18 else "band", seed=rng.randint(f"facade.{key}", 0, 9999))
+        _street_facade(ctx, f"facade.{key}", jx, _face_y(ctx, jy, bd), base_z, base_z + bh, bw * 0.62)
         if bh > 16:
             toy_curtain_wall(part, f"blob.{key}.glass", jx, jy - bd / 2 - 0.05, base_z + 2.5, base_z + bh - 1.2, bw * 0.5, m["glass"], m["charcoal"], ctx.root, ctx.col, depth=0.34, cols=2)
         slanted_wedge_roof(part, f"roof.{key}", bw, bd, jx, jy, base_z + bh, m["roof"], m["coral"] if key == "b" else m["charcoal"], ctx.root, ctx.col,
@@ -433,6 +481,7 @@ def recipe_asymmetric_campus_procedural(ctx: "BuildingContext") -> None:
     roof_deck_platform(part, "roof.deck", blobs[1][3] * 0.5, blobs[1][4] * 0.35, tb_pos[0], tb_pos[1], base_z + blobs[1][5], m["paver"], m["charcoal"], ctx.root, ctx.col)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W, podium_d=ctx.D,
                      plaza_w=_s(ctx, 10.0), plaza_d=_s(ctx, 3.8), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=_front(ctx), width=ctx.W, density=_p(ctx, "prop_density", 0.75))
     _set_anchors(ctx, entrance=(tb_pos[0] * 0.3, _front(ctx) + 2.0, base_z), roof_center=(tb_pos[0], tb_pos[1]), roof_z=base_z + blobs[1][5] + 1.5)
 
 
@@ -466,7 +515,7 @@ def recipe_sculpture_hq_procedural(ctx: "BuildingContext") -> None:
         right_x,
         -0.2,
         base_z,
-        m["coral"],
+        m["cream_dark"],
         ctx.root,
         ctx.col,
         skew_x=rng.uniform("right.skew", -2.5, 2.8),
@@ -487,6 +536,7 @@ def recipe_sculpture_hq_procedural(ctx: "BuildingContext") -> None:
     slanted_wedge_roof(part, "roof.left", ctx.W * 0.38, ctx.D * 0.48, left_x, 0.8, base_z + wing_h, m["roof"], m["brand"], ctx.root, ctx.col, rise=1.3)
     slanted_wedge_roof(part, "roof.right", ctx.W * 0.34, ctx.D * 0.44, right_x, -0.2, base_z + wing_h * 0.82, m["roof"], m["coral"], ctx.root, ctx.col, rise=1.0)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.95, podium_d=ctx.D * 0.9, plaza_w=_s(ctx, 11.0), plaza_d=_s(ctx, 4.2), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=_front(ctx), width=ctx.W, density=_p(ctx, "prop_density", 0.8))
     _set_anchors(ctx, entrance=(0, _front(ctx) + 2.1, base_z), roof_center=(left_x, 0.8), roof_z=base_z + wing_h + 1.6)
 
 
@@ -505,25 +555,39 @@ def recipe_vertical_landmark_procedural(ctx: "BuildingContext") -> None:
         cylinder_tower(part, "landmark", min(ctx.W, ctx.D) * 0.19, th, tx, ty, base_z, m["brand"], m["glass"], m["charcoal"], ctx.root, ctx.col, bands=7, glow_mat=m["glow"])
     toy_spire(part, "landmark.spire", tx, ty, base_z + th, 5.0, m["charcoal"], m["coral"], ctx.root, ctx.col, r=0.7)
     rounded_mass(part, "base.west", ctx.W * 0.3, ctx.D * 0.46, 8.5, -ctx.W * 0.27, 0.3, base_z, m["cream"], ctx.root, ctx.col, bevel=0.3, cid="base.west")
-    rounded_mass(part, "base.east", ctx.W * 0.25, ctx.D * 0.4, 11.0, ctx.W * 0.28, -0.8, base_z, m["coral"], ctx.root, ctx.col, bevel=0.3, cid="base.east")
+    rounded_mass(part, "base.east", ctx.W * 0.25, ctx.D * 0.4, 11.0, ctx.W * 0.28, -0.8, base_z, m["cream_dark"], ctx.root, ctx.col, bevel=0.3, cid="base.east")
     diagonal_bridge(part, "landmark.link", (tx + ctx.W * 0.18) / 2, (ty - 0.5) / 2, base_z + 7.0, 8.5, 2.6, 0.52, m["cream_dark"], ctx.root, ctx.col, rise=2.5)
     arch_portal_entrance(part, "entrance", 0, _front(ctx) + 2.0, base_z, m, ctx.root, ctx.col, span=11.5, height=8.5)
     signage_from_brand(part, "facade", ctx.brand, tx, ty - ctx.D * 0.18, base_z + th * 0.42, m["sign"], ctx.root, ctx.col, s=0.48, d=0.2)
     site_composition(part, "site", ctx.W, ctx.D, m, ctx.root, ctx.col, podium_w=ctx.W * 0.94, podium_d=ctx.D * 0.88, plaza_w=_s(ctx, 9.5), plaza_d=_s(ctx, 3.8), plaza_y=_plaza_y(ctx), site_z=ctx.site_z)
+    site_life(ctx, front_y=_front(ctx), width=ctx.W, density=_p(ctx, "prop_density", 0.75))
     _set_anchors(ctx, entrance=(0, _front(ctx) + 2.0, base_z), roof_center=(tx, ty), roof_z=base_z + th + 3.0)
 
 
 def recipe_hybrid_procedural(ctx: "BuildingContext") -> None:
-    """Controlled hybrid: a campus base with one selected landmark language."""
+    """Two topologies composed: L-campus, courtyard+tower, or podium+pavilion."""
     rng = _rng(ctx)
-    mode = ctx.params.get("hybrid_mode") or rng.choice("hybrid.mode", ["tower", "sculpture", "terrace"])
-    if mode == "sculpture":
+    mode = ctx.params.get("hybrid_mode") or rng.choice("hybrid.mode", ["l_campus", "court_tower", "podium_pavilion"])
+    if mode in {"sculpture", "podium_pavilion"}:
         recipe_sculpture_hq_procedural(ctx)
+        rounded_mass(
+            ctx.part,
+            "mass.pavilion",
+            ctx.W * 0.22,
+            ctx.D * 0.2,
+            _ground_h(ctx),
+            ctx.W * 0.32,
+            _front(ctx) + 3.2,
+            ctx.site_z + 0.5,
+            mass_mat(ctx, "primary"),
+            ctx.root,
+            ctx.col,
+            bevel=0.22,
+            cid="mass.pavilion",
+        )
         return
-    if mode == "terrace":
-        recipe_stepped_terrace_procedural(ctx)
+    if mode in {"terrace", "court_tower"}:
+        recipe_courtyard_block_procedural(ctx)
         return
     recipe_tower_campus_procedural(ctx)
-    # A single branded bridge makes this a hybrid rather than a duplicate of
-    # tower_campus while keeping the silhouette controlled.
-    diagonal_bridge(ctx.part, "hybrid.link", 0, _front(ctx) + 5.0, ctx.site_z + 9.0, ctx.W * 0.42, 2.4, 0.5, ctx.mats["coral"], ctx.root, ctx.col, rise=2.0)
+    diagonal_bridge(ctx.part, "hybrid.link", 0, _front(ctx) + 5.0, ctx.site_z + 9.0, ctx.W * 0.42, 2.4, 0.5, ctx.mats["cream_dark"], ctx.root, ctx.col, rise=2.0)

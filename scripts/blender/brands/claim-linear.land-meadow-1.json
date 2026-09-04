@@ -1,0 +1,64 @@
+{
+  "companyId": "linear",
+  "companyName": "Linear",
+  "tier": "startup",
+  "logo": {
+    "wordmark": "LINEAR",
+    "assetPath": "public/assets/brands/linear/logo.png",
+    "imageUrl": "https://linear.app/static/apple-touch-icon.png?v=2"
+  },
+  "primaryColours": [
+    "#5e6ad2",
+    "#08090a",
+    "#ffffff"
+  ],
+  "secondaryColours": [
+    "#dfd1ff",
+    "#9c9da1"
+  ],
+  "typography": {
+    "display": "Inter",
+    "body": "Inter"
+  },
+  "visualStyle": "dark product studio, indigo, near-black, pale lilac",
+  "industry": "technology",
+  "personality": [
+    "minimal",
+    "precise",
+    "dark"
+  ],
+  "styleKeywords": [
+    "dark",
+    "playful",
+    "tech",
+    "creative"
+  ],
+  "avatars": [
+    "https://linear.app/static/og/homepage.jpg",
+    "https://linear.app/static/apple-touch-icon.png?v=2"
+  ],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 301,
+    "libraries": []
+  },
+  "website": "https://linear.app",
+  "tagline": "Purpose-built for planning and building products with AI agents.",
+  "colourRoles": {
+    "primary": "#5e6ad2",
+    "secondary": "#08090a",
+    "accent": "#5e6ad2",
+    "background": "#08090a",
+    "foreground": "#ffffff",
+    "logo": [
+      "#5e6ad2",
+      "#ffffff",
+      "#08090a"
+    ]
+  },
+  "derivedFrom": {
+    "url": "https://linear.app/",
+    "fetchedAt": "2026-09-03T18:40:49.693Z",
+    "confidence": 0.92
+  }
+}

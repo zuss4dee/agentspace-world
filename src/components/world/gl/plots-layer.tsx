@@ -22,11 +22,12 @@ import {
   placeAtCell,
   plotRect,
   remainingRects,
+  usesForPlot,
   workingLand,
   type Plot,
 } from "@/lib/plots";
 import { TILE, h, wx, wz } from "@/lib/coords";
-import { occupancyHas, GENERATED_OCCUPANCY_PLOT_IDS, withOccupancyIds } from "@/lib/generated-occupancy";
+import { occupancyHas, withOccupancyIds } from "@/lib/generated-occupancy";
 import { isOccupiedPlot, claimedBuildingPlacementFromPlot } from "@/lib/lot-footprint";
 import { BuildingFromSpec } from "@/components/world/gl/architecture";
 import { BuildingGltfByUrl } from "@/components/world/gl/vehicle-gltf";
@@ -487,19 +488,28 @@ function ClaimedBuildingGltf({
   fp,
   profileMeters,
   tier,
+  yawDeg = 0,
 }: {
   assetId: string;
   fp: { x: number; y: number; w: number; h: number };
   profileMeters?: { width: number; depth: number; height: number };
   tier?: "enterprise" | "smb" | "startup";
+  yawDeg?: number;
 }) {
   const url = gltfUrlForAssetId(assetId);
   const tierFallback = tier ? TIER_FOOTPRINT_METERS[tier] : undefined;
   const meters = placementMetersForClaim(assetId, profileMeters ?? tierFallback);
-  const place = claimedBuildingPlacementFromPlot(fp, meters);
+  const yaw = ((yawDeg % 360) + 360) % 360;
+  const swapped = yaw === 90 || yaw === 270;
+  const oriented = meters
+    ? swapped
+      ? { w: meters.d, d: meters.w }
+      : meters
+    : undefined;
+  const place = claimedBuildingPlacementFromPlot(fp, oriented);
   if (!url || !place) return null;
   return (
-    <group position={[place.cx, 0, place.cz]}>
+    <group position={[place.cx, 0, place.cz]} rotation={[0, (yaw * Math.PI) / 180, 0]}>
       <BuildingGltfByUrl url={url} scale={[place.scale, place.scale, place.scale]} />
     </group>
   );
@@ -507,10 +517,7 @@ function ClaimedBuildingGltf({
 
 export function ClaimedMarks() {
   const { claimedPlotIds, claimedExtras, claimedPlaces, claimedUses, buildingSpecs, selectPlot } = useWorld();
-  const ids = useMemo(
-    () => [...new Set([...claimedPlotIds, ...GENERATED_OCCUPANCY_PLOT_IDS])],
-    [claimedPlotIds],
-  );
+  const ids = useMemo(() => [...new Set(claimedPlotIds)], [claimedPlotIds]);
   return (
     <group>
       {ids.map((id) => {
@@ -518,7 +525,14 @@ export function ClaimedMarks() {
         if (!p) return null;
         const extra = claimedExtras[id] ?? 0;
         const r = expandedRect(p, extra);
-        const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES.find((u) => u.id === "office") ?? LAND_USES[0]!;
+        const fitting = usesForPlot(p, extra);
+        const requested = claimedUses[id];
+        const use =
+          fitting.find((u) => u.id === requested) ??
+          fitting.find((u) => u.id === "office") ??
+          fitting[0] ??
+          LAND_USES.find((u) => u.id === "office") ??
+          LAND_USES[0]!;
         const fp = buildingFootprint(p, use, extra, claimedPlaces[id]);
         const x0 = wx(r.x);
         const z0 = wz(r.y);
@@ -568,6 +582,7 @@ export function ClaimedMarks() {
                 fp={{ x: r.x, y: r.y, w: r.w, h: r.h }}
                 profileMeters={spec.profile.buildingMeters}
                 tier={spec.profile.tier}
+                yawDeg={spec.profile.buildingYaw ?? 0}
               />
             ) : null}
             {fp && spec ? <ClaimedCompanyPin spec={spec} fp={fp} /> : null}

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import bpy
 from mathutils import Vector
 
+from .building_architecture import mass_detail_aliases, mass_stem, roof_finish
 from .library_catalog import DECORATION_SLOTS, LIBRARY_ASSETS, SCULPTURE_CATALOG, resolve_library_id
 from .library_instancer import _asset_footprint_z, instance_library_asset
 from .mini_city_style import (
@@ -16,7 +17,7 @@ from .mini_city_style import (
     stylized_planter,
     stylized_tree,
 )
-from .mini_city_style_v2 import orb_sculpture_stack, rooftop_antenna_farm, toy_spire, apply_night_facade
+from .mini_city_style_v2 import orb_sculpture_stack, rooftop_antenna_farm, toy_spire
 from .param_rng import ParamRNG
 
 if TYPE_CHECKING:
@@ -407,13 +408,15 @@ def _component_short(ob) -> str:
 
 
 def _has_mass_detail(ctx: "BuildingContext", stem: str, *needles: str) -> bool:
+    aliases = mass_detail_aliases(stem)
     for ob in bpy.data.objects:
         if ob.get("asw_assetId") != ctx.asset_id:
             continue
         short = _component_short(ob)
-        if not short.startswith(stem) and stem not in short:
+        matched = next((a for a in aliases if short == a or short.startswith(f"{a}.") or short.startswith(a)), None)
+        if matched is None:
             continue
-        if any(n in short for n in needles):
+        if any(n in short or n in matched for n in needles):
             return True
     return False
 
@@ -423,7 +426,7 @@ def enrich_recipe_facades(ctx: "BuildingContext") -> dict[str, Any]:
     if ctx.params.get("preset") == "echt_v1":
         return {"skipped": True, "reason": "echt_v1 frozen"}
 
-    from .mini_city_style import toy_entrance_portal, toy_roof_stack
+    from .mini_city_style import toy_entrance_portal
 
     rng = ParamRNG(ctx.seed)
     part = ctx.part
@@ -456,7 +459,7 @@ def enrich_recipe_facades(ctx: "BuildingContext") -> dict[str, Any]:
         h = max(zs) - min(zs)
         if h < 2.5 or w < 1.5:
             continue
-        stem = ".".join(short.split(".")[:2]) if short.count(".") >= 1 else short
+        stem = mass_stem(short)
         prev = by_stem.get(stem)
         if prev is None or h > prev[3]:
             by_stem[stem] = (cx, cy, z0, h, w, d)
@@ -464,36 +467,39 @@ def enrich_recipe_facades(ctx: "BuildingContext") -> dict[str, Any]:
     for stem, (cx, cy, z0, h, w, d) in by_stem.items():
         face_y = cy - d / 2 - 0.06
         if not _has_mass_detail(ctx, stem, "facade", "win", "glass", "slot", "band", "curtain"):
-            style = rng.choice(f"enrich.{stem}.style", ["slots", "band", "mixed"])
-            apply_night_facade(
+            from .building_architecture import punched_facade
+
+            punched_facade(
                 part,
                 f"enrich.{stem}",
                 cx,
                 face_y,
-                z0 + 1.8,
-                z0 + h - 0.8,
+                z0,
+                z0 + h,
                 w * 0.62,
                 m,
                 ctx.root,
                 ctx.col,
-                style=style,
+                storey_h=float(ctx.params.get("storey_h") or 3.4),
+                bay=float(ctx.params.get("window_bay") or 2.8),
+                skip_ground=True,
+                ground_h=float(ctx.params.get("ground_storey_h") or 4.6),
                 seed=rng.randint(f"enrich.{stem}", 0, 9999),
             )
             added.append(f"facade:{stem}")
-        if not _has_mass_detail(ctx, stem, "roof"):
-            toy_roof_stack(
+        if not stem.endswith(".podium") and not _has_mass_detail(ctx, stem, "roof"):
+            roof_finish(
                 part,
-                f"enrich.{stem}.roof",
-                w + 0.3,
-                d + 0.25,
+                f"roof.{stem.split('.')[-1]}",
+                w + 0.18,
+                d + 0.14,
                 cx,
                 cy,
                 z0 + h,
-                m["roof"],
-                m["charcoal"],
+                m,
                 ctx.root,
                 ctx.col,
-                lip=0.38,
+                parapet_h=0.42,
             )
             added.append(f"roof:{stem}")
 

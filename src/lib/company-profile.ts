@@ -231,6 +231,9 @@ const TEXT_KEYS = Object.keys(EMPTY_PROFILE) as Array<
 /** Ad fields that may be cleared explicitly (empty string removes prior value). */
 const CLEARABLE_AD_KEYS = ["adHeadline", "adImage", "ctaLabel", "ctaUrl"] as const;
 
+/** Text fields that may be cleared when the key is present (empty string is not “unset”). */
+const CLEARABLE_TEXT_KEYS = ["name", ...CLEARABLE_AD_KEYS] as const;
+
 const AD_IMAGE_FRAMES = new Set<AdImageFrame>(["landscape", "square", "portrait"]);
 
 function isAdImageFrame(v: unknown): v is AdImageFrame {
@@ -255,11 +258,11 @@ export function mergeProfile(...parts: Array<CompanyProfilePatch | undefined>): 
   for (const part of parts) {
     if (!part) continue;
     for (const key of TEXT_KEYS) {
-      if ((CLEARABLE_AD_KEYS as readonly string[]).includes(key)) continue;
+      if ((CLEARABLE_TEXT_KEYS as readonly string[]).includes(key)) continue;
       const v = part[key];
       if (typeof v === "string" && v.trim()) out[key] = v;
     }
-    for (const key of CLEARABLE_AD_KEYS) {
+    for (const key of CLEARABLE_TEXT_KEYS) {
       if (!Object.prototype.hasOwnProperty.call(part, key)) continue;
       const v = part[key];
       if (typeof v !== "string") continue;
@@ -276,8 +279,17 @@ export function mergeProfile(...parts: Array<CompanyProfilePatch | undefined>): 
     if (part.buildingMeters?.width && part.buildingMeters.depth) {
       out.buildingMeters = { ...part.buildingMeters };
     }
+    if (typeof part.buildingYaw === "number" && Number.isFinite(part.buildingYaw)) {
+      out.buildingYaw = part.buildingYaw;
+    }
     if (part.buildingStatus === "building" || part.buildingStatus === "ready" || part.buildingStatus === "failed") {
       out.buildingStatus = part.buildingStatus;
+    }
+    if (typeof part.generationFingerprint === "string" && part.generationFingerprint.trim()) {
+      out.generationFingerprint = part.generationFingerprint.trim();
+    }
+    if (typeof part.companyAdAssetId === "string" && part.companyAdAssetId.trim()) {
+      out.companyAdAssetId = part.companyAdAssetId.trim();
     }
     if ("logoPose" in part) {
       if (part.logoPose === null || part.logoPose === undefined) {

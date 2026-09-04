@@ -1,0 +1,63 @@
+{
+  "companyId": "grove",
+  "companyName": "Grove Collaborative",
+  "tier": "enterprise",
+  "logo": {
+    "wordmark": "GROVE",
+    "assetPath": "public/assets/brands/grove/logo.svg",
+    "imageUrl": "https://www.grove.co/cdn/shop/files/Green-Rewards-Logo-Left-Light.svg?v=1761682829"
+  },
+  "primaryColours": [
+    "#033b4c",
+    "#4dac72",
+    "#d4d3cd"
+  ],
+  "secondaryColours": [
+    "#f4f1ea",
+    "#ffffff"
+  ],
+  "typography": {
+    "display": "ValueSans Regular",
+    "body": "ValueSans"
+  },
+  "visualStyle": "warm retail campus, deep teal, leaf green, cream",
+  "industry": "retail",
+  "personality": [
+    "calm",
+    "organic",
+    "friendly"
+  ],
+  "styleKeywords": [
+    "light",
+    "playful",
+    "retail",
+    "health"
+  ],
+  "avatars": [
+    "http://www.grove.co/cdn/shop/files/Grove-Meta_Preview.jpg?v=1773877757"
+  ],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 12,
+    "libraries": []
+  },
+  "website": "https://www.grove.co",
+  "tagline": "Grove is your one-stop destination for everyday essentials that create a healthier home and planet, including eco-friendly cleaning, bamboo paper products, and vitamins & supplements from hundreds of vetted brands. Every",
+  "colourRoles": {
+    "primary": "#033b4c",
+    "secondary": "#4dac72",
+    "accent": "#4dac72",
+    "background": "#f4f1ea",
+    "foreground": "#033b4c",
+    "logo": [
+      "#033b4c",
+      "#4dac72",
+      "#f4f1ea"
+    ]
+  },
+  "derivedFrom": {
+    "url": "https://www.grove.co/",
+    "fetchedAt": "2026-09-03T18:31:54.067Z",
+    "confidence": 0.95
+  }
+}

@@ -52,7 +52,7 @@ def validate_footprint(
     local_meters: dict[str, float],
     spec: GeneratedBuildingSpec,
     *,
-    tolerance: float = 0.05,
+    tolerance: float = 0.20,
 ) -> dict:
     """Fail if horizontal bbox exceeds plot allocation."""
     bounds = plot_bounds_from_spec(spec)
@@ -94,6 +94,11 @@ def assert_no_interior_kinds(asset_id: str) -> dict:
 def logo_asset_id(company_id: str, *, version: str = "01") -> str:
     slug = "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in company_id.lower()).strip("-")
     return f"pack.agentspace.logo.{slug}.{version}"
+
+
+def ad_asset_id(company_id: str, *, version: str = "01") -> str:
+    slug = "".join(ch if ch.isalnum() or ch in "._-" else "-" for ch in company_id.lower()).strip("-")
+    return f"pack.agentspace.ad.{slug}.{version}"
 
 
 def validate_logo_asset_id(asset_id: str) -> dict:

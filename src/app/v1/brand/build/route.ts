@@ -3,6 +3,9 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { NextResponse } from "next/server";
 import { defaultBuildingAssetId, type BrandProfile } from "@/lib/brand-profile";
+import { persistOfficialLogo } from "@/lib/official-logo";
+import { companyAdAssetId } from "@/lib/company-ad";
+import { logoAssetIdForCompany } from "@/lib/logo-gltf";
 import { getPlot } from "@/lib/plots";
 
 export const runtime = "nodejs";
@@ -42,6 +45,35 @@ function measureGlb(glbPath: string) {
   };
 }
 
+function readMeta(repo: string, assetId: string) {
+  const metaPath = path.join(repo, "public/assets/gltf/buildings", `${assetId}.meta.json`);
+  if (!fs.existsSync(metaPath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(metaPath, "utf8")) as {
+      generationFingerprint?: string;
+      recipe?: string;
+      logoAssetId?: string;
+      companyAdAssetId?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
+function publicError(raw: string): string {
+  const text = raw.toLowerCase();
+  if (text.includes("exceeds plot") || text.includes("footprint")) {
+    return "That HQ didn't fit the lot. We tried another design — please tap Build HQ again.";
+  }
+  if (text.includes("quality gate")) {
+    return "That HQ didn't meet the quality bar. We tried another design — please tap Build HQ again.";
+  }
+  if (text.includes("timeout") || text.includes("blender")) {
+    return "HQ generation took too long. Please try again in a moment.";
+  }
+  return "Couldn't place that HQ on this lot. Please try again.";
+}
+
 /** POST /v1/brand/build — generate HQ in Blender, publish GLB, return asset metadata. */
 export async function POST(request: Request) {
   let body: BuildBody;
@@ -62,9 +94,18 @@ export async function POST(request: Request) {
   const glbPath = path.join(repo, "public/assets/gltf/buildings", `${assetId}.glb`);
   const plot = plotId ? getPlot(plotId) : undefined;
 
+  const logoPath = await persistOfficialLogo(brand.companyId, {
+    imageUrl: brand.logo?.imageUrl,
+    assetPath: brand.logo?.assetPath,
+  }, repo);
+  if (logoPath) {
+    brand.logo = { ...brand.logo, assetPath: logoPath };
+  }
+
   // Fast path: GLB already published (common after a hung UI retry).
   if (!body.forceRebuild && fs.existsSync(glbPath) && fs.statSync(glbPath).size > 32) {
     const buildingMeters = measureGlb(glbPath);
+    const meta = readMeta(repo, assetId);
     return NextResponse.json(
       {
         ok: true,
@@ -73,6 +114,10 @@ export async function POST(request: Request) {
         url: `/assets/gltf/buildings/${assetId}.glb`,
         buildingMeters,
         reused: true,
+        recipe: meta?.recipe,
+        generationFingerprint: meta?.generationFingerprint,
+        logoAssetId: meta?.logoAssetId ?? logoAssetIdForCompany(brand.companyId),
+        companyAdAssetId: meta?.companyAdAssetId ?? companyAdAssetId(brand.companyId),
       },
       { headers: { "cache-control": "no-store" } },
     );
@@ -94,7 +139,7 @@ export async function POST(request: Request) {
     const raw = execFileSync(process.execPath, [script, ...args], {
       cwd: repo,
       encoding: "utf8",
-      timeout: 240000,
+      timeout: 480000,
       env: { ...process.env },
     });
     const lastLine = raw.trim().split("\n").pop() ?? "";
@@ -103,10 +148,15 @@ export async function POST(request: Request) {
       assetId?: string;
       url?: string;
       localMeters?: { w: number; d: number; h: number; z0?: number };
+      recipe?: string;
+      generationFingerprint?: string;
+      uniquenessKey?: string;
+      logoAssetId?: string;
+      companyAdAssetId?: string;
       error?: string;
     };
     if (!result.ok) {
-      return NextResponse.json({ ok: false, error: result.error ?? "build failed" }, { status: 502 });
+      return NextResponse.json({ ok: false, error: publicError(result.error ?? "build failed") }, { status: 502 });
     }
     const meters = result.localMeters;
     return NextResponse.json(
@@ -118,6 +168,10 @@ export async function POST(request: Request) {
         buildingMeters: meters
           ? { width: meters.w, depth: meters.d, height: meters.h ?? meters.w }
           : undefined,
+        recipe: result.recipe,
+        generationFingerprint: result.generationFingerprint ?? result.uniquenessKey,
+        logoAssetId: result.logoAssetId ?? logoAssetIdForCompany(brand.companyId),
+        companyAdAssetId: result.companyAdAssetId ?? companyAdAssetId(brand.companyId),
       },
       { headers: { "cache-control": "no-store" } },
     );
@@ -144,12 +198,10 @@ export async function POST(request: Request) {
         /* not json */
       }
     }
-    const detail = [parsedError, err.message, stderr, stdout].filter(Boolean).join("\n").slice(-1200);
     return NextResponse.json(
       {
         ok: false,
-        error: parsedError || "Blender build failed — is Blender open with the MCP addon connected?",
-        detail,
+        error: publicError(parsedError || err.message || "build failed"),
       },
       { status: 502 },
     );

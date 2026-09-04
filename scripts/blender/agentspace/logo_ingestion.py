@@ -118,7 +118,7 @@ def _svg_width_units(path: Path) -> float:
     return 120.0
 
 
-def _import_svg(path: Path, prefix, parent, col, asset_id, info, x, y, z, width):
+def _import_svg(path: Path, prefix, parent, col, asset_id, info, x, y, z, width, *, extrude: float = 0.04):
     before = set(bpy.data.objects)
     bpy.ops.import_curve.svg(filepath=str(path))
     imported = [ob for ob in bpy.data.objects if ob not in before]
@@ -135,6 +135,9 @@ def _import_svg(path: Path, prefix, parent, col, asset_id, info, x, y, z, width)
             ob.data.dimensions = "2D"
             ob.data.fill_mode = "BOTH"
             ob.data.resolution_u = 12
+            if extrude > 0:
+                ob.data.extrude = min(float(extrude), 0.12)
+                ob.data.bevel_depth = min(float(extrude) * 0.15, 0.012)
         tag(
             ob,
             asset_id=asset_id or str(parent.get("asw_assetId") or ""),
@@ -191,6 +194,8 @@ def apply_logo_surface(
     depth=0.12,
     asset_id="",
     anchor_role: str | None = None,
+    extrude: float = 0.04,
+    object_name: str | None = None,
 ):
     """Place an official logo on a physical sign surface.
 
@@ -205,7 +210,12 @@ def apply_logo_surface(
     try:
         create_logo_anchor(parent, col, asset_id, x, y, z, role=role)
         if path.suffix.lower() == ".svg":
-            count = _import_svg(path, prefix, parent, col, asset_id, info, x, y, z, width)
+            count = _import_svg(path, prefix, parent, col, asset_id, info, x, y, z, width, extrude=extrude)
+            if object_name:
+                for ob in bpy.data.objects:
+                    if ob.get("asw_componentId") == f"{prefix}.official_logo.0":
+                        ob.name = object_name
+                        break
             return {
                 **info,
                 "placed": True,
@@ -216,7 +226,7 @@ def apply_logo_surface(
         mat = _image_material(path, f"asw.logo.{asset_id or 'company'}.{prefix}")
         height = width / float(info["aspectRatio"])
         ob = part(
-            f"{prefix}.official_logo",
+            object_name or f"{prefix}.official_logo",
             width,
             depth,
             height,

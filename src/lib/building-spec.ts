@@ -19,8 +19,14 @@ export type CompanyProfile = {
   buildingAssetId?: string;
   /** Measured GLB footprint — used for lot placement before registry sync. */
   buildingMeters?: { width: number; depth: number; height: number };
+  /** Yaw in degrees for a library HQ that only fits after a 90° swap (0 or 90). */
+  buildingYaw?: number;
   /** HQ generation state from the claim wizard. */
   buildingStatus?: "building" | "ready" | "failed";
+  /** Structural fingerprint stored with the published HQ. */
+  generationFingerprint?: string;
+  /** Separate roadside company-ad GLB (`pack.agentspace.ad.*`). */
+  companyAdAssetId?: string;
   /** Large headline on the visitor ad modal. Falls back to tagline / does / name. */
   adHeadline?: string;
   /** Optional hero image on the visitor ad. Falls back to brand avatars. */

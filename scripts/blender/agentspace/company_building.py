@@ -14,6 +14,7 @@ from mathutils import Vector
 from .company_building_spec import BrandSpec, GeneratedBuildingSpec
 from .geom import box, ensure_collection, link
 from .param_rng import deterministic_seed
+from .plot_fit import ensure_building_fits_plot, plot_fit_report
 from .plot_validator import assert_no_interior_kinds, validate_footprint
 from .plot_validator import validate_asset_id, validate_logo_anchors
 from .pbr_library import ensure_mats
@@ -21,7 +22,7 @@ from .building_composition import apply_toy_composition, enrich_recipe_facades
 from .recipe_templates import compose
 from .registry import tag
 from .spec_compiler import compile_spec
-from .logo_ingestion import inspect_logo, write_logo_manifest
+from .logo_ingestion import apply_logo_surface, inspect_logo, write_logo_manifest
 
 KIND = "building"
 
@@ -67,8 +68,19 @@ def _remove_asset(asset_id: str) -> None:
             bpy.data.objects.remove(ob, do_unlink=True)
 
 
-def _resolve_mat_palette(mat_defs: dict[str, dict[str, Any]]) -> dict[str, Any]:
-    raw = ensure_mats(mat_defs)
+def _mat_slug(asset_id: str) -> str:
+    return asset_id.replace("pack.agentspace.building.", "").replace(".", "_")
+
+
+def _resolve_mat_palette(mat_defs: dict[str, dict[str, Any]], *, asset_id: str = "") -> dict[str, Any]:
+    keys = list(mat_defs.keys())
+    already_namespaced = any(k.startswith("asw.mat.") for k in keys)
+    specs = mat_defs
+    if asset_id and not already_namespaced:
+        slug = _mat_slug(asset_id)
+        specs = {f"asw.mat.{slug}.{slot}": spec for slot, spec in mat_defs.items()}
+        keys = list(specs.keys())
+    raw = ensure_mats(specs)
     aliases = {
         "cream": "asw.mat.echt.toy.cream",
         "cream_dark": "asw.mat.echt.toy.cream.dark",
@@ -86,8 +98,12 @@ def _resolve_mat_palette(mat_defs: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "glow": "asw.mat.echt.toy.glow",
     }
     out: dict[str, Any] = {}
-    keys = list(mat_defs.keys())
+    slug = _mat_slug(asset_id) if asset_id else ""
     for slot in DEFAULT_MAT_KEYS:
+        namespaced = f"asw.mat.{slug}.{slot}" if slug else ""
+        if namespaced and namespaced in raw:
+            out[slot] = raw[namespaced]
+            continue
         if slot in raw:
             out[slot] = raw[slot]
             continue
@@ -108,6 +124,7 @@ def _resolve_mat_palette(mat_defs: dict[str, dict[str, Any]]) -> dict[str, Any]:
 
 
 def _measure_local_bbox(asset_id: str, fallback_w: float, fallback_d: float) -> dict:
+    bpy.context.view_layer.update()
     root = bpy.data.objects.get(asset_id)
     root_inv = root.matrix_world.inverted() if root else None
     meshes = [o for o in bpy.data.objects if o.get("asw_assetId") == asset_id and o.type == "MESH"]
@@ -130,6 +147,36 @@ def _measure_local_bbox(asset_id: str, fallback_w: float, fallback_d: float) -> 
             "z0": round(min(zs), 3) if zs else 0,
         },
     }
+
+
+def _mount_official_logo(ctx: BuildingContext, brand: BrandSpec) -> dict[str, Any]:
+    """Reusable official-logo pass: brand asset → named mesh + facade/entrance anchor."""
+    info = inspect_logo(brand.logo)
+    if not info.get("available"):
+        return info
+    entrance = ctx.anchors.get("entrance")
+    if isinstance(entrance, (tuple, list)) and len(entrance) >= 3:
+        x, y, z = float(entrance[0]), float(entrance[1]), float(entrance[2]) + 1.15
+    else:
+        x, y, z = 0.0, -float(ctx.D) * 0.42, max(2.8, float(ctx.scale) * 1.6)
+    placed = apply_logo_surface(
+        ctx.part,
+        "facade",
+        brand.logo,
+        x,
+        y,
+        z,
+        ctx.root,
+        ctx.col,
+        width=min(2.8, max(1.4, float(ctx.W) * 0.12)),
+        depth=0.08,
+        asset_id=ctx.asset_id,
+        anchor_role="facade",
+        extrude=0.04,
+        object_name="CompanyLogo",
+    )
+    ctx.anchors["officialLogo"] = placed
+    return placed
 
 
 def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
@@ -168,7 +215,12 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     root["asw_libraryRoot"] = 1
     link(root, bcol)
 
-    mats = _resolve_mat_palette(compiled.mat_defs)
+    mats = _resolve_mat_palette(compiled.mat_defs, asset_id=compiled.asset_id)
+    is_echt = compiled.recipe_params.get("preset") == "echt_v1"
+    if not is_echt:
+        from .siliconcity.materials import ensure_brand_mats
+
+        mats = ensure_brand_mats(brand.company_id, compiled.mat_defs)
 
     def _tag_part(ob, cid: str, *, kind=KIND, runtime=True):
         tag(ob, asset_id=compiled.asset_id, component_id=f"{compiled.asset_id}/{cid}", kind=kind, runtime=runtime)
@@ -200,9 +252,26 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
         anchors={},
     )
 
-    compose(compiled.recipe, ctx)
-    facade_enrichment = enrich_recipe_facades(ctx)
-    composition = apply_toy_composition(ctx)
+    if is_echt:
+        compose(compiled.recipe, ctx)
+        facade_enrichment = enrich_recipe_facades(ctx)
+        composition = apply_toy_composition(ctx)
+        quality = {"ok": True, "skipped": True, "reason": "echt_v1 frozen"}
+    else:
+        from .building_graph import compose_quality_building
+        from .quality_gate import inspect_building
+
+        facade_enrichment = {"skipped": True, "reason": "siliconcity vocabulary"}
+        composition = {"skipped": True, "reason": "archetype already dressed"}
+        compose_quality_building(ctx, brand)
+        _mount_official_logo(ctx, brand)
+        quality = inspect_building(
+            compiled.asset_id,
+            fingerprint=str(compiled.recipe_params.get("structuralFingerprint") or ""),
+            logo_available=bool(inspect_logo(brand.logo).get("available")),
+        )
+        if not quality["ok"]:
+            raise RuntimeError(f"quality gate failed: {quality['issues']}")
 
     bpy.context.view_layer.update()
 
@@ -211,7 +280,16 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
         raise RuntimeError(f"interior geometry forbidden: {interior_check['interiorComponents'][:6]}")
 
     report = _measure_local_bbox(compiled.asset_id, compiled.footprint_w, compiled.footprint_d)
+    plot_fit = ensure_building_fits_plot(compiled, report["localMeters"], root)
+    if plot_fit.applied:
+        report = _measure_local_bbox(compiled.asset_id, compiled.footprint_w, compiled.footprint_d)
     footprint_check = validate_footprint(report["localMeters"], compiled)
+    if not footprint_check["ok"] and not is_echt:
+        # Second pass — recompose scale from the measured overshoot instead of failing to the user.
+        plot_fit = ensure_building_fits_plot(compiled, report["localMeters"], root)
+        report = _measure_local_bbox(compiled.asset_id, compiled.footprint_w, compiled.footprint_d)
+        footprint_check = validate_footprint(report["localMeters"], compiled)
+    report["plotFit"] = plot_fit_report(plot_fit)
     report["footprintValidation"] = {
         "ok": footprint_check["ok"],
         "issues": footprint_check["issues"],
@@ -229,6 +307,16 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     if not footprint_check["ok"]:
         raise RuntimeError(f"plot footprint validation failed: {footprint_check['issues']}")
 
+    if not is_echt:
+        quality = inspect_building(
+            compiled.asset_id,
+            local_meters=report["localMeters"],
+            fingerprint=str(compiled.recipe_params.get("structuralFingerprint") or ""),
+            logo_available=bool(inspect_logo(brand.logo).get("available")),
+        )
+        if not quality["ok"]:
+            raise RuntimeError(f"quality gate failed: {quality['issues']}")
+
     logo_report = inspect_logo(brand.logo)
     if logo_report.get("available"):
         try:
@@ -244,6 +332,7 @@ def build_from_spec(brand: BrandSpec, spec: GeneratedBuildingSpec) -> dict:
     if not unique_component_ids:
         raise RuntimeError("duplicate component IDs in generated building")
 
+    report["qualityGate"] = quality
     report["recipe"] = compiled.recipe
     report["preset"] = compiled.recipe_params.get("preset")
     report["structuralFingerprint"] = compiled.recipe_params.get("structuralFingerprint")

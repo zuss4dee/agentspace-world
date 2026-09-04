@@ -119,6 +119,7 @@ class BrandProfile:
     style_keywords: list[str] = field(default_factory=list)
     avatars: list[str] = field(default_factory=list)
     animations: BrandAnimations = field(default_factory=BrandAnimations)
+    colour_roles: dict[str, Any] = field(default_factory=dict)
 
     # -- derived helpers -----------------------------------------------------
 
@@ -218,6 +219,7 @@ def brand_profile_from_dict(d: dict[str, Any]) -> BrandProfile:
         style_keywords=_as_list(d.get("styleKeywords")),
         avatars=_as_list(d.get("avatars")),
         animations=anim,
+        colour_roles=dict(d.get("colourRoles") or {}) if isinstance(d.get("colourRoles"), dict) else {},
     )
 
 
@@ -357,39 +359,67 @@ def _round3(c: RGB) -> RGB:
 _FALLBACK_BRAND = "#5b5bd6"  # Silicon-City indigo when a site gives no colours
 
 
+def _role_hexes(profile: BrandProfile) -> list[RGB]:
+    roles = getattr(profile, "colour_roles", None) or {}
+    out: list[RGB] = []
+    for key in ("primary", "secondary", "accent", "background", "foreground", "logo"):
+        raw = roles.get(key)
+        if isinstance(raw, list):
+            for item in raw:
+                c = parse_hex(str(item))
+                if c:
+                    out.append(c)
+        elif raw:
+            c = parse_hex(str(raw))
+            if c:
+                out.append(c)
+    return out
+
+
 def pick_brand_colours(profile: BrandProfile) -> tuple[RGB, RGB]:
-    """(brand, accent) in *sRGB* space.
+    """(brand, accent) in *sRGB* space — actual company colours, not invented candy.
 
-    brand  = most saturated primary colour (full saturation, never muddy);
-    accent = next most saturated of primary+secondary with a distinct hue,
-             else brand hue rotated ~40°.
+    Saturated brand colours stay punchy. Neutral palettes (white/grey/black + one
+    accent) keep their neutrals; the accent is the brand colour.
     """
-    prim = [parse_hex(c) for c in profile.primary_colours]
-    prim = [c for c in prim if c]
-    sec = [parse_hex(c) for c in profile.secondary_colours]
-    sec = [c for c in sec if c]
+    prim = [c for c in (parse_hex(c) for c in profile.primary_colours) if c]
+    sec = [c for c in (parse_hex(c) for c in profile.secondary_colours) if c]
+    roles = _role_hexes(profile)
+    pool = prim + sec + roles
 
-    def usable(c: RGB) -> bool:
-        return saturation(c) > 0.12 and 0.08 < value(c) < 0.98
+    def chromatic(c: RGB) -> bool:
+        return saturation(c) > 0.16 and 0.08 < value(c) < 0.97
 
-    candidates = [c for c in prim if usable(c)] or [c for c in prim + sec if usable(c)]
-    if not candidates:
+    chromatics = [c for c in pool if chromatic(c)]
+    if chromatics:
+        brand = max(chromatics, key=lambda c: saturation(c) * 0.7 + value(c) * 0.3)
+        # Only punch already-colourful brands; leave muted corporate palettes alone.
+        if saturation(brand) >= 0.35:
+            h, s, v = _hsv(brand)
+            brand = colorsys.hsv_to_rgb(h, min(0.92, max(s, 0.55)), max(0.38, min(v, 0.92)))
+    elif pool:
+        brand = max(pool, key=value)
+    else:
         brand = parse_hex(_FALLBACK_BRAND)
-    else:
-        brand = max(candidates, key=lambda c: saturation(c) * 0.75 + value(c) * 0.25)
     assert brand is not None
-    # Silicon City toy bodies: punch saturation so Slack/Stripe/YC-style brands read at city scale.
-    h, s, v = _hsv(brand)
-    brand = colorsys.hsv_to_rgb(h, max(s, 0.72), max(0.38, min(v, 0.92)))
 
-    others = [c for c in prim + sec if usable(c) and hue_distance(c, brand) > 22.0]
+    others = [c for c in pool if chromatic(c) and hue_distance(c, brand) > 18.0]
     if others:
-        accent = max(others, key=lambda c: saturation(c))
-        h, s, v = _hsv(accent)
-        accent = colorsys.hsv_to_rgb(h, max(s, 0.68), max(0.40, min(v, 0.94)))
+        accent = max(others, key=saturation)
+        if saturation(accent) >= 0.35:
+            h, s, v = _hsv(accent)
+            accent = colorsys.hsv_to_rgb(h, min(0.9, max(s, 0.5)), max(0.36, min(v, 0.94)))
+    elif chromatics and not chromatic(brand):
+        accent = max(chromatics, key=saturation)
     else:
-        accent = rotate_hue(brand, 40.0)
-        accent = with_sv(accent, s=max(saturation(accent), 0.70), v=min(0.94, value(accent) * 1.12 + 0.06))
+        lights = [c for c in pool if value(c) > 0.72]
+        darks = [c for c in pool if value(c) < 0.35]
+        if lights and chromatic(brand):
+            accent = lights[0]
+        elif darks:
+            accent = darks[0]
+        else:
+            accent = mix(brand, (0.92, 0.92, 0.90), 0.45)
     return brand, accent
 
 
@@ -412,12 +442,19 @@ def derive_mat_defs(profile: BrandProfile) -> dict[str, dict[str, Any]]:
     dark = is_dark_style(profile)
     warm = is_warm_style(profile)
 
+    lights = [c for c in _role_hexes(profile) + [parse_hex(x) for x in profile.primary_colours + profile.secondary_colours] if c and value(c) > 0.78]
+    body = lights[0] if lights else None
+
     if dark:
         cream_s: RGB = tint_toward_hue((0.19, 0.20, 0.25), brand_s, 0.12)
         cream_dark_s: RGB = tint_toward_hue((0.13, 0.14, 0.18), brand_s, 0.12)
         roof_s: RGB = tint_toward_hue((0.24, 0.25, 0.29), brand_s, 0.10)
+    elif body:
+        cream_s = mix(body, (0.94, 0.94, 0.92), 0.25)
+        cream_dark_s = mix(body, (0.62, 0.62, 0.60), 0.45)
+        roof_s = tint_toward_hue((0.74, 0.74, 0.72), brand_s, 0.06)
     else:
-        cream_s = (0.88, 0.84, 0.78)
+        cream_s = (0.90, 0.88, 0.84)
         cream_dark_s = tint_toward_hue((0.72, 0.68, 0.62), brand_s, 0.08)
         roof_s = tint_toward_hue((0.74, 0.74, 0.72), brand_s, 0.08)
 
@@ -435,8 +472,14 @@ def derive_mat_defs(profile: BrandProfile) -> dict[str, dict[str, Any]]:
     rubber_s: RGB = (0.08, 0.08, 0.09)
 
     # Accent masses must never sink below ~0.12 value (still reads in shade / night).
-    brand_l = clamp_value(srgb_to_linear(brand_s), lo=0.12)
-    accent_l = clamp_value(srgb_to_linear(accent_s), lo=0.12)
+    light_led = bool(body) and saturation(brand_s) > 0.16 and 0.08 < value(brand_s) < 0.97 and value(body) > 0.78
+    if light_led:
+        # White/cream headquarters: neutrals carry the mass, brand is the accent.
+        brand_l = clamp_value(srgb_to_linear(cream_s), lo=0.12)
+        accent_l = clamp_value(srgb_to_linear(brand_s), lo=0.12)
+    else:
+        brand_l = clamp_value(srgb_to_linear(brand_s), lo=0.12)
+        accent_l = clamp_value(srgb_to_linear(accent_s), lo=0.12)
 
     def alb(c: RGB, rough: float, var: float = 0.012, **extra: Any) -> dict[str, Any]:
         out: dict[str, Any] = {"kind": "albedo", "color": _round3(srgb_to_linear(c)), "rough": rough, "var": var}
@@ -777,7 +820,7 @@ def style_params(profile: BrandProfile, *, rng: ParamRNG | None = None) -> dict[
 # Grammar style params (procedural recipes — not siliconcity archetypes)
 # ---------------------------------------------------------------------------
 
-GENERATION_VERSION = 1
+GENERATION_VERSION = 2
 MAX_UNIQUENESS_ATTEMPTS = 12
 
 
@@ -807,9 +850,9 @@ def grammar_style_params(profile: BrandProfile, rng: ParamRNG) -> dict[str, Any]
 
     hybrid_mode = None
     if creative or playful:
-        hybrid_mode = rng.weighted_choice("hybrid.mode", ["tower", "sculpture", "terrace"], [1.2, 1.0, 0.8])
+        hybrid_mode = rng.weighted_choice("hybrid.mode", ["l_campus", "podium_pavilion", "court_tower"], [1.2, 1.1, 0.9])
     elif finance:
-        hybrid_mode = "tower"
+        hybrid_mode = "l_campus"
 
     return {
         "composition_profile": composition,
@@ -848,6 +891,7 @@ def build_spec_from_profile(
     tier: str | None = None,
     plot_id: str | None = None,
     generation_version: int = GENERATION_VERSION,
+    uniqueness_offset: int = 0,
 ) -> GeneratedBuildingSpec:
     """Plot envelope → architectural grammar → uniqueness → brand materials.
 
@@ -880,8 +924,9 @@ def build_spec_from_profile(
 
     for attempt in range(MAX_UNIQUENESS_ATTEMPTS):
         seed_key = f"{profile.company_id}+{pid}+{aid}"
-        if attempt:
-            seed_key += f":attempt{attempt}"
+        rolled = attempt + max(0, int(uniqueness_offset))
+        if rolled:
+            seed_key += f":attempt{rolled}"
         seed = deterministic_seed(seed_key, aid)
         rng = ParamRNG(seed)
         recipe = select_recipe_for_envelope(rng, profile, env_weights)
@@ -892,7 +937,7 @@ def build_spec_from_profile(
         params["generation_version"] = generation_version
         params["seed"] = seed
         if recipe == "hybrid" and not params.get("hybrid_mode"):
-            params["hybrid_mode"] = rng.choice("hybrid.mode", ["tower", "sculpture", "terrace"])
+            params["hybrid_mode"] = rng.choice("hybrid.mode", ["l_campus", "court_tower", "podium_pavilion"])
 
         fingerprint = structural_fingerprint(recipe, params)
         if register_fingerprint(

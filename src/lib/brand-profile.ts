@@ -248,7 +248,10 @@ export function brandProfileFromCompanyProfile(
 ): BrandProfile {
   const brand = profile.brand ?? {};
   const name = profile.name.trim() || brand.companyName?.trim() || "Your company";
-  const base = emptyBrandProfile(plotId.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase(), name);
+  const derivedId = slugifyCompany(brand.companyId || name);
+  const fallbackId = plotId.replace(/[^a-z0-9._-]+/gi, "-").toLowerCase();
+  const base = emptyBrandProfile(derivedId || fallbackId, name);
+  if (brand.companyName?.trim()) base.companyName = brand.companyName.trim();
 
   const palette = cleanPalette(profile.palette);
   const primary = palette.length ? palette.slice(0, 3) : cleanPalette(brand.primaryColours, 3);

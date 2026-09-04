@@ -41,6 +41,11 @@ STRUCTURAL_KEYS = (
     "window_cols",
     "facade_style",
     "corner_style",
+    "plot_family",
+    "podium_storeys",
+    "setback_m",
+    "tower_placement",
+    "courtyard",
 )
 
 REGISTRY_PATH = Path(__file__).resolve().parents[1] / "data" / "structural-registry.json"
@@ -162,6 +167,17 @@ def register_fingerprint(
 
 def list_entries() -> list[dict[str, Any]]:
     return list(_load_registry().get("entries") or [])
+
+
+def release_fingerprint(*, company_id: str, plot_id: str) -> None:
+    """Drop a registered fingerprint so a quality/footprint retry can re-roll."""
+    data = _load_registry()
+    data["entries"] = [
+        entry
+        for entry in data["entries"]
+        if not (entry.get("companyId") == company_id and entry.get("plotId") == plot_id)
+    ]
+    _save_registry(data)
 
 
 def clear_registry() -> None:

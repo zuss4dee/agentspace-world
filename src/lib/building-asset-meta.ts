@@ -10,6 +10,30 @@ export type BuildingAssetMeta = {
 };
 
 export const BUILDING_ASSET_META: Record<string, BuildingAssetMeta> = {
+  "pack.agentspace.building.echt.land-campus-1.01": {
+    buildingId: undefined,
+    brandId: undefined,
+    footprintMeters: { width: 71.748, depth: 71.595 },
+    heightMeters: 19.543,
+  },
+  "pack.agentspace.building.linear.land-meadow-1.01": {
+    buildingId: undefined,
+    brandId: undefined,
+    footprintMeters: { width: 31.649, depth: 70.546 },
+    heightMeters: 18.063,
+  },
+  "pack.agentspace.building.grove.land-parklands-2.01": {
+    buildingId: undefined,
+    brandId: undefined,
+    footprintMeters: { width: 23.65, depth: 19.329 },
+    heightMeters: 18.16,
+  },
+  "pack.agentspace.building.stripe.land-corporate-3.01": {
+    buildingId: undefined,
+    brandId: undefined,
+    footprintMeters: { width: 71.65, depth: 23.052 },
+    heightMeters: 14.927,
+  },
   "pack.agentspace.building.land-campus-1.01": {
     buildingId: undefined,
     brandId: undefined,

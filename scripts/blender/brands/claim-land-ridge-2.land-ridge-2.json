@@ -1,0 +1,55 @@
+{
+  "companyId": "land-ridge-2",
+  "companyName": "X",
+  "tier": "enterprise",
+  "logo": {
+    "wordmark": "X",
+    "assetPath": null,
+    "imageUrl": "https://x.com/apple-touch-icon.png"
+  },
+  "primaryColours": [
+    "#aaaaaa",
+    "#ffffff",
+    "#333333"
+  ],
+  "secondaryColours": [],
+  "typography": {
+    "display": "Inter",
+    "body": "Inter"
+  },
+  "visualStyle": "light contemporary brand",
+  "industry": "general",
+  "personality": [
+    "open"
+  ],
+  "styleKeywords": [
+    "light"
+  ],
+  "avatars": [
+    "https://abs.twimg.com/responsive-web/client-web/icon-ios.77d25eba.png",
+    "https://x.com/apple-touch-icon.png"
+  ],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 4,
+    "libraries": []
+  },
+  "website": "https://x.com/",
+  "tagline": "From breaking news and entertainment to sports and politics, get the full story with all the live commentary.",
+  "colourRoles": {
+    "primary": "#22a94f",
+    "secondary": "#aaaaaa",
+    "accent": "#22a94f",
+    "background": "#ffffff",
+    "foreground": "#333333",
+    "logo": [
+      "#333333",
+      "#aaaaaa"
+    ]
+  },
+  "derivedFrom": {
+    "url": "https://x.com/",
+    "fetchedAt": "2026-09-03T12:38:38.416Z",
+    "confidence": 0.6
+  }
+}

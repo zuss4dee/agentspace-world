@@ -81,9 +81,13 @@ def resolve_envelope(
     build_w = max(build_w - SETBACK_M * 2, lot_w * 0.72)
     build_d = max(build_d - SETBACK_M * 2, lot_d * 0.72)
 
-    fw, fd = footprint or defaults["footprint"]
-    fw = min(float(fw), build_w)
-    fd = min(float(fd), build_d)
+    if footprint:
+        fw, fd = float(footprint[0]), float(footprint[1])
+        fw = min(fw, build_w)
+        fd = min(fd, build_d)
+    else:
+        # Plot is the envelope: occupy the buildable land, not a tiny tier default.
+        fw, fd = build_w, build_d
 
     mh = float(max_height if max_height is not None else defaults["max_height"])
     sc = float(scale if scale is not None else defaults["scale"])
@@ -108,41 +112,30 @@ def resolve_envelope(
 
 
 def grammar_weights_for_envelope(envelope: PlotEnvelope) -> dict[str, float]:
-    """Bias architectural grammars by plot size — not finished-building templates."""
-    base = 1.0
-    w: dict[str, float] = {
-        "bridge_complex": base,
-        "tower_campus": base,
-        "stepped_terrace": base,
-        "courtyard_block": base,
-        "pavilion": base,
-        "stacked_volumes": base,
-        "asymmetric_campus": base,
-        "sculpture_hq": base,
-        "vertical_landmark": base,
-        "hybrid": base * 0.75,
-    }
-    cls = envelope.size_class
-    if cls == "small":
-        w["pavilion"] += 1.4
-        w["stacked_volumes"] += 1.1
-        w["sculpture_hq"] += 1.2
-        w["bridge_complex"] -= 0.5
-        w["asymmetric_campus"] -= 0.4
-    elif cls == "medium":
-        w["tower_campus"] += 1.2
-        w["stepped_terrace"] += 1.0
-        w["courtyard_block"] += 1.0
-        w["hybrid"] += 0.5
-    else:
-        w["bridge_complex"] += 1.3
-        w["asymmetric_campus"] += 1.2
-        w["vertical_landmark"] += 0.9
-        w["tower_campus"] += 0.6
+    """Bias architectural grammars by plot shape — stacked boxes stay rare."""
+    from .building_architecture import recipe_weights_for_plot
+
+    w = recipe_weights_for_plot(envelope.lot_w_m, envelope.lot_d_m, area_m2=envelope.lot_w_m * envelope.lot_d_m)
+    # Keep every registered recipe present so weighted_choice stays defined.
+    for recipe in (
+        "bridge_complex",
+        "tower_campus",
+        "stepped_terrace",
+        "courtyard_block",
+        "pavilion",
+        "stacked_volumes",
+        "asymmetric_campus",
+        "sculpture_hq",
+        "vertical_landmark",
+        "hybrid",
+    ):
+        w.setdefault(recipe, 0.08)
     if envelope.is_corner:
-        w["courtyard_block"] += 0.5
-        w["asymmetric_campus"] += 0.4
+        w["courtyard_block"] = w.get("courtyard_block", 0.8) + 0.5
+        w["asymmetric_campus"] = w.get("asymmetric_campus", 0.8) + 0.4
     if envelope.frontage_m < 20:
-        w["pavilion"] += 0.6
-        w["vertical_landmark"] += 0.4
+        w["pavilion"] = w.get("pavilion", 0.8) + 0.5
+        w["vertical_landmark"] = w.get("vertical_landmark", 0.6) + 0.35
+    w["_plot_w"] = envelope.lot_w_m
+    w["_plot_d"] = envelope.lot_d_m
     return w

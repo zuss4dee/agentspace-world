@@ -15,6 +15,7 @@ from ..brand_profile import BrandProfile, build_spec_from_profile
 from ..company_building_spec import BrandSpec, GeneratedBuildingSpec
 from ..geom import box, cone, cyl, ensure_collection, ico, link, prism
 from ..param_rng import ParamRNG, deterministic_seed
+from ..plot_fit import ensure_building_fits_plot, plot_fit_report
 from ..plot_validator import assert_no_interior_kinds, validate_footprint
 from ..registry import tag
 from .materials import ensure_brand_mats, logo_material
@@ -271,6 +272,10 @@ def build_from_spec(profile: BrandProfile, spec: GeneratedBuildingSpec, *, logo_
         raise RuntimeError(f"interior geometry forbidden: {interior['interiorComponents'][:6]}")
 
     report = measure_local_bbox(spec.asset_id, root)
+    plot_fit = ensure_building_fits_plot(spec, report["localMeters"], root)
+    if plot_fit.applied:
+        report = measure_local_bbox(spec.asset_id, root)
+    report["plotFit"] = plot_fit_report(plot_fit)
     fp = validate_footprint(report["localMeters"], spec)
     report["footprintValidation"] = {
         "ok": fp["ok"],

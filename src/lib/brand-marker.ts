@@ -58,6 +58,8 @@ export type BrandMarkerConfig = {
   scale?: number;
   /** Optional transparent building hit proxy (world px). */
   buildingHit?: { cx: number; cz: number; w: number; d: number; h: number };
+  /** Separate Blender-authored roadside ad GLB. */
+  companyAdAssetId?: string;
 };
 
 function hashString(input: string): number {
@@ -357,6 +359,7 @@ export function brandMarkerFromClaim(
     colours: coloursFromProfile(profile, ["#4c8f48", "#1a2e1a"]),
     variant: brandMarkerVariant(companyId, assetId),
     placement,
+    ...(profile.companyAdAssetId ? { companyAdAssetId: profile.companyAdAssetId } : {}),
   };
 }
 

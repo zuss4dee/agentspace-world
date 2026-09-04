@@ -87,18 +87,23 @@ function restoreClaimSpecs(
   for (const id of claims.claimedPlotIds) {
     const plot = getPlot(id);
     if (!plot) continue;
-    const useId = claims.claimedUses[id] ?? "office";
+    const requestedUse = claims.claimedUses[id] ?? "office";
     const extra = claims.claimedExtras[id] ?? 0;
     const place = claims.claimedPlaces[id];
-    const use = LAND_USES.find((u) => u.id === useId) ?? LAND_USES[0]!;
+    const fitting = usesForPlot(plot, extra);
+    const use =
+      fitting.find((u) => u.id === requestedUse) ??
+      fitting.find((u) => u.id === "office") ??
+      fitting[0] ??
+      LAND_USES[0]!;
     const fp = buildingFootprint(plot, use, extra, place);
     if (!fp) continue;
-    const pal = paletteForUse(useId);
+    const pal = paletteForUse(use.id);
     const profile = profiles[id]
       ? mergeProfile(defaultClaimProfile(use.name), profiles[id])
       : next[id]?.profile;
     const base =
-      next[id] ?? specFromUse(id, useId, fp.w, fp.h, h(fp.height), pal);
+      next[id] ?? specFromUse(id, use.id, fp.w, fp.h, h(fp.height), pal);
     next[id] = withBrandAccent({
       ...base,
       ...(profile
@@ -316,6 +321,17 @@ export function WorldProvider({ children }: { children: ReactNode }) {
     for (const id of Object.keys(places)) if (occupancyOrRetiredHas(id)) delete places[id];
     for (const id of Object.keys(uses)) if (occupancyOrRetiredHas(id)) delete uses[id];
     const profiles = loadStoredProfiles();
+    for (const id of claimed) {
+      const plot = getPlot(id);
+      if (!plot) continue;
+      const fitting = usesForPlot(plot, extras[id] ?? 0);
+      const requested = uses[id] ?? "office";
+      const resolved =
+        fitting.find((u) => u.id === requested) ??
+        fitting.find((u) => u.id === "office") ??
+        fitting[0];
+      if (resolved) uses[id] = resolved.id;
+    }
     setClaimedPlotIds(claimed);
     setClaimedExtras(extras);
     setClaimedPlaces(places);

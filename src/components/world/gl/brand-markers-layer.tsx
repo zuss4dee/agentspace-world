@@ -2,11 +2,9 @@
 
 import { useCallback, useMemo } from "react";
 import type { ThreeEvent } from "@react-three/fiber";
-import { expandedRect, getPlot, buildingFootprint } from "@/lib/plots";
-import { LAND_USES } from "@/lib/plots";
+import { expandedRect, getPlot, buildingFootprint, usesForPlot, LAND_USES } from "@/lib/plots";
 import { ECHT_ASSET_ID } from "@/lib/arch-viz";
 import { brandMarkerFromClaim, brandMarkerWithLogoPose, WORLD_BRAND_MARKERS } from "@/lib/brand-marker";
-import { GENERATED_OCCUPANCY_PLOT_IDS } from "@/lib/generated-occupancy";
 import { AnimatedBrandMarker } from "@/components/world/gl/animated-brand-marker";
 import { useWorld } from "@/components/world/world-store";
 
@@ -59,14 +57,20 @@ export function BrandMarkersLayer() {
 
   const claimMarkers = useMemo(() => {
     const out = [];
-    const ids = [...new Set([...claimedPlotIds, ...GENERATED_OCCUPANCY_PLOT_IDS])];
+    const ids = [...new Set(claimedPlotIds)];
     for (const id of ids) {
       if (id === logoEditPlotId) continue;
       const plot = getPlot(id);
       if (!plot) continue;
       const extra = claimedExtras[id] ?? 0;
       const r = expandedRect(plot, extra);
-      const use = LAND_USES.find((u) => u.id === claimedUses[id]) ?? LAND_USES[0]!;
+      const fitting = usesForPlot(plot, extra);
+      const requested = claimedUses[id];
+      const use =
+        fitting.find((u) => u.id === requested) ??
+        fitting.find((u) => u.id === "office") ??
+        fitting[0] ??
+        LAND_USES[0]!;
       const fp = buildingFootprint(plot, use, extra, claimedPlaces[id]);
       if (!fp) continue;
       const spec = buildingSpecs[id];

@@ -1,0 +1,52 @@
+{
+  "assetId": "pack.agentspace.building.linear.land-meadow-1.01",
+  "plotId": "land-meadow-1",
+  "recipe": "bridge_complex",
+  "generationFingerprint": "5558ebdfa3345ddb",
+  "localMeters": {
+    "w": 31.649,
+    "d": 70.546,
+    "h": 18.063,
+    "z0": -0.18
+  },
+  "qualityGate": {
+    "ok": true,
+    "issues": [],
+    "kinds": {
+      "building": 1,
+      "landscape": 39,
+      "prop": 68,
+      "structure": 3,
+      "canopy": 16,
+      "door": 6,
+      "facade": 11,
+      "brand": 36,
+      "site": 8,
+      "signage": 86,
+      "window": 174,
+      "roof": 17
+    },
+    "meshes": 465,
+    "windows": 174,
+    "signage": 123,
+    "officialLogo": 1,
+    "stackedMasses": 0,
+    "enrichRoofs": 0,
+    "roofs": 17,
+    "fingerprint": "5558ebdfa3345ddb"
+  },
+  "logoAssetId": null,
+  "companyAdAssetId": "pack.agentspace.ad.linear.01",
+  "logo": {
+    "available": true,
+    "fallback": false,
+    "path": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/linear/logo.png",
+    "format": "png",
+    "sha256": "3d22d53907820245ec1724a4954d3e180b70f21b2552697986b3f141a6730ef7",
+    "aspectRatio": 1,
+    "sourceUrl": "https://linear.app/static/apple-touch-icon.png?v=2",
+    "fetchedAt": null,
+    "manifest": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/linear/manifest.json"
+  },
+  "attempts": 1
+}

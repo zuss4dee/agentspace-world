@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
@@ -12,6 +12,7 @@ import {
   type BrandMarkerVariant,
 } from "@/lib/brand-marker";
 import { logoGltfUrlForCompanyId } from "@/lib/logo-gltf";
+import { companyAdGltfUrl, companyAdGltfUrlForAssetId } from "@/lib/company-ad";
 import { PACK_GLTF } from "@/lib/pack-gltf";
 
 function hexColor(hex: string, fallback = "#6a8a4a") {
@@ -377,24 +378,125 @@ function LogoGltfMeshInner({ url, size }: { url: string; size: number }) {
   return <primitive object={clone} />;
 }
 
-function MarkerVisual(props: MarkerAnimProps & { companyId: string; logoGltfUrl: string | null }) {
+function findNamed(root: THREE.Object3D, name: string): THREE.Object3D | null {
+  let found: THREE.Object3D | null = null;
+  root.traverse((obj) => {
+    if (found) return;
+    if (obj.name === name || obj.name.endsWith(name)) found = obj;
+  });
+  return found;
+}
+
+function CompanyAdGltfBody({
+  url,
+  hovered,
+  markerScale,
+}: {
+  url: string;
+  hovered: boolean;
+  markerScale: number;
+}) {
+  const { scene } = useGLTF(url);
+  const root = useRef<THREE.Group>(null);
+  const clone = useMemo(() => {
+    const c = scene.clone(true);
+    c.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh) {
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+      }
+    });
+    const box = new THREE.Box3().setFromObject(c);
+    if (!box.isEmpty()) c.position.y -= box.min.y;
+    return c;
+  }, [scene]);
+
+  const adRoot = useRef<THREE.Object3D | null>(null);
+  const logo = useRef<THREE.Object3D | null>(null);
+  const glow = useRef<THREE.Object3D | null>(null);
+  const accent = useRef<THREE.Object3D | null>(null);
+
+  useEffect(() => {
+    adRoot.current = findNamed(clone, "CompanyAdRoot");
+    logo.current = findNamed(clone, "CompanyLogo");
+    glow.current = findNamed(clone, "CompanyAdGlow");
+    accent.current = findNamed(clone, "CompanyAdAccent");
+  }, [clone]);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const pulse = 0.5 + Math.sin(t * 1.35) * 0.5;
+    if (adRoot.current) adRoot.current.position.y = Math.sin(t * 1.05) * h(0.028);
+    if (logo.current) logo.current.position.y = Math.sin(t * 1.05) * h(0.012);
+    if (accent.current) accent.current.rotation.z = t * 0.28;
+    if (glow.current) {
+      glow.current.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        for (const mat of mats) {
+          const std = mat as THREE.MeshStandardMaterial;
+          if (std.emissive) std.emissiveIntensity = (0.32 + pulse * 0.38) * (hovered ? 1.25 : 1);
+        }
+      });
+    }
+    if (root.current) root.current.scale.setScalar(hovered ? 1 + Math.sin(t * 3.2) * 0.01 : 1);
+  });
+
+  return (
+    <group ref={root} scale={[METERS_TO_PX * markerScale, METERS_TO_PX * markerScale, METERS_TO_PX * markerScale]}>
+      <primitive object={clone} />
+    </group>
+  );
+}
+
+function CompanyAdOrFallback(props: MarkerAnimProps & { adUrl: string | null; fallback: ReactNode }) {
+  const [available, setAvailable] = useState<boolean | null>(props.adUrl ? null : false);
+  useEffect(() => {
+    if (!props.adUrl) {
+      setAvailable(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(props.adUrl, { method: "HEAD" })
+      .then((res) => {
+        if (!cancelled) setAvailable(res.ok);
+      })
+      .catch(() => {
+        if (!cancelled) setAvailable(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.adUrl]);
+  if (!props.adUrl || available === false) return <>{props.fallback}</>;
+  if (available === null) return <>{props.fallback}</>;
+  return (
+    <Suspense fallback={props.fallback}>
+      <CompanyAdGltfBody url={props.adUrl} hovered={props.hovered} markerScale={props.markerScale} />
+    </Suspense>
+  );
+}
+
+function MarkerVisual(props: MarkerAnimProps & { companyId: string; logoGltfUrl: string | null; adUrl: string | null }) {
   const hasGlb = BRAND_MARKER_BASE_ASSET_ID in PACK_GLTF;
   const useLogoGltf = Boolean(props.logoGltfUrl);
-  if (hasGlb) {
-    return (
-      <Suspense fallback={<ProceduralMarkerBody {...props} />}>
-        <GltfMarkerBody {...props} />
-        {useLogoGltf ? (
-          <Suspense fallback={null}>
-            <group position={[0, logoBaseY(props.variant), 0]}>
-              <LogoGltfMesh companyId={props.companyId} size={1.08} />
-            </group>
-          </Suspense>
-        ) : null}
-      </Suspense>
-    );
-  }
-  return <ProceduralMarkerBody {...props} />;
+  const fallback = hasGlb ? (
+    <Suspense fallback={<ProceduralMarkerBody {...props} />}>
+      <GltfMarkerBody {...props} />
+      {useLogoGltf ? (
+        <Suspense fallback={null}>
+          <group position={[0, logoBaseY(props.variant), 0]}>
+            <LogoGltfMesh companyId={props.companyId} size={1.08} />
+          </group>
+        </Suspense>
+      ) : null}
+    </Suspense>
+  ) : (
+    <ProceduralMarkerBody {...props} />
+  );
+  return <CompanyAdOrFallback {...props} adUrl={props.adUrl} fallback={fallback} />;
 }
 
 export type AnimatedBrandMarkerProps = {
@@ -410,6 +512,7 @@ export function AnimatedBrandMarker({ config, onSelect, interactive = true }: An
   const accent = useMemo(() => hexColor(config.colours[1] ?? config.colours[0] ?? "#c8cfc2"), [config.colours]);
   const { tex, aspect } = useLogoTexture(config.logoUrl ?? "");
   const logoGltfUrl = logoGltfUrlForCompanyId(config.companyId);
+  const adUrl = companyAdGltfUrlForAssetId(config.companyAdAssetId) ?? companyAdGltfUrl(config.companyId);
   const { placement } = config;
   const markerScale = config.scale ?? 1;
 
@@ -454,6 +557,7 @@ export function AnimatedBrandMarker({ config, onSelect, interactive = true }: An
         markerScale={markerScale}
         companyId={config.companyId}
         logoGltfUrl={logoGltfUrl}
+        adUrl={adUrl}
       />
       {/* Invisible hit volume — generous for street-level clicks */}
       {interactive ? (

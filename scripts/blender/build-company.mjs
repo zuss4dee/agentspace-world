@@ -95,18 +95,34 @@ for m in [
     'agentspace.vehicle_scale',
     'agentspace.mini_city_style',
     'agentspace.siliconcity.props',
+    'agentspace.siliconcity.primitives',
+    'agentspace.siliconcity.archetypes',
+    'agentspace.siliconcity.builder',
+    'agentspace.siliconcity.materials',
+    'agentspace.building_graph',
+    'agentspace.quality_gate',
+    'agentspace.building_architecture',
     'agentspace.plot_envelope',
+    'agentspace.plot_validator',
+    'agentspace.plot_fit',
     'agentspace.uniqueness_registry',
+    'agentspace.export_pack',
     'agentspace.param_rng',
     'agentspace.brand_profile',
     'agentspace.spec_compiler',
-    'agentspace.building_recipes',
     'agentspace.building_recipes_procedural',
+    'agentspace.building_recipes',
+    'agentspace.recipe_templates',
     'agentspace.building_composition',
+    'agentspace.logo_ingestion',
+    'agentspace.logo_export',
+    'agentspace.company_ad',
     'agentspace.company_building',
 ]:
     if m in sys.modules:
         importlib.reload(sys.modules[m])
+if 'agentspace.recipe_templates' in sys.modules:
+    sys.modules['agentspace.recipe_templates']._REGISTRY = None
 `;
 }
 
@@ -173,21 +189,53 @@ async function main() {
       blenderPrelude() +
         `from agentspace.brand_profile import load_brand_profile, build_spec_from_profile
 from agentspace.company_building import build_company_building
+from agentspace.uniqueness_registry import release_fingerprint
+from agentspace.logo_export import build_and_export_logo
+from agentspace.company_ad import build_and_export_company_ad
+from agentspace.logo_ingestion import inspect_logo
 import json
 profile = load_brand_profile(${JSON.stringify(brandPy)})
-spec = build_spec_from_profile(
-    profile,
-    asset_id=${args.assetId ? JSON.stringify(args.assetId) : "None"},
-    root_local=tuple(float(x.strip()) for x in ${JSON.stringify(args.rootLocal)}.split(",")),
-    plot_id=${args.plotId ? JSON.stringify(args.plotId) : "None"},
-    plot_grid=(lambda g: {"x": float(g[0]), "y": float(g[1]), "w": float(g[2]), "h": float(g[3])} if g else None)(
-        [p.strip() for p in ${JSON.stringify(args.plotGrid)}.split(",") if p.strip()] or None
-    ),
-)
-report = build_company_building(spec.brand, spec)
+last_error = None
+report = None
+spec = None
+for attempt in range(3):
+    try:
+        spec = build_spec_from_profile(
+            profile,
+            asset_id=${args.assetId ? JSON.stringify(args.assetId) : "None"},
+            root_local=tuple(float(x.strip()) for x in ${JSON.stringify(args.rootLocal)}.split(",")),
+            plot_id=${args.plotId ? JSON.stringify(args.plotId) : "None"},
+            plot_grid=(lambda g: {"x": float(g[0]), "y": float(g[1]), "w": float(g[2]), "h": float(g[3])} if g else None)(
+                [p.strip() for p in ${JSON.stringify(args.plotGrid)}.split(",") if p.strip()] or None
+            ),
+            uniqueness_offset=attempt,
+        )
+        report = build_company_building(spec.brand, spec)
+        break
+    except Exception as exc:
+        last_error = exc
+        if spec is not None:
+            release_fingerprint(company_id=profile.company_id, plot_id=spec.parcel_id)
+        msg = str(exc)
+        retryable = any(key in msg for key in ("quality gate", "footprint", "logo anchors", "duplicate component"))
+        if not retryable or attempt == 2:
+            raise
+if report is None:
+    raise last_error
 report["grammar"] = spec.recipe
+report["recipe"] = spec.recipe
 report["structuralFingerprint"] = spec.recipe_params.get("structuralFingerprint")
 report["plotId"] = spec.parcel_id
+report["attempts"] = attempt + 1
+try:
+    if inspect_logo(profile.logo).get("available"):
+        report["logoAsset"] = build_and_export_logo(profile.logo, company_id=profile.company_id)
+except Exception as logo_exc:
+    report["logoAssetError"] = str(logo_exc)
+try:
+    report["companyAd"] = build_and_export_company_ad(spec.brand)
+except Exception as ad_exc:
+    report["companyAdError"] = str(ad_exc)
 print(${JSON.stringify(BUILD_MARKER)} + json.dumps(report, default=str))
 `,
     );
@@ -215,13 +263,34 @@ print(${JSON.stringify(BUILD_MARKER)} + json.dumps(report, default=str))
   }
 
   const localMeters = report?.localMeters ?? measureGlb(glbPath);
+  const logoAssetId = report?.logoAsset?.assetId ?? null;
+  const adAssetId = report?.companyAd?.assetId ?? null;
+  const fingerprint = report?.structuralFingerprint ?? report?.uniquenessKey ?? null;
+  const meta = {
+    assetId,
+    plotId: report?.plotId ?? args.plotId ?? null,
+    recipe: report?.recipe ?? report?.grammar ?? null,
+    generationFingerprint: fingerprint,
+    localMeters,
+    qualityGate: report?.qualityGate ?? null,
+    logoAssetId,
+    companyAdAssetId: adAssetId,
+    logo: report?.logo ?? null,
+    attempts: report?.attempts ?? 1,
+  };
+  fs.writeFileSync(path.join(GLB_DIR, `${assetId}.meta.json`), JSON.stringify(meta, null, 2) + "\n");
   const payload = {
     ok: true,
     assetId,
     url: `/assets/gltf/buildings/${assetId}.glb`,
     localMeters,
     archetype: report?.grammar ?? report?.recipe ?? null,
-    uniquenessKey: report?.structuralFingerprint ?? report?.uniquenessKey ?? null,
+    recipe: report?.recipe ?? report?.grammar ?? null,
+    uniquenessKey: fingerprint,
+    generationFingerprint: fingerprint,
+    logoAssetId,
+    companyAdAssetId: adAssetId,
+    qualityGate: report?.qualityGate ?? null,
     ...(publishError ? { publishWarning: publishError.slice(-400) } : {}),
   };
   process.stdout.write(JSON.stringify(payload));

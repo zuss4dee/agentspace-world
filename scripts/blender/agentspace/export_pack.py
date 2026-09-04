@@ -45,6 +45,8 @@ def _folder_for(asset_id: str, kind: str) -> str:
         return "characters"
     if asset_id.startswith("pack.agentspace.logo"):
         return "logos"
+    if asset_id.startswith("pack.agentspace.ad"):
+        return "ads"
     if asset_id.startswith("pack.agentspace.building"):
         return "buildings"
     if asset_id.startswith("pack.agentspace.vehicle"):

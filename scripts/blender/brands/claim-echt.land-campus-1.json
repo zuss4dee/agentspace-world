@@ -1,0 +1,62 @@
+{
+  "companyId": "echt",
+  "companyName": "Echt",
+  "tier": "startup",
+  "logo": {
+    "wordmark": "ECHT",
+    "assetPath": "public/assets/brands/echt/logo.svg",
+    "imageUrl": "https://www.useecht.com/icon.svg"
+  },
+  "primaryColours": [
+    "#22a94f",
+    "#22c55e",
+    "#0f1211"
+  ],
+  "secondaryColours": [
+    "#f4f6f5",
+    "#cdd6d1",
+    "#5a6a54"
+  ],
+  "typography": {
+    "display": "Geist Mono",
+    "body": "Inter"
+  },
+  "visualStyle": "quiet contemporary studio, white plaster, olive green, dark metal",
+  "industry": "design / operations software",
+  "personality": [
+    "precise",
+    "calm",
+    "editorial"
+  ],
+  "styleKeywords": [
+    "light",
+    "tech"
+  ],
+  "avatars": [],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 34,
+    "libraries": []
+  },
+  "website": "https://useecht.com/",
+  "tagline": "A student asks to be released from their booking. Echt reads the request, applies your policy, checks the evidence and chases what is missing. The decision stays yours.",
+  "colourRoles": {
+    "primary": "#22a94f",
+    "secondary": "#cdd6d1",
+    "accent": "#22c55e",
+    "background": "#f4f6f5",
+    "foreground": "#0f1211",
+    "logo": [
+      "#22a94f",
+      "#5fd98a",
+      "#0d6b2c",
+      "#f4f6f5",
+      "#0f1211"
+    ]
+  },
+  "derivedFrom": {
+    "url": "https://useecht.com/",
+    "fetchedAt": "2026-09-04T11:32:06.718Z",
+    "confidence": 0.95
+  }
+}

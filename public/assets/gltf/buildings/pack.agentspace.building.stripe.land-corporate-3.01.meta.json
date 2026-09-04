@@ -1,0 +1,52 @@
+{
+  "assetId": "pack.agentspace.building.stripe.land-corporate-3.01",
+  "plotId": "land-corporate-3",
+  "recipe": "vertical_landmark",
+  "generationFingerprint": "dc94bcd8572dbf16",
+  "localMeters": {
+    "w": 71.65,
+    "d": 23.052,
+    "h": 14.927,
+    "z0": 0
+  },
+  "qualityGate": {
+    "ok": true,
+    "issues": [],
+    "kinds": {
+      "building": 1,
+      "structure": 3,
+      "canopy": 22,
+      "window": 135,
+      "signage": 82,
+      "prop": 88,
+      "brand": 35,
+      "door": 5,
+      "site": 7,
+      "facade": 13,
+      "roof": 14,
+      "landscape": 52
+    },
+    "meshes": 457,
+    "windows": 135,
+    "signage": 118,
+    "officialLogo": 1,
+    "stackedMasses": 0,
+    "enrichRoofs": 0,
+    "roofs": 14,
+    "fingerprint": "dc94bcd8572dbf16"
+  },
+  "logoAssetId": null,
+  "companyAdAssetId": "pack.agentspace.ad.stripe.01",
+  "logo": {
+    "available": true,
+    "fallback": false,
+    "path": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/stripe/logo.png",
+    "format": "png",
+    "sha256": "cb86ad335799c963a12003be1ef5ca21afe578fb4fa0592dd344294b42a5aba2",
+    "aspectRatio": 1,
+    "sourceUrl": "https://images.stripeassets.com/fzn2n1nzq965/4vVgZi0ZMoEzOhkcv7EVwK/8cce6fdcf2733b2ec8e99548908847ed/favicon.png?w=180&h=180",
+    "fetchedAt": null,
+    "manifest": "/Users/damilareadeosun/Documents/agentspace-world/public/assets/brands/stripe/manifest.json"
+  },
+  "attempts": 1
+}

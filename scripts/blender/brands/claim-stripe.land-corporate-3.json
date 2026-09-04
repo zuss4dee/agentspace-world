@@ -1,0 +1,66 @@
+{
+  "companyId": "stripe",
+  "companyName": "Stripe",
+  "tier": "enterprise",
+  "logo": {
+    "wordmark": "STRIPE",
+    "assetPath": "public/assets/brands/stripe/logo.png",
+    "imageUrl": "https://images.stripeassets.com/fzn2n1nzq965/4vVgZi0ZMoEzOhkcv7EVwK/8cce6fdcf2733b2ec8e99548908847ed/favicon.png?w=180&h=180"
+  },
+  "primaryColours": [
+    "#635bff",
+    "#0a2540",
+    "#00d924"
+  ],
+  "secondaryColours": [
+    "#ffffff",
+    "#80e9ff"
+  ],
+  "typography": {
+    "display": "SourceCodePro",
+    "body": "sohne-var"
+  },
+  "visualStyle": "precise financial infrastructure, blurple, deep navy, cool white",
+  "industry": "finance",
+  "personality": [
+    "precise",
+    "premium",
+    "technical"
+  ],
+  "styleKeywords": [
+    "light",
+    "playful",
+    "bold",
+    "tech",
+    "finance",
+    "warm"
+  ],
+  "avatars": [
+    "https://images.stripeassets.com/fzn2n1nzq965/XtX984S1GJVsVOXFC7kMu/01988281e867728dfb09aa7793a6e3b9/Stripe.jpg?q=80",
+    "https://images.stripeassets.com/fzn2n1nzq965/4vVgZi0ZMoEzOhkcv7EVwK/8cce6fdcf2733b2ec8e99548908847ed/favicon.png?w=180&h=180"
+  ],
+  "animations": {
+    "hasMotion": true,
+    "keyframes": 8,
+    "libraries": []
+  },
+  "website": "https://stripe.com",
+  "tagline": "Stripe is a financial services platform that helps all types of businesses accept payments, build flexible billing models and manage money movement.",
+  "colourRoles": {
+    "primary": "#635bff",
+    "secondary": "#0a2540",
+    "accent": "#00d924",
+    "background": "#ffffff",
+    "foreground": "#0a2540",
+    "logo": [
+      "#635bff",
+      "#0a2540",
+      "#ffffff"
+    ]
+  },
+  "derivedFrom": {
+    "url": "https://stripe.com/",
+    "fetchedAt": "2026-09-03T18:28:03.992Z",
+    "confidence": 0.95
+  }
+}

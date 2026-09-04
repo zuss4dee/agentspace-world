@@ -18,6 +18,26 @@ export const TIER_FOOTPRINT_METERS: Record<CompanyTier, BuildingFootprintMeters>
 };
 
 export const BUILDING_METERS_BY_ASSET_ID: Record<string, BuildingFootprintMeters> = {
+  "pack.agentspace.building.echt.land-campus-1.01": {
+    width: 71.748,
+    depth: 71.595,
+    height: 19.543,
+  },
+  "pack.agentspace.building.linear.land-meadow-1.01": {
+    width: 31.649,
+    depth: 70.546,
+    height: 18.063,
+  },
+  "pack.agentspace.building.grove.land-parklands-2.01": {
+    width: 23.65,
+    depth: 19.329,
+    height: 18.16,
+  },
+  "pack.agentspace.building.stripe.land-corporate-3.01": {
+    width: 71.65,
+    depth: 23.052,
+    height: 14.927,
+  },
   "pack.agentspace.building.land-campus-1.01": {
     width: 27.897,
     depth: 18.496,
